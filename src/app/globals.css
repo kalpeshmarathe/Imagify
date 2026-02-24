@@ -2,103 +2,217 @@
 
 /* Imagify.me — Dark-first brand colors */
 :root {
-  /* Backgrounds */
   --bg-primary: #0E0F1A;
   --bg-secondary: #16182B;
   --bg-card: #1F2240;
-
-  /* Text */
   --text-primary: #FFFFFF;
   --text-secondary: #C7C7D1;
   --text-muted: #8B8FAE;
-
-  /* Primary gradient: Neon Pink → Electric Purple → Bright Blue (left → right) */
   --gradient-pink: #FF4F8B;
   --gradient-purple: #8A4DFF;
   --gradient-blue: #3DA9FF;
-
-  /* Icon / camera accents */
   --accent-violet: #5A2D82;
   --accent-indigo: #3B4DCC;
   --accent-cyan: #4FDFFF;
-
-  /* Glow effects */
   --glow-pink: rgba(255, 79, 139, 0.6);
   --glow-purple: rgba(138, 77, 255, 0.6);
   --glow-blue: rgba(61, 169, 255, 0.6);
-
-  /* Borders (subtle separation) */
   --border: rgba(199, 199, 209, 0.12);
 }
 
 @theme inline {
   --color-background: var(--bg-primary);
   --color-foreground: var(--text-primary);
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-poppins), system-ui, sans-serif;
+  font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
 }
 
-/* ===== Custom Keyframe Animations ===== */
+/* ===== Keyframes ===== */
+
 @keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+
+  66% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-18px) rotate(3deg);
+  }
 }
 
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(28px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; filter: blur(40px); }
-  50% { opacity: 0.9; filter: blur(50px); }
-}
-
-@keyframes scale-in {
+@keyframes slide-in-left {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: translateX(-60px) rotate(-12deg);
   }
+
   to {
+    opacity: 1;
+    transform: translateX(0) rotate(-10deg);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px) rotate(10deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(8deg);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12) rotate(4deg);
+  }
+
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  70% {
+    transform: scale(1.1);
+  }
+
+  100% {
     opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+
+  50% {
+    transform: rotate(3deg);
+  }
 }
 
-@keyframes wiggle {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    filter: blur(40px);
+  }
+
+  50% {
+    opacity: 0.9;
+    filter: blur(52px);
+  }
 }
 
 @keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
+
+@keyframes border-spin {
+  to {
+    --angle: 360deg;
+  }
+}
+
+/* ===== Utility Classes ===== */
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
 
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
 .animate-fade-in-up {
   animation: fade-in-up 0.7s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slide-in-left 0.8s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+.animate-slide-right {
+  animation: slide-in-right 0.8s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.9s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.6s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+.animate-wiggle {
+  animation: wiggle 2.5s ease-in-out infinite;
 }
 
 .animate-scale-in {
@@ -109,23 +223,123 @@ body {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-.animate-wiggle {
-  animation: wiggle 2s ease-in-out infinite;
+/* Delays */
+.animation-delay-100 {
+  animation-delay: 100ms;
 }
 
-/* Stagger delays for grouped animations */
-.animation-delay-100 { animation-delay: 100ms; }
-.animation-delay-200 { animation-delay: 200ms; }
-.animation-delay-300 { animation-delay: 300ms; }
-.animation-delay-400 { animation-delay: 400ms; }
-.animation-delay-500 { animation-delay: 500ms; }
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animation-delay-600 {
+  animation-delay: 600ms;
+}
+
+.animation-delay-700 {
+  animation-delay: 700ms;
+}
+
+.animation-delay-800 {
+  animation-delay: 800ms;
+}
+
+/* Funky gradient badge base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-float,
-  .animate-fade-in-up,
-  .animate-scale-in,
-  .animate-pulse-glow,
-  .animate-wiggle {
-    animation: none;
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
   }
+}
+
+/* ===== Slot-machine cycling text ===== */
+/* 5 items, each 1.6 line-heights tall; total = 5 × 1 = 5 units of 100% */
+@keyframes slot-cycle {
+  0% {
+    transform: translateY(0);
+  }
+
+  18% {
+    transform: translateY(0);
+  }
+
+  22% {
+    transform: translateY(-20%);
+  }
+
+  38% {
+    transform: translateY(-20%);
+  }
+
+  42% {
+    transform: translateY(-40%);
+  }
+
+  58% {
+    transform: translateY(-40%);
+  }
+
+  62% {
+    transform: translateY(-60%);
+  }
+
+  78% {
+    transform: translateY(-60%);
+  }
+
+  82% {
+    transform: translateY(-80%);
+  }
+
+  96% {
+    transform: translateY(-80%);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-slot {
+  animation: slot-cycle 8s cubic-bezier(0.77, 0, 0.18, 1) infinite;
+}
+
+/* Speech bubble tail (bottom-left) */
+.bubble-tail::after {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  left: 22px;
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 16px solid white;
 }

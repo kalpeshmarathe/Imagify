@@ -1,251 +1,733 @@
 import Link from "next/link";
 import { AnimateOnScroll } from "@/components/AnimateOnScroll";
 import { MobileNav } from "@/components/MobileNav";
+import { ImageShowcase } from "@/components/ImageShowcase";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* ===== FLOATING FEEDBACK WIDGET (desktop/tablet) ===== */}
-      <div className="fixed top-1/2 -translate-y-1/2 right-3 md:right-4 z-50 hidden md:block">
-        <AnimateOnScroll direction="right" threshold={0} delay={800}>
-          <div className="w-56 md:w-64 rounded-2xl bg-white p-4 shadow-xl border border-gray-100 transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
-            <p className="text-sm font-semibold text-gray-900">Got feedback?</p>
-            <p className="text-xs text-gray-500 mt-0.5">Drop it here. Anonymous.</p>
+    <div
+      className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden"
+      style={{ fontFamily: "'Nunito', var(--font-nunito), sans-serif" }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+        :root {
+          --pink: #FF3D7F;
+          --purple: #7C3AFF;
+          --blue: #00C8FF;
+          --yellow: #FFE500;
+          --green: #00FF94;
+          --bg: #0a0a0a;
+        }
+
+        /* ── Grain overlay ── */
+        body::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none;
+          z-index: 9999;
+          opacity: 0.35;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 99px; }
+
+        /* ── Marquee ── */
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .marquee-track { display: flex; width: max-content; animation: marquee 18s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
+
+        /* ── Float ── */
+        @keyframes float { 0%,100%{transform:translateY(0) rotate(var(--r,0deg))} 50%{transform:translateY(-14px) rotate(var(--r,0deg))} }
+        .float { animation: float 4s ease-in-out infinite; }
+
+        /* ── Wiggle ── */
+        @keyframes wiggle { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
+        .wiggle { animation: wiggle 2.4s ease-in-out infinite; }
+
+        /* ── Slot machine ── */
+        @keyframes slot {
+          0%   { transform: translateY(0); }
+          18%  { transform: translateY(-20%); }
+          36%  { transform: translateY(-40%); }
+          54%  { transform: translateY(-60%); }
+          72%  { transform: translateY(-80%); }
+          90%  { transform: translateY(-80%); }
+          100% { transform: translateY(0); }
+        }
+        .slot { animation: slot 7s cubic-bezier(0.25,0.46,0.45,0.94) infinite; }
+
+        /* ── Fade up ── */
+        @keyframes fadeUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.7s ease forwards; }
+        .delay-1 { animation-delay: 0.15s; opacity: 0; }
+        .delay-2 { animation-delay: 0.3s; opacity: 0; }
+        .delay-3 { animation-delay: 0.45s; opacity: 0; }
+        .delay-4 { animation-delay: 0.6s; opacity: 0; }
+
+        /* ── Pop in ── */
+        @keyframes popIn { 0%{opacity:0;transform:scale(0.5) rotate(-10deg)} 70%{transform:scale(1.08) rotate(2deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        /* ── Sticker badge ── */
+        .sticker {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 20px;
+          border-radius: 9999px;
+          font-weight: 900;
+          font-size: 0.95rem;
+          letter-spacing: -0.01em;
+          border: 2.5px solid rgba(255,255,255,0.25);
+          backdrop-filter: blur(12px);
+          white-space: nowrap;
+          cursor: default;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .sticker:hover { transform: scale(1.08) rotate(-2deg) !important; }
+
+        /* ── Outlined text ── */
+        .text-outline {
+          -webkit-text-stroke: 3px white;
+          color: transparent;
+        }
+
+        /* ── Neon glow ── */
+        .glow-pink  { text-shadow: 0 0 40px rgba(255,61,127,0.8), 0 0 80px rgba(255,61,127,0.4); }
+        .glow-blue  { text-shadow: 0 0 40px rgba(0,200,255,0.8), 0 0 80px rgba(0,200,255,0.4); }
+        .glow-green { text-shadow: 0 0 40px rgba(0,255,148,0.8), 0 0 80px rgba(0,255,148,0.4); }
+
+        /* ── Step card ── */
+        .step-card {
+          background: #141414;
+          border: 1.5px solid rgba(255,255,255,0.08);
+          border-radius: 24px;
+          padding: 32px;
+          transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+          position: relative;
+          overflow: hidden;
+        }
+        .step-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at top left, var(--card-glow, rgba(124,58,255,0.12)) 0%, transparent 65%);
+          pointer-events: none;
+        }
+        .step-card:hover {
+          transform: translateY(-6px) rotate(-0.5deg);
+          border-color: rgba(255,255,255,0.18);
+          box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+        }
+
+        /* ── Navbar glass ── */
+        .navbar-glass {
+          background: rgba(10,10,10,0.7);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* ── CTA button ── */
+        .cta-btn {
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.25s, box-shadow 0.25s;
+        }
+        .cta-btn::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+          pointer-events: none;
+        }
+        .cta-btn:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 16px 48px rgba(255,61,127,0.5); }
+        .cta-btn:active { transform: scale(0.97); }
+
+        /* ── Photo card ── */
+        .photo-card {
+          position: relative;
+          transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .photo-card:hover { transform: scale(1.04) rotate(0deg) !important; }
+
+        /* ── Pill nav link ── */
+        .nav-pill {
+          padding: 6px 16px;
+          border-radius: 9999px;
+          font-weight: 800;
+          font-size: 0.9rem;
+          color: rgba(255,255,255,0.7);
+          transition: background 0.2s, color 0.2s;
+        }
+        .nav-pill:hover {
+          background: rgba(255,255,255,0.1);
+          color: #fff;
+        }
+
+        /* ── Section divider ── */
+        .slash-divider {
+          width: 100%;
+          height: 80px;
+          background: linear-gradient(135deg, #FF3D7F, #7C3AFF, #00C8FF);
+          clip-path: polygon(0 0, 100% 0, 100% 40%, 0 100%);
+        }
+
+        /* ── Footer link ── */
+        .footer-link { color: rgba(255,255,255,0.4); font-weight: 700; transition: color 0.2s; }
+        .footer-link:hover { color: #fff; }
+      `}</style>
+
+      {/* ================================================================
+          NAVBAR
+      ================================================================ */}
+      <header className="fixed top-0 left-0 right-0 z-50 navbar-glass">
+        <nav className="flex h-16 items-center justify-between px-6 sm:px-10 max-w-7xl mx-auto">
+
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <span
+              className="text-2xl font-black tracking-tight text-white transition-all duration-300 group-hover:scale-105 inline-block"
+              style={{ letterSpacing: "-0.04em" }}
+            >
+              imagify
+              <span className="text-[var(--pink)]">.</span>
+            </span>
+          </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-1">
+            <Link href="#how" className="nav-pill">how it works</Link>
+            <Link href="#play" className="nav-pill">play</Link>
+          </div>
+
+          {/* CTA */}
+          <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="mt-3 block w-full rounded-xl py-2.5 text-center text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
+              className="hidden sm:inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white cta-btn"
               style={{
-                background: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
+                background: "linear-gradient(135deg, var(--pink), var(--purple))",
+                boxShadow: "0 4px 20px rgba(255,61,127,0.4)",
               }}
             >
-              Send feedback
+              give feedback ✨
             </Link>
-          </div>
-        </AnimateOnScroll>
-      </div>
-
-      {/* ===== FLOATING FEEDBACK BUTTON (mobile) ===== */}
-      <Link
-        href="/dashboard"
-        className="fixed bottom-5 right-5 z-50 md:hidden rounded-full px-5 py-3.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 active:scale-95 hover:scale-105"
-        style={{
-          background: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
-          boxShadow: "0 4px 24px rgba(255, 79, 139, 0.5)",
-        }}
-      >
-        Feedback ✨
-      </Link>
-
-      {/* ===== TOP NAV ===== */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-black/70 backdrop-blur-md border-b border-white/5">
-        <nav className="flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6 max-w-7xl mx-auto">
-          <Link
-            href="/"
-            className="text-base sm:text-lg font-bold bg-clip-text text-transparent transition-opacity hover:opacity-90"
-            style={{
-              backgroundImage: "linear-gradient(90deg, #FF4F8B, #8A4DFF, #3DA9FF)",
-            }}
-          >
-            Imagify
-          </Link>
-          <div className="flex items-center gap-4 sm:gap-6">
-            <div className="hidden lg:flex text-sm gap-6">
-              <Link href="#how" className="text-gray-400 hover:text-white transition-colors">How it works</Link>
-              <Link href="#play" className="text-gray-400 hover:text-white transition-colors">Play</Link>
-              <Link
-                href="/dashboard"
-                className="rounded-full px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-105 active:scale-95"
-                style={{
-                  background: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
-                }}
-              >
-                Give feedback
-              </Link>
-            </div>
             <MobileNav />
           </div>
         </nav>
       </header>
 
-      {/* ===== SECTION 1: HERO (gradient bg) ===== */}
+
+      {/* ================================================================
+          HERO
+      ================================================================ */}
       <section
-        className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-24 pb-24 sm:pt-28 sm:pb-32"
-        style={{
-          background: "linear-gradient(135deg, #FF4F8B 0%, #8A4DFF 50%, #3DA9FF 100%)",
-        }}
+        className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, #1a0533 0%, #0a0a0a 65%)" }}
       >
-        {/* Floating emoji-style elements - responsive sizing & positioning */}
-        <div className="absolute top-16 sm:top-20 left-[5%] sm:left-[10%] text-4xl sm:text-5xl md:text-6xl opacity-80 animate-float hidden xs:block">📷</div>
-        <div className="absolute top-24 sm:top-32 right-[8%] sm:right-[15%] text-3xl sm:text-5xl opacity-70 animate-float animation-delay-200 hidden sm:block">🔒</div>
-        <div className="absolute bottom-24 sm:bottom-40 left-[5%] sm:left-[8%] text-3xl sm:text-4xl opacity-60 animate-float animation-delay-300">💬</div>
-        <div className="absolute top-1/3 right-[5%] sm:right-[10%] text-3xl sm:text-5xl opacity-75 animate-float animation-delay-100 hidden sm:block">🖼️</div>
-        <div className="absolute bottom-1/3 left-[8%] sm:left-[12%] text-3xl sm:text-4xl opacity-65 animate-float animation-delay-400">✨</div>
+        {/* Background grid */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
 
-        {/* Rounded placeholder "photos" - hidden on very small screens */}
-        <div className="absolute top-20 sm:top-24 left-[2%] sm:left-[5%] w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm hidden sm:block" />
-        <div className="absolute bottom-24 sm:bottom-32 right-[3%] sm:right-[8%] w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-white/25 backdrop-blur-sm hidden md:block" />
-        <div className="absolute top-1/2 right-[5%] sm:right-[12%] w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/15 hidden lg:block" />
+        {/* Gradient blobs */}
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 pointer-events-none"
+          style={{ background: "var(--purple)" }} />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full blur-[100px] opacity-15 pointer-events-none"
+          style={{ background: "var(--pink)" }} />
 
-        <div className="relative z-10 text-center max-w-3xl">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight text-white drop-shadow-lg animate-fade-in-up">
-            <span className="block">real feedback</span>
-            <span className="block mt-1 animate-fade-in-up animation-delay-100">real vibes</span>
-          </h1>
-          <p className="mt-5 sm:mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl mx-auto animate-fade-in-up animation-delay-200">
-            Anonymous. Image-based. No cap — just drop a pic and spill the tea.
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-8 sm:mt-10 inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 animate-fade-in-up animation-delay-300"
+        {/* ── LEFT PHOTO ── */}
+        <div
+          className="photo-card absolute left-[2%] top-1/2 hidden lg:block"
+          style={{ transform: "translateY(-54%) rotate(-9deg)", zIndex: 10, animationDelay: "200ms" }}
+        >
+          <div
+            className="p-[5px] rounded-[26px]"
+            style={{
+              background: "linear-gradient(135deg, var(--pink), var(--purple), var(--blue))",
+              boxShadow: "0 30px 80px rgba(255,61,127,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+            }}
           >
-            Drop your feedback 🚀
-          </Link>
+            <div className="w-[200px] h-[260px] xl:w-[230px] xl:h-[300px] rounded-[22px] overflow-hidden bg-black relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/image (1).jpg" alt="feedback preview" className="w-full h-full object-cover" />
+              {/* Overlay shimmer */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            </div>
+          </div>
+          {/* Floating reaction */}
+          <div
+            className="absolute -bottom-4 -right-6 sticker pop-in"
+            style={{
+              background: "var(--yellow)", color: "#000",
+              border: "2.5px solid rgba(0,0,0,0.12)",
+              transform: "rotate(6deg)",
+              animationDelay: "1.2s",
+            }}
+          >
+            🔥 roast me
+          </div>
         </div>
-      </section>
 
-      {/* ===== SECTION 2: Play / Q&A games (black bg) ===== */}
-      <section id="play" className="relative bg-black py-16 sm:py-20 md:py-24 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <AnimateOnScroll>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              <span className="block">play feedback</span>
-              <span className="block">games</span>
-            </h2>
-            <p className="mt-3 sm:mt-4 text-gray-400 text-base sm:text-lg">screenshot feedback · roast me · rate this · 3 words</p>
-          </AnimateOnScroll>
+        {/* ── RIGHT PHOTO ── */}
+        <div
+          className="photo-card absolute right-[2%] top-1/2 hidden lg:block"
+          style={{ transform: "translateY(-44%) rotate(7deg)", zIndex: 10 }}
+        >
+          <div
+            className="p-[5px] rounded-[26px]"
+            style={{
+              background: "linear-gradient(135deg, var(--blue), var(--purple), var(--pink))",
+              boxShadow: "0 30px 80px rgba(0,200,255,0.35), 0 0 0 1px rgba(255,255,255,0.05)",
+            }}
+          >
+            <div className="w-[200px] h-[260px] xl:w-[230px] xl:h-[300px] rounded-[22px] overflow-hidden bg-black relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/image (2).jpg" alt="feedback preview" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            </div>
+          </div>
+          <div
+            className="absolute -top-4 -left-8 sticker pop-in"
+            style={{
+              background: "var(--green)", color: "#000",
+              border: "2.5px solid rgba(0,0,0,0.12)",
+              transform: "rotate(-5deg)",
+              animationDelay: "1.4s",
+            }}
+          >
+            ⭐ rate this
+          </div>
+        </div>
 
-          {/* Speech bubbles - with hover animation */}
-          <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {[
-              "What would you change about this?",
-              "Rate this 1-10 🔥",
-              "Roast it ( respectfully )",
-              "One word to describe this",
-              "Best part? Worst part?",
-              "Would you use this?",
-            ].map((text, i) => (
-              <AnimateOnScroll key={i} delay={i * 80}>
-                <div className="transition-transform duration-300 hover:scale-105 cursor-default">
-                  <div
-                    className="relative rounded-2xl bg-white px-4 sm:px-6 py-3 sm:py-4 shadow-lg transition-shadow duration-300 hover:shadow-xl"
-                    style={{
-                      transform: `rotate(${(i % 3 - 1) * 2}deg)`,
-                    }}
-                  >
-                    <p className="text-gray-800 text-xs sm:text-sm font-medium">{text}</p>
-                    <div
-                      className="absolute -bottom-2 left-4 sm:left-6 w-3 h-3 sm:w-4 sm:h-4 bg-white rotate-45"
-                      style={{ boxShadow: "2px 2px 4px rgba(0,0,0,0.1)" }}
-                    />
-                  </div>
-                </div>
-              </AnimateOnScroll>
-            ))}
+        {/* ── Floating 3D objects ── */}
+        <div className="absolute hidden sm:block float" style={{ top: "9%", left: "7%", zIndex: 20, "--r": "-6deg" } as React.CSSProperties}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image1.png" alt="" className="w-28 h-28 md:w-40 md:h-40 xl:w-44 xl:h-44 object-contain"
+            style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.6))" }} />
+        </div>
+        <div className="absolute hidden sm:block float" style={{ top: "7%", right: "6%", zIndex: 20, animationDelay: "0.7s", "--r": "5deg" } as React.CSSProperties}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image2.png" alt="" className="w-32 h-32 md:w-44 md:h-44 xl:w-52 xl:h-52 object-contain"
+            style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))" }} />
+        </div>
+        <div className="absolute hidden md:block float" style={{ bottom: "8%", left: "12%", zIndex: 20, animationDelay: "0.4s", animationDuration: "5s" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image3.png" alt="" className="w-20 h-20 md:w-28 md:h-28 xl:w-32 xl:h-32 object-contain"
+            style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.5))" }} />
+        </div>
+
+        {/* ── Extra floating stickers ── */}
+        <div className="absolute hidden lg:block wiggle" style={{ left: "20%", top: "28%", zIndex: 25 }}>
+          <div className="sticker" style={{ background: "rgba(124,58,255,0.85)", transform: "rotate(3deg)", boxShadow: "0 8px 32px rgba(124,58,255,0.5)" }}>
+            💬 spill the tea
+          </div>
+        </div>
+        <div className="absolute hidden lg:block wiggle" style={{ right: "20%", top: "26%", zIndex: 25, animationDelay: "0.8s" }}>
+          <div className="sticker" style={{ background: "rgba(0,200,255,0.85)", color: "#000", transform: "rotate(-4deg)", boxShadow: "0 8px 32px rgba(0,200,255,0.4)" }}>
+            😤 be honest
+          </div>
+        </div>
+        <div className="absolute hidden xl:block float" style={{ right: "18%", bottom: "20%", zIndex: 25, animationDuration: "6s" }}>
+          <div className="sticker" style={{ background: "rgba(255,61,127,0.85)", transform: "rotate(5deg)", boxShadow: "0 8px 32px rgba(255,61,127,0.5)" }}>
+            🫦 no filter
+          </div>
+        </div>
+
+        {/* ── Hero text ── */}
+        <div className="relative text-center px-4" style={{ zIndex: 30 }}>
+          {/* Label pill */}
+          <div className="fade-up flex justify-center mb-6">
+            <div
+              className="sticker text-xs"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.15)" }}
+            >
+              <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 8px var(--green)" }} />
+              anonymous. no limits.
+            </div>
           </div>
 
-          {/* Floating emojis */}
-          <div className="absolute top-24 sm:top-40 right-[3%] sm:right-[5%] text-4xl sm:text-6xl opacity-60 animate-float hidden sm:block">💜</div>
-          <div className="absolute bottom-24 sm:bottom-40 left-[3%] sm:left-[5%] text-3xl sm:text-5xl opacity-50 animate-float animation-delay-200 hidden sm:block">📸</div>
+          <h1
+            className="font-black text-white leading-[0.9] tracking-tight"
+            style={{ fontSize: "clamp(4rem, 11vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
+          >
+            <span className="fade-up block">real</span>
+            <span className="fade-up delay-1 block text-outline">feedback.</span>
+            <span className="fade-up delay-2 block" style={{ color: "var(--pink)" }}>real vibes.</span>
+          </h1>
+
+          <p className="fade-up delay-3 mt-6 text-white/60 max-w-xs mx-auto font-semibold text-base sm:text-lg">
+            Drop a pic. Get anonymous reactions. No cap.
+          </p>
+
+          <div className="fade-up delay-4 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/dashboard"
+              className="cta-btn rounded-full px-10 py-4 font-black text-white text-base"
+              style={{
+                background: "linear-gradient(135deg, var(--pink) 0%, var(--purple) 100%)",
+                boxShadow: "0 8px 40px rgba(255,61,127,0.5)",
+              }}
+            >
+              drop your feedback 🚀
+            </Link>
+            <Link
+              href="#play"
+              className="rounded-full px-8 py-4 font-black text-white/70 text-base border border-white/10 hover:border-white/30 hover:text-white transition-all duration-200"
+            >
+              see how it works ↓
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* ===== SECTION 3: Get to know (gradient bg) ===== */}
-      <section
-        id="how"
-        className="relative py-16 sm:py-20 md:py-24 px-4 sm:px-6"
-        style={{
-          background: "linear-gradient(135deg, #FF4F8B 0%, #8A4DFF 50%, #3DA9FF 100%)",
-        }}
-      >
-        <div className="absolute top-16 sm:top-20 left-[5%] sm:left-[10%] text-4xl sm:text-5xl opacity-60 animate-float">🔮</div>
-        <div className="absolute bottom-16 sm:bottom-20 right-[5%] sm:right-[10%] text-4xl sm:text-5xl opacity-60 animate-float animation-delay-200">💬</div>
+      {/* ── MARQUEE DIVIDER ── */}
+      <div className="overflow-hidden border-y border-white/08 py-4" style={{ background: "#0f0f0f" }}>
+        <div className="marquee-track">
+          {Array(2).fill(["🔥 roast me", "💬 spill the tea", "⭐ rate this", "😤 be honest", "🫦 no filter", "👀 screenshot review", "💀 love it or hate it", "🎯 3 words", "🪞 mirror check", "✨ glow up or no"]).flat().map((t, i) => (
+            <span key={i} className="mx-6 text-sm font-black text-white/30 uppercase tracking-widest flex-shrink-0">
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+
+      {/* ================================================================
+          SECTION 2: PLAY FEEDBACK GAMES
+      ================================================================ */}
+      <section id="play" className="relative bg-[var(--bg)] min-h-screen flex items-center overflow-hidden py-24 px-4 sm:px-6">
+
+        {/* Subtle background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10"
+            style={{ background: "var(--blue)" }} />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10"
+            style={{ background: "var(--pink)" }} />
+        </div>
+
+        {/* ── 3D objects ── */}
+        <div className="absolute top-10 left-[5%] float hidden sm:block" style={{ zIndex: 5, animationDuration: "4s" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image1.png" alt="" className="w-28 h-28 md:w-36 md:h-36 object-contain opacity-70"
+            style={{ filter: "drop-shadow(0 16px 32px rgba(0,0,0,0.8))" }} />
+        </div>
+        <div className="absolute top-8 right-[4%] float hidden sm:block" style={{ zIndex: 5, animationDuration: "5s", animationDelay: "0.6s" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image2.png" alt="" className="w-32 h-32 md:w-44 md:h-44 object-contain opacity-70"
+            style={{ filter: "drop-shadow(0 16px 32px rgba(0,0,0,0.7))" }} />
+        </div>
+        <div className="absolute bottom-10 left-[3%] float hidden md:block" style={{ zIndex: 5, animationDelay: "0.3s", animationDuration: "6s" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/image3.png" alt="" className="w-24 h-24 md:w-32 md:h-32 object-contain opacity-70"
+            style={{ filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.7))" }} />
+        </div>
+
+        {/* ── Left response image bubbles ── */}
+        {[
+          { src: "/images/response1.jpg", label: "😂 mood", top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
+          { src: "/images/response2.jpg", label: "🙏 relatable", top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
+        ].map((b, i) => (
+          <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
+            <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
+              <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(255,61,127,0.8),rgba(124,58,255,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
+                <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={b.src} alt="response" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="absolute -bottom-3 -right-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap" style={{ background: b.labelBg }}>{b.label}</div>
+            </div>
+          </div>
+        ))}
+
+        {/* ── Right response image bubbles ── */}
+        {[
+          { src: "/images/response3.jpg", label: "🌹 love it", top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
+          { src: "/images/response4.jpg", label: "💖 aww", top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
+        ].map((b, i) => (
+          <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
+            <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
+              <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(0,200,255,0.8),rgba(255,61,127,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
+                <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={b.src} alt="response" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="absolute -bottom-3 -left-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap" style={{ background: b.labelBg }}>{b.label}</div>
+            </div>
+          </div>
+        ))}
+
+        {/* ── Central content ── */}
+        <div className="relative max-w-2xl mx-auto text-center" style={{ zIndex: 20 }}>
           <AnimateOnScroll>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg">
-              get to know
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">feedback games</p>
+            <h2
+              className="font-black leading-[0.88] tracking-tight"
+              style={{ fontSize: "clamp(3.8rem, 12vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
+            >
+              <span className="text-white block">play</span>
+              <span className="text-outline block">feedback</span>
+              <span className="block" style={{ color: "var(--blue)" }}>games</span>
             </h2>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white/95 mt-1 sm:mt-2 drop-shadow-lg">
-              your audience
-            </h2>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/90">
-              Screenshots, memes, design mockups — show don&apos;t tell. Anonymous feedback that actually helps.
-            </p>
           </AnimateOnScroll>
 
-          {/* Central "profile" placeholder */}
+          {/* Slot machine */}
           <AnimateOnScroll delay={200}>
-            <div className="mt-10 sm:mt-12 flex justify-center">
-              <div
-                className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-white/25 backdrop-blur-md flex items-center justify-center text-4xl sm:text-5xl transition-transform duration-300 hover:scale-110"
-              >
-                📷
+            <div
+              className="mt-8 mx-auto overflow-hidden rounded-2xl border border-white/10"
+              style={{ height: "clamp(3rem, 8vw, 5.5rem)", background: "rgba(255,255,255,0.04)", maxWidth: "480px" }}
+            >
+              <div className="slot" style={{ height: "500%" }}>
+                {[
+                  { label: "🔥 roast me", color: "var(--pink)" },
+                  { label: "⭐ rate this", color: "var(--yellow)" },
+                  { label: "📸 screenshot review", color: "var(--blue)" },
+                  { label: "✌️ 3 words only", color: "var(--green)" },
+                  { label: "💀 love it or hate it", color: "#fff" },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-center font-black"
+                    style={{
+                      height: "20%",
+                      fontSize: "clamp(1.6rem, 5vw, 3.5rem)",
+                      fontFamily: "var(--font-nunito), 'Nunito'",
+                      color: item.color,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                ))}
               </div>
             </div>
           </AnimateOnScroll>
 
-          {/* More speech bubbles */}
-          <div className="mt-8 sm:mt-12 flex flex-wrap justify-center gap-3 sm:gap-4">
-            {["Love it!", "Fix this part 👆", "So fire"].map((t, i) => (
-              <AnimateOnScroll key={i} delay={300 + i * 80}>
-                <div
-                  className="rounded-2xl bg-white px-4 sm:px-5 py-2.5 sm:py-3 shadow-lg transition-all duration-300 hover:scale-110 hover:rotate-3"
-                  style={{ transform: `rotate(${(i - 1) * 3}deg)` }}
-                >
-                  <p className="text-gray-800 text-sm font-medium">{t}</p>
+          {/* Mobile response image cards */}
+          <AnimateOnScroll delay={350}>
+            <div className="mt-10 flex flex-wrap justify-center gap-4 lg:hidden">
+              {[
+                { src: "/images/response1.jpg", label: "😂 mood", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
+                { src: "/images/response2.jpg", label: "🙏 relatable", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
+                { src: "/images/response3.jpg", label: "🌹 love it", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
+                { src: "/images/response4.jpg", label: "💖 aww", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
+              ].map((r, i) => (
+                <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
+                  <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
+                    <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.src} alt={r.label} className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black text-white whitespace-nowrap shadow" style={{ background: r.bg }}>{r.label}</div>
                 </div>
-              </AnimateOnScroll>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== SECTION 4: Join (black bg) ===== */}
-      <section className="relative bg-black py-20 sm:py-24 md:py-28 px-4 sm:px-6">
-        <div className="absolute top-24 sm:top-32 left-[5%] sm:left-[8%] text-4xl sm:text-5xl opacity-50 animate-float">✨</div>
-        <div className="absolute bottom-24 sm:bottom-32 right-[5%] sm:right-[8%] text-4xl sm:text-5xl opacity-50 animate-float animation-delay-200">🚀</div>
-
-        <div className="max-w-3xl mx-auto text-center">
-          <AnimateOnScroll>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white">
-              join the vibe
-            </h2>
-            <p className="mt-4 sm:mt-6 text-gray-400 text-base sm:text-lg">
-              No sign up. No stress. Just vibes.
-            </p>
-            <Link
-              href="/dashboard"
-              className="mt-8 sm:mt-10 inline-flex items-center justify-center gap-2 rounded-full px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
-              style={{
-                background: "linear-gradient(90deg, #FF4F8B, #8A4DFF, #3DA9FF)",
-                boxShadow: "0 0 60px rgba(138, 77, 255, 0.5)",
-              }}
-            >
-              Start now ✨
-            </Link>
+              ))}
+            </div>
           </AnimateOnScroll>
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="border-t border-white/10 bg-black py-8 sm:py-10 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span
-            className="text-sm font-semibold bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
-            }}
+
+      {/* ================================================================
+          SECTION 2.5: IMAGE SHOWCASE
+      ================================================================ */}
+      <section className="relative bg-[#0d0d0d] py-20 sm:py-28 px-4 sm:px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
+          style={{ background: "var(--pink)" }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
+          style={{ background: "var(--purple)" }} />
+
+        <div className="max-w-6xl mx-auto">
+          <AnimateOnScroll>
+            <div className="text-center mb-16">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">in action</p>
+              <h2 className="font-black text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}>
+                see it{" "}
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{ backgroundImage: "linear-gradient(90deg, var(--pink), var(--purple), var(--blue))" }}
+                >
+                  live
+                </span>
+              </h2>
+              <p className="mt-3 text-white/40 text-base sm:text-lg font-semibold">Drop any image. Get real, anonymous reactions instantly.</p>
+            </div>
+          </AnimateOnScroll>
+          <ImageShowcase />
+        </div>
+      </section>
+
+
+      {/* ================================================================
+          SECTION 3: HOW IT WORKS
+      ================================================================ */}
+      <section id="how" className="relative py-24 sm:py-32 px-4 sm:px-6 overflow-hidden" style={{ background: "#0a0a0a" }}>
+
+        {/* Gradient top accent */}
+        <div className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: "linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent)" }} />
+
+        <div className="max-w-5xl mx-auto">
+          <AnimateOnScroll>
+            <div className="text-center mb-16">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">get to know</p>
+              <h2
+                className="font-black text-white leading-[0.9]"
+                style={{ fontSize: "clamp(3rem, 9vw, 7rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
+              >
+                your{" "}
+                <span className="text-outline">audience</span>
+              </h2>
+              <p className="mt-5 text-white/50 text-base sm:text-lg font-semibold max-w-md mx-auto">
+                Screenshots, memes, design mockups — show don&apos;t tell. Anonymous feedback that actually hits.
+              </p>
+            </div>
+          </AnimateOnScroll>
+
+          {/* Step cards */}
+          <div className="grid sm:grid-cols-3 gap-5">
+            {[
+              { step: "01", icon: "📤", title: "Upload anything", desc: "Screenshot, selfie, design mockup, meme — literally anything goes.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)" },
+              { step: "02", icon: "🔗", title: "Share your link", desc: "One tap. Send it to your group chat, story, or anywhere.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)" },
+              { step: "03", icon: "💬", title: "Get real reactions", desc: "100% anonymous. No sugarcoating. Real vibes only.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)" },
+            ].map((s, i) => (
+              <AnimateOnScroll key={i} delay={i * 120}>
+                <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
+                  <div className="text-3xl mb-4">{s.icon}</div>
+                  <div className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: s.color }}>{s.step}</div>
+                  <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
+                  <p className="text-white/40 font-semibold text-sm leading-relaxed">{s.desc}</p>
+                </div>
+              </AnimateOnScroll>
+            ))}
+          </div>
+
+          {/* Image response cards */}
+          <AnimateOnScroll delay={400}>
+            <div className="mt-12 flex flex-wrap justify-center items-end gap-5 sm:gap-8">
+              {[
+                { src: "/images/response1.jpg", label: "😂 mood", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg", scale: "1" },
+                { src: "/images/response2.jpg", label: "🙏 relatable", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg", scale: "1.1" },
+                { src: "/images/response3.jpg", label: "🌹 love it", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg", scale: "1" },
+                { src: "/images/response4.jpg", label: "💖 aww", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg", scale: "1" },
+              ].map((r, i) => (
+                <div
+                  key={i}
+                  className="relative group cursor-pointer"
+                  style={{ transform: `rotate(${r.rot}) scale(${r.scale})`, transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = "rotate(0deg) scale(1.12)")}
+                  onMouseLeave={e => (e.currentTarget.style.transform = `rotate(${r.rot}) scale(${r.scale})`)}
+                >
+                  <div className="p-[3px] rounded-2xl" style={{ background: r.bg, boxShadow: `0 12px 40px ${r.glow}` }}>
+                    <div className="w-24 h-28 sm:w-28 sm:h-34 md:w-32 md:h-40 rounded-xl overflow-hidden bg-black">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.src} alt={r.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-black text-white whitespace-nowrap shadow-lg" style={{ background: r.bg }}>{r.label}</div>
+                </div>
+              ))}
+            </div>
+          </AnimateOnScroll>
+        </div>
+      </section>
+
+
+      {/* ================================================================
+          SECTION 4: JOIN THE VIBE (CTA)
+      ================================================================ */}
+      <section className="relative overflow-hidden py-28 sm:py-36 px-4 sm:px-6">
+        {/* Full bleed gradient */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #FF3D7F 0%, #7C3AFF 50%, #00C8FF 100%)" }} />
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+        {/* Floating emoji */}
+        <div className="absolute top-12 left-[8%] text-5xl float opacity-70">🔮</div>
+        <div className="absolute bottom-12 right-[8%] text-5xl float opacity-70" style={{ animationDelay: "1s" }}>💬</div>
+        <div className="absolute top-16 right-[20%] text-3xl float opacity-50" style={{ animationDelay: "0.5s" }}>✨</div>
+        <div className="absolute bottom-20 left-[20%] text-3xl float opacity-50" style={{ animationDelay: "1.5s" }}>🫦</div>
+
+        <div className="max-w-3xl mx-auto text-center relative z-10">
+          <AnimateOnScroll>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60 mb-4">ready?</p>
+            <h2
+              className="font-black text-white leading-[0.9]"
+              style={{ fontSize: "clamp(3.5rem, 11vw, 8rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
+            >
+              join the
+              <br />
+              <span style={{ WebkitTextStroke: "3px rgba(255,255,255,0.9)", color: "transparent" }}>vibe</span>
+            </h2>
+            <p className="mt-5 text-white/80 text-lg font-bold">No sign up. No stress. Just vibes.</p>
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/dashboard"
+                className="cta-btn rounded-full px-12 py-5 font-black text-lg"
+                style={{
+                  background: "#fff",
+                  color: "#7C3AFF",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
+                }}
+              >
+                start now ✨
+              </Link>
+            </div>
+          </AnimateOnScroll>
+        </div>
+      </section>
+
+
+      {/* ================================================================
+          FOOTER
+      ================================================================ */}
+      <footer className="border-t border-white/06 bg-[#080808] py-10 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center sm:items-start gap-1">
+            <span
+              className="text-xl font-black bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(90deg, var(--pink), var(--purple))" }}
+            >
+              imagify.
+            </span>
+            <p className="text-xs text-white/20 font-semibold">anonymous image feedback</p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-6 text-sm">
+            <Link href="#how" className="footer-link">how it works</Link>
+            <Link href="#play" className="footer-link">play</Link>
+            <Link href="/dashboard" className="footer-link">give feedback</Link>
+          </div>
+
+          {/* Social-style pill */}
+          <div
+            className="sticker text-xs"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            Imagify
-          </span>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm text-gray-400">
-            <Link href="#how" className="hover:text-white transition-colors">How it works</Link>
-            <Link href="#play" className="hover:text-white transition-colors">Play</Link>
-            <Link href="/dashboard" className="hover:text-white transition-colors">Give feedback</Link>
+            <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 6px var(--green)" }} />
+            live & free
           </div>
         </div>
-        <p className="mt-4 text-center text-xs text-gray-500">imagify.me — anonymous image feedback</p>
+        <p className="mt-6 text-center text-xs text-white/15">© 2025 imagify — made with chaos ✨</p>
       </footer>
+
     </div>
   );
 }
