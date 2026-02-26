@@ -58,7 +58,7 @@ export default function LoginPage() {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-        :root { --pink: #FF3D7F; --purple: #7C3AFF; --blue: #00C8FF; --yellow: #FFE500; --green: #00FF94; --bg: var(--bg-primary); }
+        :root { --pink: #D4A84B; --purple: #9B59B6; --gold: #D4A84B; --rust: #C75B39; --emerald: #2D6A4F; --blue: #2D6A4F; --yellow: #F5A623; --green: #2D6A4F; --bg: var(--bg-primary); }
         .navbar-glass { border-bottom: 1px solid var(--border); }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         .float { animation: float 4s ease-in-out infinite; }

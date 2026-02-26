@@ -5,10 +5,13 @@ import { Heart } from "lucide-react";
 /* Image response cards for "How it works" section — hover effects require client */
 
 const CARDS = [
-  { src: "/images/response1.jpg", label: "mood", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg", scale: "1" },
-  { src: "/images/response2.jpg", label: "relatable", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg", scale: "1.1" },
-  { src: "/images/response3.jpg", label: "love it", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg", scale: "1" },
-  { src: "/images/response4.jpg", label: "aww", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg", scale: "1" },
+  { src: "/images/response.png", label: "for you", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg", scale: "1" },
+  { src: "/images/response1.png", label: "love it", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg", scale: "1.1" },
+  { src: "/images/response2.png", label: "vibes", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg", scale: "1" },
+  { src: "/images/response3.jpg", label: "princess", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg", scale: "1" },
+  { src: "/images/response4.jpg", label: "chalak", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)", glow: "rgba(0,200,255,0.45)", rot: "3deg", scale: "1" },
+  { src: "/images/response5.png", label: "adventure", bg: "linear-gradient(135deg,#00FF94,#00C8FF)", glow: "rgba(0,255,148,0.5)", rot: "-4deg", scale: "1" },
+  { src: "/images/response6.png", label: "explorer", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)", glow: "rgba(124,58,255,0.45)", rot: "2deg", scale: "1" },
 ];
 
 export function ImageResponseCards() {

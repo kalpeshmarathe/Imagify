@@ -6,7 +6,14 @@
     "public": "out",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
-      { "source": "/u/**", "destination": "/u/index.html" }
+      { "source": "/dashboard", "destination": "/dashboard.html" },
+      { "source": "/login", "destination": "/login.html" },
+      { "source": "/create-id", "destination": "/create-id.html" },
+      { "source": "/inbox", "destination": "/inbox.html" },
+      { "source": "/f", "destination": "/f.html" },
+      { "source": "/feedback", "destination": "/feedback.html" },
+      { "source": "/u", "destination": "/u.html" },
+      { "source": "/u/**", "destination": "/u.html" }
     ]
   }
 }

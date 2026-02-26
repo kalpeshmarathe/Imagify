@@ -4,8 +4,9 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isDarkOnlyRoute } = useTheme();
   const isDark = theme === "dark";
+  if (isDarkOnlyRoute) return null;
   return (
     <button
       type="button"

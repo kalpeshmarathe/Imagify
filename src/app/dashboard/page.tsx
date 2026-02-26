@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link2, Copy, Share2, Inbox } from "lucide-react";
+import { Link2, Copy, Share2, Inbox, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -16,12 +16,14 @@ import {
   limit,
 } from "firebase/firestore";
 import { db, ensureFirestoreNetwork } from "@/lib/firebase";
+import { HowToPlayModal } from "@/components/HowToPlayModal";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
   const toast = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   useEffect(() => {
     if (!db || !user?.uid) return;
@@ -172,6 +174,21 @@ export default function DashboardPage() {
             </span>
           )}
         </Link>
+
+        <button
+          type="button"
+          onClick={() => setShowHowToPlay(true)}
+          className="mt-4 w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-[var(--blue)] hover:text-[var(--purple)] border-2 border-[var(--blue)]/30 hover:border-[var(--purple)]/50 transition-colors"
+        >
+          <PlayCircle className="w-5 h-5" /> How to play
+        </button>
+
+        <HowToPlayModal
+          isOpen={showHowToPlay}
+          onClose={() => setShowHowToPlay(false)}
+          feedbackUrl={feedbackUrl}
+          onCopyLink={copyLink}
+        />
 
         <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
           Anyone with your link can send you an image reaction — 100% anonymous

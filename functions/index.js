@@ -13,6 +13,8 @@ const CORS_ORIGINS = [
   "http://127.0.0.1:3001",
   "https://imagify-5f3d5.web.app",
   "https://imagify-5f3d5.firebaseapp.com",
+  "https://picpop.me",
+  "https://www.picpop.me",
 ];
 
 /** Get client IP from callable request */

@@ -17,6 +17,7 @@ import { db, ensureFirestoreNetwork } from "@/lib/firebase";
 import {
   requestNotificationPermission,
   saveFcmToken,
+  clearFcmToken,
   onForegroundMessage,
 } from "@/lib/notifications";
 import { useAuth } from "@/lib/auth-context";
@@ -88,6 +89,8 @@ export default function InboxPage() {
       setNotifStatus(
         Notification.permission === "granted" ? "enabled" : Notification.permission === "denied" ? "denied" : "idle"
       );
+    } else {
+      setNotifStatus("unsupported");
     }
   }, []);
 
@@ -188,6 +191,10 @@ export default function InboxPage() {
 
   const handleEnableNotifications = async () => {
     if (notifStatus === "enabled" || notifStatus === "unsupported") return;
+    if (!user) {
+      toast.error("Please sign in first");
+      return;
+    }
     setNotifStatus("loading");
     try {
       const token = await requestNotificationPermission();
@@ -196,10 +203,28 @@ export default function InboxPage() {
         setNotifStatus("enabled");
         toast.success("Notifications enabled");
       } else {
-        setNotifStatus(Notification.permission === "denied" ? "denied" : "idle");
+        const perm = typeof Notification !== "undefined" ? Notification.permission : "denied";
+        setNotifStatus(perm === "denied" ? "denied" : "idle");
+        if (perm === "denied") toast.error("Notifications blocked");
       }
-    } catch {
+    } catch (err) {
+      console.error("Enable notifications:", err);
       setNotifStatus("idle");
+      toast.error("Could not enable notifications");
+    }
+  };
+
+  const handleDisableNotifications = async () => {
+    if (notifStatus !== "enabled" || !user) return;
+    setNotifStatus("loading");
+    try {
+      await clearFcmToken(user.uid);
+      setNotifStatus("idle");
+      toast.success("Notifications disabled");
+    } catch (err) {
+      console.error("Disable notifications:", err);
+      setNotifStatus("enabled");
+      toast.error("Could not disable notifications");
     }
   };
 
@@ -303,22 +328,39 @@ export default function InboxPage() {
             <Bell className="w-5 h-5 text-[var(--pink)]" />
             <span className="font-bold text-sm">Push notifications</span>
           </div>
-          {notifStatus === "enabled" ? (
-            <span className="text-xs font-bold text-[var(--green)] flex items-center gap-1">
-              <Bell className="w-3.5 h-3.5" /> On
-            </span>
+          {notifStatus === "unsupported" ? (
+            <span className="text-xs text-[var(--text-muted)]">Not supported</span>
           ) : notifStatus === "denied" ? (
-            <span className="text-xs text-[var(--text-muted)]">Blocked</span>
-          ) : notifStatus !== "unsupported" ? (
+            <span className="text-xs text-[var(--text-muted)]">Blocked by browser</span>
+          ) : notifStatus === "loading" ? (
+            <span className="text-xs font-bold text-[var(--text-muted)]">...</span>
+          ) : notifStatus === "enabled" ? (
+            <button
+              type="button"
+              onClick={handleDisableNotifications}
+              disabled={notifStatus === "loading"}
+              className="relative w-12 h-7 rounded-full transition-colors flex-shrink-0 cursor-pointer"
+              style={{ background: "var(--green)" }}
+              aria-label="Turn off notifications"
+            >
+              <span
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white shadow"
+              />
+            </button>
+          ) : (
             <button
               type="button"
               onClick={handleEnableNotifications}
               disabled={notifStatus === "loading"}
-              className="text-xs font-bold text-[var(--pink)] hover:text-[var(--purple)] disabled:opacity-50"
+              className="relative w-12 h-7 rounded-full transition-colors flex-shrink-0 cursor-pointer"
+              style={{ background: "var(--bg-secondary)", border: "2px solid var(--border)" }}
+              aria-label="Turn on notifications"
             >
-              {notifStatus === "loading" ? "..." : "Turn on"}
+              <span
+                className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow"
+              />
             </button>
-          ) : null}
+          )}
         </div>
 
         {unreadCount > 0 && (

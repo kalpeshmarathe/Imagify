@@ -450,8 +450,8 @@ export default function Home() {
 
         {/* ── Left response image bubbles ── */}
         {[
-          { src: "/images/response1.jpg", label: "mood", Icon: Heart, top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
-          { src: "/images/response2.jpg", label: "relatable", Icon: Heart, top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
+          { src: "/images/response.png", label: "for you", Icon: Heart, top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
+          { src: "/images/response1.png", label: "love it", Icon: Heart, top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
         ].map((b, i) => {
           const BIcon = b.Icon;
           return (
@@ -471,8 +471,8 @@ export default function Home() {
 
         {/* ── Right response image bubbles ── */}
         {[
-          { src: "/images/response3.jpg", label: "love it", Icon: Heart, top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
-          { src: "/images/response4.jpg", label: "aww", Icon: Heart, top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
+          { src: "/images/response3.jpg", label: "princess", Icon: Heart, top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
+          { src: "/images/response4.jpg", label: "chalak", Icon: Heart, top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
         ].map((b, i) => {
           const BIcon = b.Icon;
           return (
@@ -543,10 +543,10 @@ export default function Home() {
           <AnimateOnScroll delay={350}>
             <div className="mt-10 flex flex-wrap justify-center gap-4 lg:hidden">
               {[
-                { src: "/images/response1.jpg", label: "mood", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
-                { src: "/images/response2.jpg", label: "relatable", Icon: Heart, bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
-                { src: "/images/response3.jpg", label: "love it", Icon: Heart, bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
-                { src: "/images/response4.jpg", label: "aww", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
+                { src: "/images/response.png", label: "for you", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
+                { src: "/images/response1.png", label: "love it", Icon: Heart, bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
+                { src: "/images/response2.png", label: "vibes", Icon: Heart, bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
+                { src: "/images/response3.jpg", label: "princess", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
               ].map((r, i) => {
                 const RIcon = r.Icon;
                 return (
