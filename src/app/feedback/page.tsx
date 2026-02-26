@@ -10,20 +10,19 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-    if (!profile?.coolId) {
-      router.replace("/create-id");
-      return;
-    }
-    router.replace("/dashboard");
+    const id = setTimeout(() => {
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+      if (!profile?.coolId) {
+        router.replace("/create-id");
+        return;
+      }
+      router.replace("/dashboard");
+    }, 0);
+    return () => clearTimeout(id);
   }, [user, profile, loading, router]);
 
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  return null;
 }

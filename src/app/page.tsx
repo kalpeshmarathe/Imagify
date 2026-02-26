@@ -1,12 +1,28 @@
 import Link from "next/link";
+import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown } from "lucide-react";
 import { AnimateOnScroll } from "@/components/AnimateOnScroll";
 import { MobileNav } from "@/components/MobileNav";
 import { ImageShowcase } from "@/components/ImageShowcase";
+import { ImageResponseCards } from "@/components/ImageResponseCards";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
+  { Icon: Flame, label: "roast me" },
+  { Icon: MessageCircle, label: "spill the tea" },
+  { Icon: Star, label: "rate this" },
+  { Icon: Zap, label: "be honest" },
+  { Icon: MessageCircle, label: "no filter" },
+  { Icon: Eye, label: "screenshot review" },
+  { Icon: Skull, label: "love it or hate it" },
+  { Icon: Target, label: "3 words" },
+  { Icon: ScanLine, label: "mirror check" },
+  { Icon: Sparkles, label: "glow up or no" },
+];
 
 export default function Home() {
   return (
     <div
-      className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden"
+      className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden"
       style={{ fontFamily: "'Nunito', var(--font-nunito), sans-serif" }}
     >
       <style>{`
@@ -18,7 +34,7 @@ export default function Home() {
           --blue: #00C8FF;
           --yellow: #FFE500;
           --green: #00FF94;
-          --bg: #0a0a0a;
+          --bg: var(--bg-primary);
         }
 
         /* ── Grain overlay ── */
@@ -34,7 +50,7 @@ export default function Home() {
 
         /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
         ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 99px; }
 
         /* ── Marquee ── */
@@ -105,8 +121,8 @@ export default function Home() {
 
         /* ── Step card ── */
         .step-card {
-          background: #141414;
-          border: 1.5px solid rgba(255,255,255,0.08);
+          background: var(--bg-card);
+          border: 1.5px solid var(--border);
           border-radius: 24px;
           padding: 32px;
           transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
@@ -122,16 +138,12 @@ export default function Home() {
         }
         .step-card:hover {
           transform: translateY(-6px) rotate(-0.5deg);
-          border-color: rgba(255,255,255,0.18);
+          border-color: var(--border);
           box-shadow: 0 32px 64px rgba(0,0,0,0.5);
         }
 
-        /* ── Navbar glass ── */
-        .navbar-glass {
-          background: rgba(10,10,10,0.7);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
+        /* ── Navbar glass (theme from globals) ── */
+        .navbar-glass { border-bottom: 1px solid var(--border); }
 
         /* ── CTA button ── */
         .cta-btn {
@@ -179,8 +191,8 @@ export default function Home() {
         }
 
         /* ── Footer link ── */
-        .footer-link { color: rgba(255,255,255,0.4); font-weight: 700; transition: color 0.2s; }
-        .footer-link:hover { color: #fff; }
+        .footer-link { color: var(--text-muted); font-weight: 700; transition: color 0.2s; }
+        .footer-link:hover { color: var(--text-primary); }
       `}</style>
 
       {/* ================================================================
@@ -192,10 +204,10 @@ export default function Home() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <span
-              className="text-2xl font-black tracking-tight text-white transition-all duration-300 group-hover:scale-105 inline-block"
+              className="text-2xl font-black tracking-tight text-[var(--text-primary)] transition-all duration-300 group-hover:scale-105 inline-block"
               style={{ letterSpacing: "-0.04em" }}
             >
-              imagify
+              picpop
               <span className="text-[var(--pink)]">.</span>
             </span>
           </Link>
@@ -216,7 +228,7 @@ export default function Home() {
                 boxShadow: "0 4px 20px rgba(255,61,127,0.4)",
               }}
             >
-              give feedback ✨
+              <span className="inline-flex items-center gap-2">give feedback <Sparkles className="w-4 h-4" /></span>
             </Link>
             <MobileNav />
           </div>
@@ -229,7 +241,7 @@ export default function Home() {
       ================================================================ */}
       <section
         className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, #1a0533 0%, #0a0a0a 65%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% 0%, #1a0533 0%, var(--bg-primary) 65%)" }}
       >
         {/* Background grid */}
         <div
@@ -275,7 +287,7 @@ export default function Home() {
               animationDelay: "1.2s",
             }}
           >
-            🔥 roast me
+            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4" /> roast me</span>
           </div>
         </div>
 
@@ -306,7 +318,7 @@ export default function Home() {
               animationDelay: "1.4s",
             }}
           >
-            ⭐ rate this
+            <span className="inline-flex items-center gap-1"><Star className="w-4 h-4" /> rate this</span>
           </div>
         </div>
 
@@ -330,17 +342,17 @@ export default function Home() {
         {/* ── Extra floating stickers ── */}
         <div className="absolute hidden lg:block wiggle" style={{ left: "20%", top: "28%", zIndex: 25 }}>
           <div className="sticker" style={{ background: "rgba(124,58,255,0.85)", transform: "rotate(3deg)", boxShadow: "0 8px 32px rgba(124,58,255,0.5)" }}>
-            💬 spill the tea
+            <span className="inline-flex items-center gap-1"><MessageCircle className="w-4 h-4" /> spill the tea</span>
           </div>
         </div>
         <div className="absolute hidden lg:block wiggle" style={{ right: "20%", top: "26%", zIndex: 25, animationDelay: "0.8s" }}>
           <div className="sticker" style={{ background: "rgba(0,200,255,0.85)", color: "#000", transform: "rotate(-4deg)", boxShadow: "0 8px 32px rgba(0,200,255,0.4)" }}>
-            😤 be honest
+            <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4" /> be honest</span>
           </div>
         </div>
         <div className="absolute hidden xl:block float" style={{ right: "18%", bottom: "20%", zIndex: 25, animationDuration: "6s" }}>
           <div className="sticker" style={{ background: "rgba(255,61,127,0.85)", transform: "rotate(5deg)", boxShadow: "0 8px 32px rgba(255,61,127,0.5)" }}>
-            🫦 no filter
+            <span className="inline-flex items-center gap-1"><MessageCircle className="w-4 h-4" /> no filter</span>
           </div>
         </div>
 
@@ -379,13 +391,13 @@ export default function Home() {
                 boxShadow: "0 8px 40px rgba(255,61,127,0.5)",
               }}
             >
-              drop your feedback 🚀
+              <span className="inline-flex items-center gap-2">drop your feedback <Rocket className="w-4 h-4" /></span>
             </Link>
             <Link
               href="#play"
               className="rounded-full px-8 py-4 font-black text-white/70 text-base border border-white/10 hover:border-white/30 hover:text-white transition-all duration-200"
             >
-              see how it works ↓
+              <span className="inline-flex items-center gap-1.5">see how it works <ChevronDown className="w-4 h-4" /></span>
             </Link>
           </div>
         </div>
@@ -394,11 +406,14 @@ export default function Home() {
       {/* ── MARQUEE DIVIDER ── */}
       <div className="overflow-hidden border-y border-white/08 py-4" style={{ background: "#0f0f0f" }}>
         <div className="marquee-track">
-          {Array(2).fill(["🔥 roast me", "💬 spill the tea", "⭐ rate this", "😤 be honest", "🫦 no filter", "👀 screenshot review", "💀 love it or hate it", "🎯 3 words", "🪞 mirror check", "✨ glow up or no"]).flat().map((t, i) => (
-            <span key={i} className="mx-6 text-sm font-black text-white/30 uppercase tracking-widest flex-shrink-0">
-              {t}
-            </span>
-          ))}
+          {Array(2).fill(MARQUEE_ITEMS).flat().map((item, i) => {
+            const Icon = item.Icon;
+            return (
+              <span key={i} className="mx-6 text-sm font-black text-white/30 uppercase tracking-widest flex-shrink-0 inline-flex items-center gap-1.5">
+                <Icon className="w-4 h-4 shrink-0" /> {item.label}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -435,9 +450,11 @@ export default function Home() {
 
         {/* ── Left response image bubbles ── */}
         {[
-          { src: "/images/response1.jpg", label: "😂 mood", top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
-          { src: "/images/response2.jpg", label: "🙏 relatable", top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
-        ].map((b, i) => (
+          { src: "/images/response1.jpg", label: "mood", Icon: Heart, top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
+          { src: "/images/response2.jpg", label: "relatable", Icon: Heart, top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
+        ].map((b, i) => {
+          const BIcon = b.Icon;
+          return (
           <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
             <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
               <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(255,61,127,0.8),rgba(124,58,255,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
@@ -446,16 +463,19 @@ export default function Home() {
                   <img src={b.src} alt="response" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <div className="absolute -bottom-3 -right-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap" style={{ background: b.labelBg }}>{b.label}</div>
+              <div className="absolute -bottom-3 -right-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap inline-flex items-center gap-1" style={{ background: b.labelBg }}><BIcon className="w-3 h-3 shrink-0" /> {b.label}</div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* ── Right response image bubbles ── */}
         {[
-          { src: "/images/response3.jpg", label: "🌹 love it", top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
-          { src: "/images/response4.jpg", label: "💖 aww", top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
-        ].map((b, i) => (
+          { src: "/images/response3.jpg", label: "love it", Icon: Heart, top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
+          { src: "/images/response4.jpg", label: "aww", Icon: Heart, top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
+        ].map((b, i) => {
+          const BIcon = b.Icon;
+          return (
           <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
             <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
               <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(0,200,255,0.8),rgba(255,61,127,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
@@ -464,10 +484,11 @@ export default function Home() {
                   <img src={b.src} alt="response" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <div className="absolute -bottom-3 -left-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap" style={{ background: b.labelBg }}>{b.label}</div>
+              <div className="absolute -bottom-3 -left-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap inline-flex items-center gap-1" style={{ background: b.labelBg }}><BIcon className="w-3 h-3 shrink-0" /> {b.label}</div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* ── Central content ── */}
         <div className="relative max-w-2xl mx-auto text-center" style={{ zIndex: 20 }}>
@@ -491,15 +512,17 @@ export default function Home() {
             >
               <div className="slot" style={{ height: "500%" }}>
                 {[
-                  { label: "🔥 roast me", color: "var(--pink)" },
-                  { label: "⭐ rate this", color: "var(--yellow)" },
-                  { label: "📸 screenshot review", color: "var(--blue)" },
-                  { label: "✌️ 3 words only", color: "var(--green)" },
-                  { label: "💀 love it or hate it", color: "#fff" },
-                ].map((item, i) => (
+                  { label: "roast me", Icon: Flame, color: "var(--pink)" },
+                  { label: "rate this", Icon: Star, color: "var(--yellow)" },
+                  { label: "screenshot review", Icon: Camera, color: "var(--blue)" },
+                  { label: "3 words only", Icon: HandMetal, color: "var(--green)" },
+                  { label: "love it or hate it", Icon: Skull, color: "#fff" },
+                ].map((item, i) => {
+                  const SlotIcon = item.Icon;
+                  return (
                   <div
                     key={i}
-                    className="flex items-center justify-center font-black"
+                    className="flex items-center justify-center gap-2 font-black"
                     style={{
                       height: "20%",
                       fontSize: "clamp(1.6rem, 5vw, 3.5rem)",
@@ -508,9 +531,10 @@ export default function Home() {
                       lineHeight: 1,
                     }}
                   >
-                    {item.label}
+                    <SlotIcon className="w-8 h-8 shrink-0" /> {item.label}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </AnimateOnScroll>
@@ -519,11 +543,13 @@ export default function Home() {
           <AnimateOnScroll delay={350}>
             <div className="mt-10 flex flex-wrap justify-center gap-4 lg:hidden">
               {[
-                { src: "/images/response1.jpg", label: "😂 mood", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
-                { src: "/images/response2.jpg", label: "🙏 relatable", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
-                { src: "/images/response3.jpg", label: "🌹 love it", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
-                { src: "/images/response4.jpg", label: "💖 aww", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
-              ].map((r, i) => (
+                { src: "/images/response1.jpg", label: "mood", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
+                { src: "/images/response2.jpg", label: "relatable", Icon: Heart, bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
+                { src: "/images/response3.jpg", label: "love it", Icon: Heart, bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
+                { src: "/images/response4.jpg", label: "aww", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
+              ].map((r, i) => {
+                const RIcon = r.Icon;
+                return (
                 <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
                   <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
                     <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
@@ -531,9 +557,10 @@ export default function Home() {
                       <img src={r.src} alt={r.label} className="w-full h-full object-cover" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black text-white whitespace-nowrap shadow" style={{ background: r.bg }}>{r.label}</div>
+                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black text-white whitespace-nowrap shadow inline-flex items-center gap-1" style={{ background: r.bg }}><RIcon className="w-2.5 h-2.5 shrink-0" /> {r.label}</div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </AnimateOnScroll>
         </div>
@@ -573,7 +600,7 @@ export default function Home() {
       {/* ================================================================
           SECTION 3: HOW IT WORKS
       ================================================================ */}
-      <section id="how" className="relative py-24 sm:py-32 px-4 sm:px-6 overflow-hidden" style={{ background: "#0a0a0a" }}>
+      <section id="how" className="relative py-24 sm:py-32 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--bg-primary)" }}>
 
         {/* Gradient top accent */}
         <div className="absolute top-0 left-0 right-0 h-px"
@@ -582,9 +609,9 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <AnimateOnScroll>
             <div className="text-center mb-16">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">get to know</p>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">get to know</p>
               <h2
-                className="font-black text-white leading-[0.9]"
+                className="font-black text-[var(--text-primary)] leading-[0.9]"
                 style={{ fontSize: "clamp(3rem, 9vw, 7rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
               >
                 your{" "}
@@ -599,47 +626,27 @@ export default function Home() {
           {/* Step cards */}
           <div className="grid sm:grid-cols-3 gap-5">
             {[
-              { step: "01", icon: "📤", title: "Upload anything", desc: "Screenshot, selfie, design mockup, meme — literally anything goes.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)" },
-              { step: "02", icon: "🔗", title: "Share your link", desc: "One tap. Send it to your group chat, story, or anywhere.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)" },
-              { step: "03", icon: "💬", title: "Get real reactions", desc: "100% anonymous. No sugarcoating. Real vibes only.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)" },
-            ].map((s, i) => (
+              { step: "01", Icon: Upload, title: "Upload anything", desc: "Screenshot, selfie, design mockup, meme — literally anything goes.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)" },
+              { step: "02", Icon: Link2, title: "Share your link", desc: "One tap. Send it to your group chat, story, or anywhere.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)" },
+              { step: "03", Icon: MessageCircle, title: "Get real reactions", desc: "100% anonymous. No sugarcoating. Real vibes only.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)" },
+            ].map((s, i) => {
+              const StepIcon = s.Icon;
+              return (
               <AnimateOnScroll key={i} delay={i * 120}>
                 <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
-                  <div className="text-3xl mb-4">{s.icon}</div>
+                  <div className="mb-4"><StepIcon className="w-10 h-10" style={{ color: s.color }} /></div>
                   <div className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: s.color }}>{s.step}</div>
                   <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
                   <p className="text-white/40 font-semibold text-sm leading-relaxed">{s.desc}</p>
                 </div>
               </AnimateOnScroll>
-            ))}
+              );
+            })}
           </div>
 
           {/* Image response cards */}
           <AnimateOnScroll delay={400}>
-            <div className="mt-12 flex flex-wrap justify-center items-end gap-5 sm:gap-8">
-              {[
-                { src: "/images/response1.jpg", label: "😂 mood", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg", scale: "1" },
-                { src: "/images/response2.jpg", label: "🙏 relatable", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg", scale: "1.1" },
-                { src: "/images/response3.jpg", label: "🌹 love it", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg", scale: "1" },
-                { src: "/images/response4.jpg", label: "💖 aww", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg", scale: "1" },
-              ].map((r, i) => (
-                <div
-                  key={i}
-                  className="relative group cursor-pointer"
-                  style={{ transform: `rotate(${r.rot}) scale(${r.scale})`, transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = "rotate(0deg) scale(1.12)")}
-                  onMouseLeave={e => (e.currentTarget.style.transform = `rotate(${r.rot}) scale(${r.scale})`)}
-                >
-                  <div className="p-[3px] rounded-2xl" style={{ background: r.bg, boxShadow: `0 12px 40px ${r.glow}` }}>
-                    <div className="w-24 h-28 sm:w-28 sm:h-34 md:w-32 md:h-40 rounded-xl overflow-hidden bg-black">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.src} alt={r.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-black text-white whitespace-nowrap shadow-lg" style={{ background: r.bg }}>{r.label}</div>
-                </div>
-              ))}
-            </div>
+            <ImageResponseCards />
           </AnimateOnScroll>
         </div>
       </section>
@@ -659,11 +666,11 @@ export default function Home() {
             backgroundSize: "40px 40px",
           }}
         />
-        {/* Floating emoji */}
-        <div className="absolute top-12 left-[8%] text-5xl float opacity-70">🔮</div>
-        <div className="absolute bottom-12 right-[8%] text-5xl float opacity-70" style={{ animationDelay: "1s" }}>💬</div>
-        <div className="absolute top-16 right-[20%] text-3xl float opacity-50" style={{ animationDelay: "0.5s" }}>✨</div>
-        <div className="absolute bottom-20 left-[20%] text-3xl float opacity-50" style={{ animationDelay: "1.5s" }}>🫦</div>
+        {/* Floating icons */}
+        <div className="absolute top-12 left-[8%] float opacity-70"><Sparkles className="w-12 h-12 text-white/80" /></div>
+        <div className="absolute bottom-12 right-[8%] float opacity-70" style={{ animationDelay: "1s" }}><MessageCircle className="w-12 h-12 text-white/80" /></div>
+        <div className="absolute top-16 right-[20%] float opacity-50" style={{ animationDelay: "0.5s" }}><Sparkles className="w-8 h-8 text-white/70" /></div>
+        <div className="absolute bottom-20 left-[20%] float opacity-50" style={{ animationDelay: "1.5s" }}><MessageCircle className="w-8 h-8 text-white/70" /></div>
 
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <AnimateOnScroll>
@@ -687,7 +694,7 @@ export default function Home() {
                   boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
                 }}
               >
-                start now ✨
+                <span className="inline-flex items-center gap-2">start now <Sparkles className="w-5 h-5" /></span>
               </Link>
             </div>
           </AnimateOnScroll>
@@ -705,7 +712,7 @@ export default function Home() {
               className="text-xl font-black bg-clip-text text-transparent"
               style={{ backgroundImage: "linear-gradient(90deg, var(--pink), var(--purple))" }}
             >
-              imagify.
+              picpop.
             </span>
             <p className="text-xs text-white/20 font-semibold">anonymous image feedback</p>
           </div>
@@ -725,7 +732,7 @@ export default function Home() {
             live & free
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-white/15">© 2025 imagify — made with chaos ✨</p>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-white/15"><Sparkles className="w-3.5 h-3.5 shrink-0" /> © 2025 picpop — made with chaos</p>
       </footer>
 
     </div>

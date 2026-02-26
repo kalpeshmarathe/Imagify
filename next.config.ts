@@ -1,7 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "export",
+  reactStrictMode: false,
+  eslint: { ignoreDuringBuilds: true },
+  webpack: (config, { dev }) => {
+    // Avoid casing mismatch on Windows (Imagify vs imagify)
+    config.resolve = config.resolve || {};
+    config.resolve.symlinks = true;
+    // Use memory cache in dev to avoid ENOENT pack.gz filesystem errors on Windows
+    if (dev && config.cache) {
+      config.cache = { type: "memory" as const };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

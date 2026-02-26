@@ -3,34 +3,41 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Sparkles, Flame, Rocket } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { doc, getDoc, setDoc, enableNetwork } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useLoading } from "@/lib/loading-context";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db, ensureFirestoreNetwork } from "@/lib/firebase";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const COOL_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
 export default function CreateIdPage() {
   const router = useRouter();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
+  const { setActionLoading } = useLoading();
   const [coolId, setCoolId] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace("/login");
+      const id = setTimeout(() => router.replace("/login"), 0);
+      return () => clearTimeout(id);
     }
   }, [user, loading, router]);
 
   useEffect(() => {
     if (!loading && user && profile?.coolId) {
-      router.replace("/dashboard");
+      const id = setTimeout(() => router.replace("/dashboard"), 0);
+      return () => clearTimeout(id);
     }
   }, [user, profile, loading, router]);
 
   const checkAvailability = async (id: string): Promise<boolean> => {
     if (!db) return false;
-    const ref = doc(db, "usernames", id.toLowerCase());
+    const firestore = db;
+    const ref = doc(firestore, "usernames", id.toLowerCase());
     const snap = await getDoc(ref);
     return !snap.exists();
   };
@@ -52,9 +59,10 @@ export default function CreateIdPage() {
 
     const lower = trimmed.toLowerCase();
     setSubmitting(true);
+    setActionLoading(true);
 
     try {
-      if (db) await enableNetwork(db);
+      await ensureFirestoreNetwork();
       const available = await checkAvailability(lower);
       if (!available) {
         setError(`"${trimmed}" is taken. Try another?`);
@@ -67,9 +75,9 @@ export default function CreateIdPage() {
         setSubmitting(false);
         return;
       }
-
-      const userRef = doc(db, "users", user.uid);
-      const usernameRef = doc(db, "usernames", lower);
+      const firestore = db;
+      const userRef = doc(firestore, "users", user.uid);
+      const usernameRef = doc(firestore, "usernames", lower);
 
       await Promise.all([
         setDoc(userRef, { coolId: trimmed }, { merge: true }),
@@ -83,16 +91,11 @@ export default function CreateIdPage() {
       setError("Couldn't save. Try again.");
     } finally {
       setSubmitting(false);
+      setActionLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return null;
 
   if (!user) return null;
 
@@ -108,13 +111,10 @@ export default function CreateIdPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6"
-      style={{
-        background: "linear-gradient(135deg, #0E0F1A 0%, #16182B 50%, #1F2240 100%)",
-      }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 bg-[var(--bg-primary)]"
     >
-      <div className="absolute top-20 left-[8%] text-4xl opacity-50 animate-float">✨</div>
-      <div className="absolute bottom-24 right-[8%] text-4xl opacity-50 animate-float animation-delay-200">🔥</div>
+      <div className="absolute top-20 left-[8%] opacity-50 animate-float"><Sparkles className="w-10 h-10 text-[var(--text-muted)]" /></div>
+      <div className="absolute bottom-24 right-[8%] opacity-50 animate-float animation-delay-200"><Flame className="w-10 h-10 text-[var(--text-muted)]" /></div>
 
       <div className="relative z-10 w-full max-w-lg">
         <div className="flex items-center justify-between mb-8">
@@ -122,23 +122,26 @@ export default function CreateIdPage() {
             href="/"
             className="text-lg font-bold bg-clip-text text-transparent"
             style={{
-              backgroundImage: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
+              backgroundImage: "linear-gradient(90deg, var(--pink), var(--purple))",
             }}
           >
-            Imagify
+            PicPop
           </Link>
-          <button
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
             onClick={() => signOut()}
-            className="text-sm text-gray-400 hover:text-white transition-colors"
+            className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
             Sign out
           </button>
+          </div>
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
           Create your cool ID
         </h1>
-        <p className="text-gray-400 mb-6">
+        <p className="text-[var(--text-muted)] mb-6">
           Choose a unique handle. 3–20 characters. Letters, numbers, underscores.
         </p>
 
@@ -158,7 +161,7 @@ export default function CreateIdPage() {
               autoComplete="off"
               disabled={submitting}
             />
-            <p className="mt-2 text-xs text-gray-500">{coolId.length}/20</p>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">{coolId.length}/20</p>
           </div>
 
           {error && (
@@ -173,7 +176,7 @@ export default function CreateIdPage() {
               background: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
             }}
           >
-            {submitting ? "Creating..." : "Claim my ID 🚀"}
+            {submitting ? "Creating..." : <span className="flex items-center justify-center gap-2">Claim my ID <Rocket className="w-4 h-4" /></span>}
           </button>
         </form>
 
@@ -188,7 +191,7 @@ export default function CreateIdPage() {
                   setCoolId(s);
                   setError("");
                 }}
-                className="rounded-lg bg-white/5 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="rounded-lg bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)]"
               >
                 {s}
               </button>

@@ -1,4 +1,4 @@
-# Firebase Setup for Imagify
+# Firebase Setup for PicPop
 
 ## 1. Create Firebase Project
 
@@ -17,6 +17,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=your-vapid-key   # For push notifications (see §7)
 ```
 
 ## 3. Enable Sign-In Methods
@@ -35,17 +36,90 @@ Add authorized domains for your app (e.g. `localhost` for dev, your production d
 2. Deploy rules: `firebase deploy --only firestore`
 3. Or paste `firestore.rules` content in Console → Firestore → Rules
 
-## 5. Firestore Storage
+## 5. Firebase Storage
 
 1. Create **Storage** in Firebase Console
 2. Deploy rules: `firebase deploy --only storage`
 3. Or paste `storage.rules` in Console → Storage → Rules
 
-## 6. Collections
+### 5.1 CORS (required for share/snapshot)
+
+If you use **share to Instagram** or **snapshot** from Cloudflare tunnels or custom domains, configure CORS.
+
+**Option A – Google Cloud Shell (easiest, no local install):**
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/storage/browser?project=imagify-5f3d5)
+2. Click the **Cloud Shell** icon (terminal) in the top-right
+3. Run:
+   ```bash
+   gcloud config set project imagify-5f3d5
+   echo '[{"origin":["*"],"method":["GET","HEAD"],"maxAgeSeconds":3600,"responseHeader":["Content-Type","Access-Control-Allow-Origin"]}]' > cors.json
+   gcloud storage buckets update gs://imagify-5f3d5.firebasestorage.app --cors-file=cors.json
+   ```
+
+**Option B – Local gcloud CLI:**
+
+```bash
+gcloud config set project imagify-5f3d5
+gcloud storage buckets update gs://imagify-5f3d5.firebasestorage.app --cors-file=storage-cors.json
+```
+
+If your bucket name differs, use the value from `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` in `.env.local`.
+
+## 6. Firebase Hosting (Frontend)
+
+Deploy the Next.js static export to Firebase Hosting:
+
+```bash
+# Build + deploy everything (hosting, functions, firestore, storage)
+npm run deploy
+
+# Or build + deploy only the frontend
+npm run deploy:hosting
+```
+
+**Requirements:**
+- Firebase CLI: `npm install -g firebase-tools` (if not installed)
+- Log in: `firebase login`
+- Project: `.firebaserc` points to your project (e.g. imagify-5f3d5)
+
+**What happens:**
+1. `npm run build` runs `next build` and outputs static files to `out/`
+2. `firebase deploy` serves `out/` via Firebase Hosting
+3. Your site will be at `https://your-project.web.app` and `https://your-project.firebaseapp.com`
+
+**Rewrite for /u routes:** If someone visits `/u/username` (path-based URL), the rewrite serves `/u/index.html` so the client-side app can handle it. The recommended share link format is `/u?user=username`.
+
+## 7. Firestore Collections
 
 Firestore will auto-create:
 
-- **users** `/{uid}` — user profile with `coolId`, `displayName`, `email`, `photoURL`
+- **users** `/{uid}` — user profile with `coolId`, `displayName`, `email`, `photoURL`, `fcmToken`, `fcmTokenUpdatedAt`
 - **usernames** `/{coolId}` — maps cool ID → `uid` for uniqueness checks
 - **images** `/{imageId}` — uploaded images (imageUrl, userId, coolId)
-- **feedbacks** — anonymous feedback on images (imageId, text)
+- **feedbacks** — anonymous feedback on images (imageId, parentId?, feedbackImageUrl, createdAt)
+
+## 8. Push Notifications (optional)
+
+When someone responds to your post, you receive a push notification.
+
+1. **VAPID key**: Firebase Console → Project Settings (⚙️) → **Cloud Messaging** → Web Push certificates → generate/copy key → add `NEXT_PUBLIC_FIREBASE_VAPID_KEY` to `.env.local`
+2. **Deploy Cloud Functions** (required — notifications won't work without this):
+   ```bash
+   cd Imagify
+   npm install --prefix functions
+   firebase deploy --only functions
+   ```
+3. On the dashboard, click **enable** next to the bell icon. The FCM token is saved to `users/{uid}` and refreshed automatically on each visit.
+
+### Notifications not working?
+
+| Check | Action |
+|-------|--------|
+| **VAPID key** | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` in `.env.local`. Get from Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → generate key pair. |
+| **Blaze plan** | Cloud Functions need Firebase Blaze (pay-as-you-go). Upgrade in Console → ⚙️ → Usage. |
+| **Deploy functions** | `firebase deploy --only functions` — notifications require this. Also deploy indexes: `firebase deploy --only firestore:indexes` |
+| **Token in Firestore?** | Firestore → `users` → your doc → verify `fcmToken` exists. If missing, click "enable push" in Notifications section. |
+| **Service worker** | `public/firebase-messaging-sw.js` must be served at `/firebase-messaging-sw.js`. If using a different Firebase project, update the config object in that file to match your project. |
+| **HTTPS or localhost** | Push requires secure context. |
+| **Cloud Function logs** | Firebase Console → Functions → Logs — "Push sent" = success; "user has no fcmToken" = enable in dashboard. |

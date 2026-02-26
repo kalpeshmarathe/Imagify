@@ -9,15 +9,17 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
+  signInWithRedirect,
   signInWithPopup,
+  getRedirectResult,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, enableNetwork } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db, ensureFirestoreNetwork } from "@/lib/firebase";
 
 export type AuthProviderType = "google" | "facebook" | "yahoo";
 
@@ -50,19 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchOrCreateProfile = async (firebaseUser: User): Promise<UserProfile | null> => {
-    if (!db) return null;
+    if (!db) {
+      console.log("[Auth] fetchOrCreateProfile: db not configured, skipping");
+      return null;
+    }
+    console.log("[Auth] fetchOrCreateProfile: fetching for", firebaseUser.uid, firebaseUser.email);
     const database = db;
     const userRef = doc(database, "users", firebaseUser.uid);
 
     const tryFetch = async (retries = 4): Promise<UserProfile | null> => {
       try {
-        await enableNetwork(database);
-        // Brief wait for connection to establish (helps avoid "offline" on first load)
-        await new Promise((r) => setTimeout(r, 300));
+        await ensureFirestoreNetwork();
         const snap = await getDoc(userRef);
         if (snap.exists()) {
-          return snap.data() as UserProfile;
+          const data = snap.data() as UserProfile;
+          console.log("[Auth] fetchOrCreateProfile: found existing profile", { coolId: data.coolId });
+          return data;
         }
+        console.log("[Auth] fetchOrCreateProfile: no existing profile, creating new");
         const newProfile: UserProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email ?? null,
@@ -72,8 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
         };
         await setDoc(userRef, newProfile);
+        console.log("[Auth] fetchOrCreateProfile: created new profile");
         return newProfile;
       } catch (err) {
+        console.warn("[Auth] fetchOrCreateProfile: error (retries left:", retries, ")", err);
         const isOffline =
           err instanceof Error &&
           (err.message.includes("offline") || err.message.includes("Failed to get document"));
@@ -90,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (!user || !db) return;
-    const userRef = doc(db, "users", user.uid);
+    const firestore = db;
+    const userRef = doc(firestore, "users", user.uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
       setProfile(snap.data() as UserProfile);
@@ -98,12 +108,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    ensureFirestoreNetwork();
+  }, []);
+
+  useEffect(() => {
+    console.log("[Auth] AuthProvider mount: auth=", !!auth, "db=", !!db);
     if (!auth) {
+      console.log("[Auth] No auth, setting loading=false");
       setLoading(false);
       return;
     }
 
+    let mounted = true;
+    console.log("[Auth] Checking getRedirectResult (returning from OAuth?)...");
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!mounted) return;
+        if (result?.user) {
+          console.log("[Auth] Redirect result: signed in as", result.user.email);
+          setUser(result.user);
+          try {
+            const p = await fetchOrCreateProfile(result.user);
+            if (mounted) setProfile(p);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("[Auth] Redirect profile fetch failed:", err);
+            if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
+              console.error("[Auth] Firestore permission denied — check firestore.rules allow read/write for users/{userId}");
+            }
+          } finally {
+            if (mounted) setLoading(false);
+          }
+        } else {
+          console.log("[Auth] getRedirectResult: no pending redirect (normal page load)");
+        }
+      })
+      .catch((err) => {
+        if (mounted) {
+          console.error("[Auth] Redirect sign-in failed:", err);
+          setLoading(false);
+        }
+      });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("[Auth] onAuthStateChanged:", firebaseUser ? `${firebaseUser.email} (${firebaseUser.uid})` : "signed out");
       setUser(firebaseUser);
       try {
         if (firebaseUser) {
@@ -113,18 +161,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         }
       } catch (err) {
-        console.error("Auth profile fetch failed:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[Auth] Auth profile fetch failed:", err);
+        if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
+          console.error("[Auth] Firestore blocked — ensure firestore.rules allow users/{userId} when request.auth.uid == userId");
+        }
         setProfile(firebaseUser ? { uid: firebaseUser.uid, email: firebaseUser.email ?? null, displayName: firebaseUser.displayName ?? null, photoURL: firebaseUser.photoURL ?? null, coolId: null, createdAt: "" } : null);
       } finally {
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const signInWithProvider = async (providerType: AuthProviderType) => {
-    if (!auth) throw new Error("Firebase not configured");
+    if (!auth) {
+      console.error("[Auth] Firebase not configured");
+      throw new Error("Firebase not configured");
+    }
 
     let provider;
     switch (providerType) {
@@ -141,10 +199,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Unknown provider");
     }
 
-    await signInWithPopup(auth, provider);
+    // Use popup for Google (shows account picker) - fall back to redirect if blocked
+    if (providerType === "google") {
+      try {
+        console.log("[Auth] signInWithProvider(google): opening popup...");
+        const cred = await signInWithPopup(auth, provider);
+        console.log("[Auth] signInWithProvider(google): popup succeeded", cred.user.email);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("[Auth] signInWithProvider(google): popup failed", err);
+        if (msg.includes("auth/popup-blocked") || (msg.includes("popup") && msg.includes("blocked"))) {
+          console.log("[Auth] signInWithProvider(google): popup blocked, falling back to redirect");
+          await signInWithRedirect(auth, provider);
+        } else {
+          throw err;
+        }
+      }
+    } else {
+      console.log("[Auth] signInWithProvider(" + providerType + "): redirecting...");
+      await signInWithRedirect(auth, provider);
+    }
   };
 
   const signOut = async () => {
+    console.log("[Auth] signOut called");
     if (auth) await firebaseSignOut(auth);
     setUser(null);
     setProfile(null);

@@ -16,8 +16,28 @@ service cloud.firestore {
     }
     match /feedbacks/{feedbackId} {
       allow create: if true;
-      allow read: if request.auth != null
-        && get(/databases/$(database)/documents/images/$(resource.data.imageId)).data.userId == request.auth.uid;
+      allow read: if true;
+      allow update, delete: if false;
+    }
+    match /blockedIps/{ipKey} {
+      allow read, write: if false;
+    }
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+    match /visits/{visitId} {
+      allow create: if true;
+      allow read: if request.auth != null && (
+        resource.data.imageOwnerId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid
+      );
+      allow update, delete: if false;
+    }
+    match /notifications/{notifId} {
+      allow read: if request.auth != null && resource.data.recipientId == request.auth.uid;
+      allow create: if false;
+      allow update: if request.auth != null && resource.data.recipientId == request.auth.uid;
+      allow delete: if false;
     }
   }
 }

@@ -1,357 +1,181 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { Link2, Copy, Share2, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/lib/toast-context";
 import {
   collection,
   query,
   where,
-  getDocs,
-  enableNetwork,
-  doc,
-  setDoc,
+  onSnapshot,
+  orderBy,
+  limit,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { uploadImage } from "@/lib/image-upload";
-
-const FEEDBACK_VISIBLE_LIMIT = 5;
-
-function ShareLink({ imageId }: { imageId: string }) {
-  const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/f/${imageId}` : "";
-  return (
-    <div className="mt-3 flex items-center gap-2">
-      <p className="text-sm text-gray-500">Share:</p>
-      <input
-        type="text"
-        readOnly
-        value={url}
-        className="flex-1 rounded-lg bg-black/50 px-3 py-2 text-xs text-cyan-400 border border-white/10"
-      />
-      <button
-        type="button"
-        onClick={() => {
-          navigator.clipboard.writeText(url);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}
-        className="rounded-lg bg-white/10 px-3 py-2 text-xs font-medium hover:bg-white/20 transition-colors whitespace-nowrap"
-      >
-        {copied ? "Copied!" : "Copy"}
-      </button>
-    </div>
-  );
-}
-
-interface StoredImage {
-  id: string;
-  userId: string;
-  coolId: string;
-  imageUrl: string;
-  createdAt: string;
-}
-
-interface Feedback {
-  id: string;
-  imageId: string;
-  text: string;
-  feedbackImageUrl?: string;
-  createdAt: string;
-}
+import { db, ensureFirestoreNetwork } from "@/lib/firebase";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
-  const [images, setImages] = useState<StoredImage[]>([]);
-  const [feedbacks, setFeedbacks] = useState<Record<string, Feedback[]>>({});
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const toast = useToast();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!db || !user?.uid) return;
+    const firestore = db;
+    const uid = user.uid;
+    let unsub: (() => void) | undefined;
+    const run = async () => {
+      try {
+        await ensureFirestoreNetwork();
+        const q = query(
+          collection(firestore, "notifications"),
+          where("recipientId", "==", uid),
+          orderBy("createdAt", "desc"),
+          limit(100)
+        );
+        unsub = onSnapshot(q, (snap) => {
+          const count = snap.docs.filter((d) => d.data().isRead !== true).length;
+          setUnreadCount(count);
+        });
+      } catch {
+        // Index may be missing; ignore
+      }
+    };
+    run();
+    return () => unsub?.();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      const id = setTimeout(() => router.replace("/login"), 0);
+      return () => clearTimeout(id);
+    }
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (!loading && user && !profile?.coolId) router.replace("/create-id");
+    if (!loading && user && !profile?.coolId) {
+      const id = setTimeout(() => router.replace("/create-id"), 0);
+      return () => clearTimeout(id);
+    }
   }, [user, profile, loading, router]);
 
-  const fetchImages = useCallback(async () => {
-    if (!db || !user) return;
-    try {
-      const database = db;
-      await enableNetwork(database);
-      const q = query(
-        collection(database, "images"),
-        where("userId", "==", user.uid)
-      );
-      const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as StoredImage));
-      // Sort by createdAt desc (Firestore may need index)
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setImages(list);
+  const feedbackUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/u?user=${profile?.coolId || ""}`
+      : `/u?user=${profile?.coolId || ""}`;
 
-      const feedbackMap: Record<string, Feedback[]> = {};
-      for (const img of list) {
-        const fbQuery = query(
-          collection(database, "feedbacks"),
-          where("imageId", "==", img.id)
-        );
-        const fbSnap = await getDocs(fbQuery);
-        const list = (fbSnap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        })) as Feedback[]).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        feedbackMap[img.id] = list;
+  const copyLink = () => {
+    navigator.clipboard.writeText(feedbackUrl);
+    toast.success("Link copied!");
+  };
+
+  const shareLink = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Send me feedback on PicPop",
+          text: `Send me anonymous image feedback — ${feedbackUrl}`,
+          url: feedbackUrl,
+        });
+        toast.success("Shared!");
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") toast.error("Could not share");
       }
-      setFeedbacks(feedbackMap);
-    } catch (err) {
-      console.error("Failed to fetch:", err);
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && profile?.coolId) fetchImages();
-  }, [user, profile, fetchImages]);
-
-  const handleUploadFixed = async (file: File) => {
-    if (!db || !user || !profile?.coolId) return;
-    setUploadError("");
-    setUploading(true);
-    try {
-      if (!file.type.startsWith("image/")) {
-        setUploadError("Please upload an image file.");
-        setUploading(false);
-        return;
-      }
-
-      const imageId = crypto.randomUUID();
-      const url = await uploadImage(file, user.uid, imageId);
-
-      await setDoc(doc(db, "images", imageId), {
-        userId: user.uid,
-        coolId: profile.coolId,
-        imageUrl: url,
-        createdAt: new Date().toISOString(),
-      });
-
-      await fetchImages();
-    } catch (err) {
-      console.error(err);
-      setUploadError("Upload failed. Try again.");
-    } finally {
-      setUploading(false);
+    } else {
+      copyLink();
     }
   };
 
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleUploadFixed(file);
-  };
-
-  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUploadFixed(file);
-    e.target.value = "";
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Redirect is handled by useEffects; show spinner while navigating
+  if (loading) return null;
   if (!user) return null;
-  if (!profile?.coolId) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (!profile?.coolId) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-40 -right-40 size-96 rounded-full opacity-20 blur-3xl"
-          style={{ background: "var(--glow-purple)" }}
-        />
-      </div>
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
+      <style>{`:root { --pink: #FF3D7F; --purple: #7C3AFF; --blue: #00C8FF; --green: #00FF94; }`}</style>
 
-      <header className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-40">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <Link
-            href="/"
-            className="text-xl font-semibold bg-clip-text text-transparent"
-            style={{
-              backgroundImage: "linear-gradient(90deg, #FF4F8B, #8A4DFF, #3DA9FF)",
-            }}
-          >
-            Imagify
+      <header className="navbar-glass sticky top-0 z-50 border-b border-[var(--border)]">
+        <nav className="flex h-14 items-center justify-between px-4 max-w-[600px] mx-auto">
+          <Link href="/" className="text-lg font-black tracking-tight">
+            picpop<span className="text-[var(--pink)]">.</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400">@{profile.coolId}</span>
-            <Link
-              href="/"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Home
-            </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="text-sm font-bold text-[var(--text-muted)]">@{profile.coolId}</span>
           </div>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-10">
-        <h1 className="text-2xl font-bold text-white mb-2">Your dashboard</h1>
-        <p className="text-gray-400 mb-8">
-          Upload images. Share the link. Get feedback. Top 5 visible, rest blurred.
-        </p>
-        {loadError && (
-          <div className="mb-6 rounded-xl bg-red-500/20 border border-red-500/50 px-4 py-3 text-sm text-red-300">
-            {loadError}
-            <button
-              onClick={() => { setLoadError(null); fetchImages(); }}
-              className="ml-2 underline"
+      <main className="max-w-[600px] mx-auto px-4 py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-black text-[var(--text-primary)] mb-2">Your feedback link</h1>
+          <p className="text-sm text-[var(--text-muted)]">Share this link to get anonymous image feedback</p>
+        </div>
+
+        <div
+          className="rounded-2xl p-6 border-2 border-[var(--border)] transition-colors"
+          style={{ background: "var(--bg-card)" }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
             >
-              Retry
+              <Link2 className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Copy & share</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] break-all">{feedbackUrl}</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={copyLink}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, var(--pink), var(--purple))",
+                boxShadow: "0 4px 20px rgba(255,61,127,0.3)",
+              }}
+            >
+              <Copy className="w-5 h-5" /> Copy link
+            </button>
+            <button
+              type="button"
+              onClick={shareLink}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-4 font-bold text-white transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, var(--purple), var(--blue))",
+                boxShadow: "0 4px 20px rgba(124,58,255,0.3)",
+              }}
+            >
+              <Share2 className="w-5 h-5" /> Share
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Upload zone */}
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={onDrop}
-          className={`rounded-2xl border-2 border-dashed p-12 text-center transition-all ${
-            dragActive
-              ? "border-pink-500 bg-pink-500/10"
-              : "border-white/20 bg-white/5 hover:border-white/40"
-          } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+        <Link
+          href="/inbox"
+          className="mt-6 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-[var(--pink)] hover:text-[var(--purple)] border-2 border-[var(--pink)]/30 hover:border-[var(--purple)]/50 transition-colors relative"
         >
-          <input
-            type="file"
-            accept="image/*"
-            onChange={onFileSelect}
-            className="hidden"
-            id="image-upload"
-            disabled={uploading}
-          />
-          <label htmlFor="image-upload" className="cursor-pointer block">
-            <div
-              className="mx-auto flex size-16 items-center justify-center rounded-xl mb-4"
-              style={{ background: "rgba(79, 223, 255, 0.2)" }}
+          <Inbox className="w-5 h-5" /> Open inbox
+          {unreadCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-xs font-black text-white"
+              style={{ background: "var(--pink)" }}
             >
-              {uploading ? (
-                <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg
-                  className="size-8 text-cyan-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"
-                  />
-                </svg>
-              )}
-            </div>
-            <p className="font-medium text-white">
-              {uploading ? "Compressing & uploading..." : "Drop image or click to upload"}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Compressed for storage • Full quality on display
-            </p>
-          </label>
-          {uploadError && (
-            <p className="mt-4 text-sm text-red-400">{uploadError}</p>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
           )}
-        </div>
+        </Link>
 
-        {/* Images & feedbacks */}
-        <div className="mt-12 space-y-10">
-          {images.length === 0 && !uploading && (
-            <p className="text-center text-gray-500 py-12">
-              No images yet. Upload one to get started.
-            </p>
-          )}
-          {images.map((img) => {
-            const imgFeedbacks = feedbacks[img.id] || [];
-            const visible = imgFeedbacks.slice(0, FEEDBACK_VISIBLE_LIMIT);
-            const blurred = imgFeedbacks.slice(FEEDBACK_VISIBLE_LIMIT);
-
-            return (
-              <div
-                key={img.id}
-                className="rounded-2xl border border-white/10 bg-[#16182B] p-6"
-              >
-                <div className="relative rounded-xl overflow-hidden bg-black/50">
-                  <img
-                    src={img.imageUrl}
-                    alt="Upload"
-                    className="w-full h-auto max-h-[400px] object-contain"
-                  />
-                </div>
-                <ShareLink imageId={img.id} />
-
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-gray-400 mb-2">
-                    Feedback ({imgFeedbacks.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {visible.map((fb) => (
-                      <div
-                        key={fb.id}
-                        className="rounded-lg bg-white/5 p-3 text-sm text-gray-200"
-                      >
-                        {fb.text}
-                        {fb.feedbackImageUrl && (
-                          <img
-                            src={fb.feedbackImageUrl}
-                            alt=""
-                            className="mt-2 rounded max-h-24 object-cover"
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {blurred.map((fb) => (
-                      <div
-                        key={fb.id}
-                        className="rounded-lg bg-white/5 p-3 text-sm blur-md select-none pointer-events-none"
-                      >
-                        {fb.text}
-                      </div>
-                    ))}
-                  </div>
-                  {blurred.length > 0 && (
-                    <p className="mt-2 text-xs text-gray-500">
-                      +{blurred.length} more (blurred)
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
+          Anyone with your link can send you an image reaction — 100% anonymous
+        </p>
       </main>
     </div>
   );

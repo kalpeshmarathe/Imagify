@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Imagify.me — Dark-first brand colors */
+/* PicPop — Dark-first brand colors */
 :root {
   --bg-primary: #0E0F1A;
   --bg-secondary: #16182B;
@@ -18,6 +18,40 @@
   --glow-purple: rgba(138, 77, 255, 0.6);
   --glow-blue: rgba(61, 169, 255, 0.6);
   --border: rgba(199, 199, 209, 0.12);
+  --pink: #FF3D7F;
+  --purple: #7C3AFF;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border: rgba(15, 23, 42, 0.12);
+  --overlay-bg: rgba(15, 23, 42, 0.6);
+}
+
+/* Navbar glass - theme aware (default dark) */
+.navbar-glass {
+  backdrop-filter: blur(20px);
+  background: rgba(10, 10, 10, 0.9);
+}
+[data-theme="light"] .navbar-glass {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+/* Modal overlay - theme aware */
+.modal-overlay {
+  background: var(--overlay-bg);
+}
+
+/* Modal content card - theme aware */
+.modal-card {
+  background: var(--bg-card);
+  border-color: var(--border);
 }
 
 @theme inline {

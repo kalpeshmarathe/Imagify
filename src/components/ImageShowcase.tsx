@@ -1,5 +1,7 @@
 "use client";
 
+import { Heart } from "lucide-react";
+
 /* ─────────────────────────────────────────────────────────────
    ImageShowcase — shows 4 response images as feedback cards
    (replacing old text-only badge labels with image reactions)
@@ -8,7 +10,7 @@
 const RESPONSES = [
     {
         src: "/images/response1.jpg",
-        label: "😂 mood",
+        label: "mood",
         labelBg: "linear-gradient(90deg, #FF3D7F, #7C3AFF)",
         borderBg: "linear-gradient(135deg, #FF4F8B, #8A4DFF)",
         glow: "rgba(255, 79, 139, 0.55)",
@@ -33,7 +35,7 @@ const RESPONSES = [
     },
     {
         src: "/images/response3.jpg",
-        label: "🌹 love it",
+        label: "love it",
         labelBg: "linear-gradient(90deg, #00C8FF, #FF3D7F)",
         borderBg: "linear-gradient(135deg, #3DA9FF, #FF4F8B)",
         glow: "rgba(61, 169, 255, 0.55)",
@@ -102,7 +104,7 @@ export function ImageShowcase() {
                             ...r.labelPos,
                         }}
                     >
-                        {r.label}
+                        <span className="inline-flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 shrink-0" /> {r.label}</span>
                     </div>
                 </div>
             ))}
