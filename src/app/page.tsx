@@ -732,7 +732,7 @@ export default function Home() {
             live & free
           </div>
         </div>
-        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-white/15"><Sparkles className="w-3.5 h-3.5 shrink-0" /> © 2025 picpop — made with chaos</p>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-white/15"><Sparkles className="w-3.5 h-3.5 shrink-0" />  © {new Date().getFullYear()} picpop — made with chaos</p>
       </footer>
 
     </div>

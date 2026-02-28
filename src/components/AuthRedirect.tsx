@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 /**
- * Redirects logged-in users from /login or / to dashboard or create-id.
+ * Redirects logged-in users from /login to dashboard or create-id.
  * Uses window.location.replace for reliable redirect with static export.
  */
 export function AuthRedirect() {
@@ -17,7 +17,7 @@ export function AuthRedirect() {
     if (!user) return;
     if (!profile) return;
 
-    if (pathname === "/login" || pathname === "/") {
+    if (pathname === "/login") {
       const target = profile.coolId ? "/dashboard" : "/create-id";
       console.log("[AuthRedirect] redirecting to", target, "pathname=", pathname);
       window.location.replace(target);

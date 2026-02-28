@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link2, Copy, Share2, Inbox, PlayCircle } from "lucide-react";
+import { Link2, Copy, Share2, Inbox, PlayCircle, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -20,10 +20,20 @@ import { HowToPlayModal } from "@/components/HowToPlayModal";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const toast = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push("/");
+    } catch (error) {
+      toast.error("Failed to sign out");
+    }
+  };
 
   useEffect(() => {
     if (!db || !user?.uid) return;
@@ -107,7 +117,27 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <span className="text-sm font-bold text-[var(--text-muted)]">@{profile.coolId}</span>
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="text-sm font-bold text-[var(--text-muted)] cursor-pointer hover:text-[var(--pink)] transition-colors bg-transparent border-none"
+              >
+                @{profile.coolId}
+              </button>
+              {showDropdown && (
+                <div className="absolute right-0 top-full mt-2 py-2 w-32 rounded-xl border border-[var(--border)] shadow-lg z-50"
+                  style={{ background: "var(--bg-card)" }}
+                >
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full px-4 py-2 text-left text-sm font-bold text-[var(--text-muted)] hover:text-[var(--pink)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
       </header>

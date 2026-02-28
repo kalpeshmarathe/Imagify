@@ -1,11 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { X, ChevronRight, Menu } from "lucide-react";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   const navLinks = [
     { href: "#how", label: "How it works" },
@@ -15,67 +35,82 @@ export function MobileNav() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="lg:hidden p-2 -mr-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
-        aria-label="Toggle menu"
-        aria-expanded={open}
-      >
-        <div className="w-6 h-5 flex flex-col justify-between">
-          <span
-            className={`block h-0.5 bg-[var(--text-primary)] rounded-full transition-all duration-300 ${
-              open ? "rotate-45 translate-y-2" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 bg-[var(--text-primary)] rounded-full transition-all duration-300 ${
-              open ? "opacity-0" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 bg-[var(--text-primary)] rounded-full transition-all duration-300 ${
-              open ? "-rotate-45 -translate-y-2" : ""
-            }`}
-          />
-        </div>
-      </button>
+      <div className="lg:hidden flex items-center justify-end w-full">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6 text-[var(--text-primary)]" />
+        </button>
+      </div>
 
       <div
-        className={`lg:hidden fixed inset-0 top-14 bg-[var(--bg-primary)]/95 backdrop-blur-xl z-30 transition-opacity duration-300 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        className={`lg:hidden fixed inset-0 z-50 transition-all duration-300 ${
+          open 
+            ? "opacity-100 visible" 
+            : "opacity-0 invisible pointer-events-none"
         }`}
-        onClick={() => setOpen(false)}
-        aria-hidden={!open}
       >
-        <nav
-          className="flex flex-col items-center justify-center gap-8 pt-20"
-          onClick={(e) => e.stopPropagation()}
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+        
+        <div 
+          className={`absolute right-0 top-0 h-full w-[300px] bg-[#1a1a1a] shadow-2xl transform transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "translate-x-full"
+          }`}
         >
-          <div className="absolute top-6 right-6">
-            <ThemeToggle />
-          </div>
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <span className="text-xl font-black tracking-tight text-white">
+              Menu
+            </span>
+            <button
+              type="button"
               onClick={() => setOpen(false)}
-              className="text-2xl font-medium text-[var(--text-primary)] hover:text-[var(--pink)] transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Close menu"
             >
-              {label}
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+
+          <nav className="p-4 bg-[#1a1a1a]">
+            <div className="space-y-2 ">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between p-4 rounded-xl text-white hover:bg-white/10 transition-colors group"
+                >
+                  <span className="font-semibold">{link.label}</span>
+                  <ChevronRight className="w-5 h-5 text-white/50 group-hover:text-[var(--pink)] transition-colors" />
+                </Link>
+              ))}
+            </div>
+
+            <Link
+              href="/dashboard"
+              onClick={() => setOpen(false)}
+              className="mt-6 block w-full text-center rounded-full px-6 py-4 font-bold text-white"
+              style={{
+                background: "linear-gradient(135deg, var(--pink), var(--purple))",
+              }}
+            >
+              Give feedback
             </Link>
-          ))}
-          <Link
-            href="/dashboard"
-            onClick={() => setOpen(false)}
-            className="mt-4 rounded-full px-8 py-4 text-lg font-semibold text-white"
-            style={{
-              background: "linear-gradient(90deg, #FF4F8B, #8A4DFF)",
-            }}
-          >
-            Give feedback
-          </Link>
-        </nav>
+
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-white/70">Theme</span>
+                <ThemeToggle />
+              </div>
+            </div>
+          </nav>
+        </div>
       </div>
     </>
   );
