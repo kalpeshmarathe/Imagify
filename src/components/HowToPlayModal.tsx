@@ -46,19 +46,69 @@ const INSTAGRAM_STEPS: Step[] = [
 ];
 
 const SNAPCHAT_STEPS: Step[] = [
-  { img: "", title: "Step 1", shortLabel: "1", description: "Coming soon" },
-  { img: "", title: "Step 2", shortLabel: "2", description: "Coming soon" },
-  { img: "", title: "Step 3", shortLabel: "3", description: "Coming soon" },
-  { img: "", title: "Step 4", shortLabel: "4", description: "Coming soon" },
-  { img: "", title: "Step 5", shortLabel: "5", description: "Coming soon" },
+  {
+    img: "",
+    title: "Copy your link",
+    shortLabel: "Copy link",
+    description: "Copy your feedback link from picpop.me (use the Copy button above)",
+  },
+  {
+    img: "",
+    title: "Open Snapchat",
+    shortLabel: "Open app",
+    description: "Open Snapchat and tap the camera button to create a new Snap.",
+  },
+  {
+    img: "",
+    title: "Take or upload a Snap",
+    shortLabel: "Create Snap",
+    description: "Take a photo or video, or upload one from your gallery.",
+  },
+  {
+    img: "",
+    title: "Add link sticker",
+    shortLabel: "Add link",
+    description: "Tap the sticker icon (square with folded corner), then select the Link sticker and paste your feedback link.",
+  },
+  {
+    img: "",
+    title: "Share your Snap",
+    shortLabel: "Share",
+    description: "Send your Snap to friends or add it to your Story. Friends can tap the link to send you anonymous feedback!",
+  },
 ];
 
 const WHATSAPP_STEPS: Step[] = [
-  { img: "", title: "Step 1", shortLabel: "1", description: "Coming soon" },
-  { img: "", title: "Step 2", shortLabel: "2", description: "Coming soon" },
-  { img: "", title: "Step 3", shortLabel: "3", description: "Coming soon" },
-  { img: "", title: "Step 4", shortLabel: "4", description: "Coming soon" },
-  { img: "", title: "Step 5", shortLabel: "5", description: "Coming soon" },
+  {
+    img: "",
+    title: "Copy your link",
+    shortLabel: "Copy link",
+    description: "Copy your feedback link from picpop.me (use the Copy button above)",
+  },
+  {
+    img: "",
+    title: "Open WhatsApp",
+    shortLabel: "Open app",
+    description: "Open WhatsApp and go to the chat where you want to share your feedback link.",
+  },
+  {
+    img: "",
+    title: "Paste your link",
+    shortLabel: "Paste link",
+    description: "Long-press in the message input field and paste your feedback link.",
+  },
+  {
+    img: "",
+    title: "Add a message",
+    shortLabel: "Add message",
+    description: "Optional: Add a fun message like 'Drop some feedback on this!' to encourage friends.",
+  },
+  {
+    img: "",
+    title: "Send",
+    shortLabel: "Send",
+    description: "Tap the send button to share your link. Friends can tap it to send you anonymous feedback!",
+  },
 ];
 
 const PLATFORM_STEPS: Record<NonNullable<Platform>, Step[]> = {
@@ -230,23 +280,21 @@ export function HowToPlayModal({ isOpen, onClose, feedbackUrl, onCopyLink }: How
             </div>
           ) : (
             <div className="p-5">
-              {/* Copy link bar - only for Instagram */}
-              {selectedPlatform === "instagram" && (
-                <div
-                  className="rounded-xl p-4 mb-6 flex items-center gap-3"
-                  style={{ background: "rgba(255,61,127,0.06)", border: "1px solid rgba(255,61,127,0.2)" }}
+              {/* Copy link bar - for all platforms */}
+              <div
+                className="rounded-xl p-4 mb-6 flex items-center gap-3"
+                style={{ background: "rgba(255,61,127,0.06)", border: "1px solid rgba(255,61,127,0.2)" }}
+              >
+                <p className="text-xs font-medium text-[var(--text-muted)] flex-1 truncate">{feedbackUrl}</p>
+                <button
+                  type="button"
+                  onClick={onCopyLink}
+                  className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-white text-sm"
+                  style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
                 >
-                  <p className="text-xs font-medium text-[var(--text-muted)] flex-1 truncate">{feedbackUrl}</p>
-                  <button
-                    type="button"
-                    onClick={onCopyLink}
-                    className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-white text-sm"
-                    style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
-                  >
-                    <Copy className="w-4 h-4" /> Copy
-                  </button>
-                </div>
-              )}
+                  <Copy className="w-4 h-4" /> Copy
+                </button>
+              </div>
 
               {/* 5 clickable steps - numbers only, in one line */}
               <div className="grid grid-cols-5 gap-2 mb-6">
