@@ -277,18 +277,6 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           </div>
-          {/* Floating reaction */}
-          <div
-            className="absolute -bottom-4 -right-6 sticker pop-in"
-            style={{
-              background: "var(--yellow)", color: "#000",
-              border: "2.5px solid rgba(0,0,0,0.12)",
-              transform: "rotate(6deg)",
-              animationDelay: "1.2s",
-            }}
-          >
-            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4" /> roast me</span>
-          </div>
         </div>
 
         {/* ── RIGHT PHOTO ── */}
@@ -309,17 +297,6 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           </div>
-          <div
-            className="absolute -top-4 -left-8 sticker pop-in"
-            style={{
-              background: "var(--green)", color: "#000",
-              border: "2.5px solid rgba(0,0,0,0.12)",
-              transform: "rotate(-5deg)",
-              animationDelay: "1.4s",
-            }}
-          >
-            <span className="inline-flex items-center gap-1"><Star className="w-4 h-4" /> rate this</span>
-          </div>
         </div>
 
         {/* ── Floating 3D objects ── */}
@@ -337,23 +314,6 @@ export default function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/image3.png" alt="" className="w-20 h-20 md:w-28 md:h-28 xl:w-32 xl:h-32 object-contain"
             style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.5))" }} />
-        </div>
-
-        {/* ── Extra floating stickers ── */}
-        <div className="absolute hidden lg:block wiggle" style={{ left: "20%", top: "28%", zIndex: 25 }}>
-          <div className="sticker" style={{ background: "rgba(124,58,255,0.85)", transform: "rotate(3deg)", boxShadow: "0 8px 32px rgba(124,58,255,0.5)" }}>
-            <span className="inline-flex items-center gap-1"><MessageCircle className="w-4 h-4" /> spill the tea</span>
-          </div>
-        </div>
-        <div className="absolute hidden lg:block wiggle" style={{ right: "20%", top: "26%", zIndex: 25, animationDelay: "0.8s" }}>
-          <div className="sticker" style={{ background: "rgba(0,200,255,0.85)", color: "#000", transform: "rotate(-4deg)", boxShadow: "0 8px 32px rgba(0,200,255,0.4)" }}>
-            <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4" /> be honest</span>
-          </div>
-        </div>
-        <div className="absolute hidden xl:block float" style={{ right: "18%", bottom: "20%", zIndex: 25, animationDuration: "6s" }}>
-          <div className="sticker" style={{ background: "rgba(255,61,127,0.85)", transform: "rotate(5deg)", boxShadow: "0 8px 32px rgba(255,61,127,0.5)" }}>
-            <span className="inline-flex items-center gap-1"><MessageCircle className="w-4 h-4" /> no filter</span>
-          </div>
         </div>
 
         {/* ── Hero text ── */}
@@ -450,10 +410,9 @@ export default function Home() {
 
         {/* ── Left response image bubbles ── */}
         {[
-          { src: "/images/response.png", label: "for you", Icon: Heart, top: "18%", delay: "0.8s", rot: "-5deg", labelBg: "linear-gradient(90deg,#FF3D7F,#7C3AFF)" },
-          { src: "/images/response1.png", label: "love it", Icon: Heart, top: "54%", delay: "1.4s", rot: "3deg", labelBg: "linear-gradient(90deg,#7C3AFF,#00C8FF)" },
+          { src: "/images/response.png", top: "18%", delay: "0.8s", rot: "-5deg" },
+          { src: "/images/response1.png", top: "54%", delay: "1.4s", rot: "3deg" },
         ].map((b, i) => {
-          const BIcon = b.Icon;
           return (
           <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
             <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
@@ -463,7 +422,6 @@ export default function Home() {
                   <img src={b.src} alt="response" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <div className="absolute -bottom-3 -right-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap inline-flex items-center gap-1" style={{ background: b.labelBg }}><BIcon className="w-3 h-3 shrink-0" /> {b.label}</div>
             </div>
           </div>
           );
@@ -471,10 +429,9 @@ export default function Home() {
 
         {/* ── Right response image bubbles ── */}
         {[
-          { src: "/images/response3.jpg", label: "princess", Icon: Heart, top: "20%", delay: "1s", rot: "5deg", labelBg: "linear-gradient(90deg,#00C8FF,#FF3D7F)" },
-          { src: "/images/response4.jpg", label: "chalak", Icon: Heart, top: "55%", delay: "0.5s", rot: "-4deg", labelBg: "linear-gradient(90deg,#FF3D7F,#FFE500)" },
+          { src: "/images/response3.jpg", top: "20%", delay: "1s", rot: "5deg" },
+          { src: "/images/response4.jpg", top: "55%", delay: "0.5s", rot: "-4deg" },
         ].map((b, i) => {
-          const BIcon = b.Icon;
           return (
           <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
             <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
@@ -484,7 +441,6 @@ export default function Home() {
                   <img src={b.src} alt="response" className="w-full h-full object-cover" />
                 </div>
               </div>
-              <div className="absolute -bottom-3 -left-2 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-lg whitespace-nowrap inline-flex items-center gap-1" style={{ background: b.labelBg }}><BIcon className="w-3 h-3 shrink-0" /> {b.label}</div>
             </div>
           </div>
           );
@@ -543,21 +499,19 @@ export default function Home() {
           <AnimateOnScroll delay={350}>
             <div className="mt-10 flex flex-wrap justify-center gap-4 lg:hidden">
               {[
-                { src: "/images/response.png", label: "for you", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
-                { src: "/images/response1.png", label: "love it", Icon: Heart, bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
-                { src: "/images/response2.png", label: "vibes", Icon: Heart, bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
-                { src: "/images/response3.jpg", label: "princess", Icon: Heart, bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
+                { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
+                { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
+                { src: "/images/response2.png", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
+                { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
               ].map((r, i) => {
-                const RIcon = r.Icon;
                 return (
                 <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
                   <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
                     <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.src} alt={r.label} className="w-full h-full object-cover" />
+                      <img src={r.src} alt="response" className="w-full h-full object-cover" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black text-white whitespace-nowrap shadow inline-flex items-center gap-1" style={{ background: r.bg }}><RIcon className="w-2.5 h-2.5 shrink-0" /> {r.label}</div>
                 </div>
                 );
               })}

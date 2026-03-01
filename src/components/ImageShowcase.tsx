@@ -53,17 +53,6 @@ export function ImageShowcase() {
                             />
                         </div>
                     </div>
-
-                    {/* Floating label badge */}
-                    <div
-                        className="absolute rounded-full px-3 py-1.5 text-xs font-black text-white shadow-lg whitespace-nowrap"
-                        style={{
-                            background: r.labelBg,
-                            ...r.labelPos,
-                        }}
-                    >
-                        <span className="inline-flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 shrink-0" /> {r.label}</span>
-                    </div>
                 </div>
             ))}
         </div>

@@ -152,13 +152,13 @@ function UserFeedbackContent() {
   }
 
   const RESPONSE_PREVIEWS = [
-    { src: "/images/response.png", label: "for you", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)" },
-    { src: "/images/response1.png", label: "love it", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)" },
-    { src: "/images/response2.png", label: "vibes", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)" },
-    { src: "/images/response3.jpg", label: "princess", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)" },
-    { src: "/images/response4.jpg", label: "chalak", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)" },
-    { src: "/images/response5.png", label: "adventure", bg: "linear-gradient(135deg,#00FF94,#00C8FF)" },
-    { src: "/images/response6.png", label: "explorer", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)" },
+    { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)" },
+    { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)" },
+    { src: "/images/response2.png", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)" },
+    { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)" },
+    { src: "/images/response4.jpg", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)" },
+    { src: "/images/response5.png", bg: "linear-gradient(135deg,#00FF94,#00C8FF)" },
+    { src: "/images/response6.png", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)" },
   ];
 
   return (
@@ -209,10 +209,9 @@ function UserFeedbackContent() {
                 <div className="p-[2px] rounded-xl" style={{ background: r.bg }}>
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-black">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.src} alt={r.label} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                    <img src={r.src} alt="response preview" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                   </div>
                 </div>
-                <p className="text-[9px] sm:text-[10px] font-bold text-center mt-1 text-[var(--text-muted)] truncate max-w-[3.5rem]">{r.label}</p>
               </div>
             ))}
           </div>

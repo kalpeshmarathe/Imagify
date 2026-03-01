@@ -31,7 +31,6 @@ export function ImageResponseCards() {
               <img src={r.src} alt={r.label} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
             </div>
           </div>
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-black text-white whitespace-nowrap shadow-lg inline-flex items-center gap-1.5" style={{ background: r.bg }}><Heart className="w-3.5 h-3.5 shrink-0" /> {r.label}</div>
         </div>
       ))}
     </div>
