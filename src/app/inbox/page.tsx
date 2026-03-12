@@ -1098,9 +1098,9 @@ export default function InboxPage() {
                   </button>
                 </div>
               </div>
-              </div>
             </div>
-          )}
+          </div>
+        )}
 
       {shareModalOpen && profile && (
         <FeedbackShareModal
