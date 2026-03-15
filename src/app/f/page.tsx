@@ -287,6 +287,12 @@ function FeedbackOnImageContent() {
       } else {
         setShowTerms(false);
       }
+    } else if (!authLoading && !authLoadingState && !user) {
+      // 3. GUEST CHECK: Prompt if on this device haven't accepted yet
+      const universal = typeof window !== "undefined" ? localStorage.getItem("picpop_legal_v1") === "true" : false;
+      if (!universal) {
+        setShowTerms(true);
+      }
     }
   }, [user, profile, authLoading, authLoadingState]);
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Flame, Rocket } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLoading } from "@/lib/loading-context";
@@ -13,7 +13,20 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const COOL_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
 export default function CreateIdPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: "var(--pink)" }} />
+      </div>
+    }>
+      <CreateIdContent />
+    </Suspense>
+  );
+}
+
+function CreateIdContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const { setActionLoading } = useLoading();
   const [coolId, setCoolId] = useState("");
@@ -77,8 +90,10 @@ export default function CreateIdPage() {
         setDoc(usernameRef, { uid: user.uid }),
       ]);
 
+      const redirectPath = searchParams.get("redirect");
+
       await refreshProfile();
-      router.replace("/dashboard");
+      router.replace(redirectPath || "/dashboard");
     } catch (err) {
       console.error(err);
       setError("Couldn't save. Try again.");

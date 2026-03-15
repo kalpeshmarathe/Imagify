@@ -23,6 +23,7 @@ import {
   saveFcmToken,
   clearFcmToken,
   getIosPushHint,
+  onForegroundMessage,
 } from "@/lib/notifications";
 import { uploadAttachment } from "@/lib/image-upload";
 import { useAuth } from "@/lib/auth-context";
@@ -111,7 +112,13 @@ export default function InboxPage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showTerms, setShowTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(() => {
+    if (typeof window !== "undefined") {
+      const universal = localStorage.getItem("picpop_legal_v1") === "true";
+      if (universal) return false;
+    }
+    return false;
+  });
 
   const optionsRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -156,6 +163,7 @@ export default function InboxPage() {
           query(
             collection(firestore, "notifications"),
             where("recipientId", "==", uid),
+            orderBy("createdAt", "desc"),
             limit(100)
           ),
           (snap) => {
@@ -181,6 +189,7 @@ export default function InboxPage() {
                   recipientId: data.recipientId,
                   visitorId: data.visitorId,
                   targetUid: data.targetUid,
+                  threadId: data.threadId,
                 };
               })
             );
@@ -214,6 +223,7 @@ export default function InboxPage() {
                 recipientId: data.recipientId,
                 visitorId: data.visitorId,
                 targetUid: data.targetUid,
+                threadId: data.threadId,
                 coolId: "",
               };
             });
@@ -246,6 +256,7 @@ export default function InboxPage() {
           query(
             collection(firestore, "feedbacks"),
             where("recipientId", "==", uid),
+            orderBy("createdAt", "desc"),
             limit(100)
           ),
           processFeedbacksList,
@@ -259,6 +270,7 @@ export default function InboxPage() {
           query(
             collection(firestore, "feedbacks"),
             where("submitterId", "==", uid),
+            orderBy("createdAt", "desc"),
             limit(100)
           ),
           processFeedbacksList,
@@ -289,8 +301,28 @@ export default function InboxPage() {
   }, [user?.uid]);
 
   useEffect(() => {
+    // 1. FAST CHECK: If this device has already accepted, don't show the modal
+    if (typeof window !== "undefined") {
+      const universal = localStorage.getItem("picpop_legal_v1") === "true";
+      const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
+      if (universal || userSpecific) {
+        setShowTerms(false);
+        return;
+      }
+    }
+
+    // 2. BACKUP CHECK: For logged-in users, check Firestore profile
     if (!loading && user && profile && profile.coolId) {
-      if (!profile.termsAccepted || !profile.privacyAccepted) {
+      const isAcceptedInStore = profile.termsAccepted && profile.privacyAccepted;
+      if (!isAcceptedInStore) {
+        setShowTerms(true);
+      } else {
+        setShowTerms(false);
+      }
+    } else if (!loading && !user) {
+      // 3. GUEST CHECK: Prompt if on this device haven't accepted yet
+      const universal = typeof window !== "undefined" ? localStorage.getItem("picpop_legal_v1") === "true" : false;
+      if (!universal) {
         setShowTerms(true);
       }
     }
@@ -374,6 +406,66 @@ export default function InboxPage() {
       }
     };
   }, [selectedGroup, latestFeedbackId]);
+
+  // Dedicated real-time listener for the active chat thread
+  useEffect(() => {
+    if (!selectedGroup || !db || !user?.uid) return;
+
+    const threadId = selectedGroup.items.find(i => i.threadId)?.threadId;
+    if (!threadId) return;
+
+    const firestore = db;
+    const q = query(
+      collection(firestore, "feedbacks"),
+      where("threadId", "==", threadId),
+      orderBy("createdAt", "asc")
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs
+        .filter((d) => d.data().deleted !== true)
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            message: "New feedback",
+            isRead: false,
+            createdAt: toIsoString(data.createdAt),
+            type: "anonymous_feedback" as const,
+            feedbackImageUrl: data.feedbackImageUrl,
+            feedbackMessage: data.message || data.feedbackMessage,
+            anonymousId: data.anonymousId,
+            attachmentUrl: data.attachmentUrl,
+            attachmentName: data.attachmentName,
+            submitterId: data.submitterId,
+            submitterIp: data.submitterIp,
+            sessionId: data.sessionId,
+            isOwnerReply: data.isOwnerReply === true,
+            recipientId: data.recipientId,
+            visitorId: data.visitorId,
+            targetUid: data.targetUid,
+            threadId: data.threadId,
+            coolId: "",
+          };
+        });
+
+      setFeedbacks(prev => {
+        const map = new Map(prev.map(i => [i.id, i]));
+        let changed = false;
+        for (const item of items) {
+          const existing = map.get(item.id);
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(item)) {
+            map.set(item.id, item);
+            changed = true;
+          }
+        }
+        if (!changed) return prev;
+        return Array.from(map.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      });
+    });
+
+    return () => unsub();
+  }, [selectedGroup, user?.uid]);
 
   const handleSelectItem = async (group: GroupedItem) => {
     if (group.itemType !== "visit") {
@@ -498,7 +590,7 @@ export default function InboxPage() {
       targetUid: partnerSubmitterId ?? undefined,
       sessionId: sessionId ?? undefined,
       coolId: "",
-      threadId: items.find(i => i.threadId)?.threadId || items.find(i => i.id || i.feedbackId)?.id || items[0].id,
+      threadId: fileToUpload ? undefined : (items.find(i => i.threadId)?.threadId || items.find(i => i.id || i.feedbackId)?.id || items[0].id),
     };
 
     setFeedbacks(prev => [...prev, optItem]);
@@ -528,12 +620,11 @@ export default function InboxPage() {
         feedbackImageUrl: (isImageFile && attachmentUrl) ? attachmentUrl : null,
         attachmentUrl: (!isImageFile && attachmentUrl) ? attachmentUrl : null,
         attachmentName: (!isImageFile && attachmentName) ? attachmentName : null,
-        threadId: threadId,
+      threadId: fileToUpload ? "" : threadId,
       });
 
-      setTimeout(() => {
-        setFeedbacks(prev => prev.filter(f => f.id !== optId));
-      }, 2000);
+      // opt_ removed by listener sync - no timeout needed
+
 
     } catch (err) {
       setFeedbacks(prev => prev.filter(f => f.id !== optId));
@@ -579,7 +670,7 @@ export default function InboxPage() {
 
   const feedbackItems = mergedFeedbackItems.map(i => ({ ...i, itemType: "feedback" as const }));
   const visitItems = notifications.filter(n => n.type === "visit").map(i => ({ ...i, itemType: "visit" as const }));
-  
+
   const allItems = [...feedbackItems, ...visitItems]
     .map(item => {
       const notif = notifications.find(n => n.feedbackId === item.id || n.id === item.id);
@@ -587,12 +678,38 @@ export default function InboxPage() {
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // Listen for foreground notifications
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    let mounted = true;
+
+    const setup = async () => {
+      try {
+        const cleanup = await onForegroundMessage((payload) => {
+          if (!mounted) return;
+          const title = payload.notification?.title || "New notification";
+          const body = payload.notification?.body || "You have a new message.";
+          toast.success(`${title}: ${body}`);
+        });
+        unsub = cleanup;
+      } catch (err) {
+        console.warn("Foreground notification setup failed:", err);
+      }
+    };
+
+    setup();
+    return () => {
+      mounted = false;
+      if (unsub) unsub();
+    };
+  }, [toast]);
+
   useEffect(() => {
     const ids = new Set<string>();
     allItems.forEach(item => {
       const pid = (item.submitterId && item.submitterId !== uid) ? item.submitterId :
-                  (item.recipientId && item.recipientId !== uid) ? item.recipientId :
-                  (item.targetUid && item.targetUid !== uid) ? item.targetUid : null;
+        (item.recipientId && item.recipientId !== uid) ? item.recipientId :
+          (item.targetUid && item.targetUid !== uid) ? item.targetUid : null;
       if (pid && !profileCache[pid] && !resolvingIds.has(pid)) ids.add(pid);
     });
 
@@ -609,7 +726,7 @@ export default function InboxPage() {
       const newCache = { ...profileCache };
       const firestore = db;
       if (!firestore) return;
-      
+
       for (const id of toFetch) {
         try {
           const q = query(collection(firestore, "usernames"), where("uid", "==", id), limit(1));
@@ -636,12 +753,14 @@ export default function InboxPage() {
 
   const getConversationKey = (item: any): string => {
     if (item.itemType === "visit") return "all-visits";
+    // Prioritize threadId for grouping to separate chats per user/thread
     if (item.threadId) return `thread_${item.threadId}`;
-    
+
+    // Fallback for older items without threadId
     const partnerId = (item.submitterId && item.submitterId !== uid) ? item.submitterId :
-                     (item.recipientId && item.recipientId !== uid) ? item.recipientId :
-                     (item.targetUid && item.targetUid !== uid) ? item.targetUid :
-                     getStablePartnerId("unknown", item);
+      (item.recipientId && item.recipientId !== uid) ? item.recipientId :
+        (item.targetUid && item.targetUid !== uid) ? item.targetUid :
+          getStablePartnerId("unknown", item);
     const pair = [uid ?? "anon", partnerId].sort();
     return `conv_${pair[0]}_${pair[1]}`;
   };
@@ -661,12 +780,12 @@ export default function InboxPage() {
       });
     }
     const group = groupedMap.get(groupId)!;
-    
+
     const effId = item.feedbackId || item.id;
     if (!group.items.find(i => (i.feedbackId || i.id) === effId)) {
       group.items.push(item);
     }
-    
+
     if (new Date(item.createdAt).getTime() > new Date(group.createdAt).getTime()) {
       group.createdAt = item.createdAt;
       group.latestItem = item;
@@ -747,7 +866,7 @@ export default function InboxPage() {
               {notifStatus === "unsupported" ? (
                 <span className="text-[10px] font-black uppercase text-[var(--text-muted)] opacity-50">Not Supported</span>
               ) : (
-                <button 
+                <button
                   onClick={() => notifStatus === "enabled" ? handleDisableNotifications() : handleEnableNotifications()}
                   className={`relative w-12 h-6 rounded-full transition-all duration-500 ${notifStatus === "enabled" ? "bg-[var(--pink)] shadow-[0_0_15px_rgba(255,61,127,0.3)]" : "bg-white/10"}`}
                 >
@@ -783,14 +902,14 @@ export default function InboxPage() {
             <>
               {groupedItems.map((item) => (
                 <Fragment key={item.id}>
-                   {item.itemType === "visit" ? (
+                  {item.itemType === "visit" ? (
                     <div className={`w-full p-4 rounded-2xl border transition-all group relative overflow-hidden ${item.items.some(i => !i.isRead) ? "border-[var(--blue)]/30 bg-white/[0.04]" : "border-white/5 bg-white/[0.02] opacity-50"}`}>
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10 border border-blue-500/20"><Eye className="w-5 h-5 text-[var(--blue)]" /></div>
                         <div className="flex-1 min-w-0">
                           <p className="font-extrabold text-[11px] text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                             A shadow viewed your link {item.items.length > 1 && <span>× {item.items.length}</span>}
-                            {item.items.some(i => !i.isRead) && <div className="w-2 h-2 rounded-full bg-[var(--pink)] shadow-[0_0_8px_var(--pink)] animate-pulse" />}
+                            {item.items.some(i => !i.isRead) && <span className="w-2 h-2 rounded-full bg-[var(--pink)] shadow-[0_0_8px_var(--pink)] animate-pulse" />}
                           </p>
                           <p className="text-[10px] text-[var(--text-muted)] opacity-40 font-bold uppercase">{formatTimeAgo(item.createdAt)}</p>
                         </div>
@@ -808,14 +927,14 @@ export default function InboxPage() {
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                           <div className="flex items-center justify-between gap-2">
-                             <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                               {item.items.some(i => i.submitterId && i.submitterId !== uid && !i.isOwnerReply) ? (
                                 <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /><span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Verified User</span></div>
                               ) : (
                                 <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full"><span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Anonymous Fan</span></div>
                               )}
-                             </div>
-                             <span className="text-[10px] text-[var(--text-muted)] font-bold opacity-40">{formatTimeAgo(item.createdAt)}</span>
+                            </div>
+                            <span className="text-[10px] text-[var(--text-muted)] font-bold opacity-40">{formatTimeAgo(item.createdAt)}</span>
                           </div>
                           <p className="font-black text-base text-[var(--text-primary)] truncate leading-tight">
                             {(() => {
@@ -831,7 +950,7 @@ export default function InboxPage() {
                           </p>
                           <div className="flex items-center justify-between gap-4 mt-auto">
                             <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-tighter flex items-center gap-1.5 opacity-60"><MessageSquare className="w-3 h-3" />{item.items.length} messages</span>
-                            {item.items.some(i => !i.isRead) && <div className="w-2.5 h-2.5 rounded-full bg-[var(--pink)] shadow-[0_0_15px_var(--pink)] animate-pulse border border-white/20" />}
+                            {item.items.some(i => !i.isRead) && <span className="w-2.5 h-2.5 rounded-full bg-[var(--pink)] shadow-[0_0_15px_var(--pink)] animate-pulse border border-white/20" />}
                           </div>
                         </div>
                       </div>
@@ -883,7 +1002,7 @@ export default function InboxPage() {
                         )}
                         {chatItem.attachmentUrl && (
                           <div className="mb-2">
-                             <a href={chatItem.attachmentUrl} target="_blank" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10"><FileText className="w-4 h-4 text-blue-400" /><span className="text-[10px] font-bold truncate">{chatItem.attachmentName || 'View'}</span></a>
+                            <a href={chatItem.attachmentUrl} target="_blank" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10"><FileText className="w-4 h-4 text-blue-400" /><span className="text-[10px] font-bold truncate">{chatItem.attachmentName || 'View'}</span></a>
                           </div>
                         )}
                         {chatItem.feedbackMessage && <p className="text-sm font-semibold whitespace-pre-wrap">{chatItem.feedbackMessage}</p>}
@@ -912,9 +1031,9 @@ export default function InboxPage() {
       )}
 
       <FeedbackShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} singleFeedback={{ feedbackImageUrl: activeGroup?.items.find(i => (i.feedbackId || i.id) === feedbackDocId)?.feedbackImageUrl || "" }} feedbackId={feedbackDocId}
-          allData={{ imageUrl: activeGroup?.items.find(i => (i.feedbackId || i.id) === feedbackDocId)?.feedbackImageUrl || "", coolId: profile?.coolId ?? "picpop", feedbackImageUrls: [] }}
-          shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/u/${profile?.coolId ?? "picpop"}`}
-          userFeedbackLink={`${typeof window !== "undefined" ? window.location.origin : ""}/u/${profile?.coolId ?? "picpop"}`} />
+        allData={{ imageUrl: activeGroup?.items.find(i => (i.feedbackId || i.id) === feedbackDocId)?.feedbackImageUrl || "", coolId: profile?.coolId ?? "picpop", feedbackImageUrls: [] }}
+        shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/u/${profile?.coolId ?? "picpop"}`}
+        userFeedbackLink={`${typeof window !== "undefined" ? window.location.origin : ""}/u/${profile?.coolId ?? "picpop"}`} />
       <TermsModal isOpen={showTerms} onAccept={() => setShowTerms(false)} />
       <ReportFeedbackModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} feedbackId={feedbackDocId || ""} onReportSuccess={() => { toast.success("Reported"); setSelectedGroup(null); }} onReportError={(m) => toast.error(m)} />
     </div>
