@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Share2, X, Reply, Check, Camera, ChevronDown, Flag, Trash2 } from "lucide-react";
+import { Share2, X, Reply, Check, Camera, ChevronDown, Flag, Trash2, AlertCircle } from "lucide-react";
 import {
   doc,
   getDoc,
@@ -24,6 +24,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/lib/toast-context";
 import { useLoading } from "@/lib/loading-context";
 import { TermsModal } from "@/components/TermsModal";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Feedback {
   id: string;
@@ -33,7 +34,14 @@ interface Feedback {
   createdAt: string;
   submitterId?: string | null;
   threadId?: string;
+  status?: "feedback_only" | "awaiting_reply" | "active_chat";
+  mode?: "one_way" | "two_way";
+  hasReply?: boolean;
+  senderCanReply?: boolean;
+  receiverCanReply?: boolean;
 }
+
+const isMountedRef = { current: true };
 
 function buildThread(feedbacks: Feedback[]): { feedback: Feedback; replies: Feedback[] }[] {
   const topLevel = feedbacks.filter((f) => !f.parentId || f.parentId === "");
@@ -65,6 +73,7 @@ function FeedbackThreadItem({
   onDelete,
   isOwner,
   depth = 0,
+  currentUserId,
 }: {
   feedback: Feedback;
   replies: Feedback[];
@@ -77,13 +86,22 @@ function FeedbackThreadItem({
   onDelete?: (f: Feedback) => void;
   isOwner?: boolean;
   depth?: number;
+  currentUserId?: string | null;
 }) {
   const isReplying = replyingTo === feedback.id;
+
+  // ✅ FIX: Check if this is feedback-only status (can't reply yet)
+  const isFeedbackOnly = feedback.status === "feedback_only" && feedback.submitterId === currentUserId;
+
   return (
     <div className={depth > 0 ? "ml-6 sm:ml-8 mt-3 border-l-2 border-white/10 pl-3 sm:pl-4" : ""}>
       <div className="relative inline-block group">
         <div
-          className={`rounded-xl overflow-hidden bg-white/5 border inline-block max-w-[180px] sm:max-w-[220px] transition-colors cursor-pointer ${isReplying ? "border-[var(--pink)] ring-2 ring-[var(--pink)]/30" : "border-white/5"
+          className={`rounded-xl overflow-hidden bg-white/5 border inline-block max-w-[180px] sm:max-w-[220px] transition-colors cursor-pointer ${isReplying
+            ? "border-[var(--pink)] ring-2 ring-[var(--pink)]/30"
+            : isFeedbackOnly
+              ? "border-yellow-500/30 ring-1 ring-yellow-500/20"
+              : "border-white/5"
             }`}
           onClick={() => !isReplying && isOwner && onShare?.(feedback)}
         >
@@ -92,6 +110,9 @@ function FeedbackThreadItem({
             src={feedback.feedbackImageUrl}
             alt="Reaction"
             className="w-full aspect-square object-cover"
+            onError={(e) => {
+              console.error("Image load error:", feedback.feedbackImageUrl);
+            }}
           />
           {isOwner && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
@@ -100,13 +121,25 @@ function FeedbackThreadItem({
           )}
         </div>
       </div>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
         <button
           type="button"
           onClick={() => (isReplying ? onCancelReply() : onReply(feedback.id))}
-          className="text-xs font-bold text-white/50 hover:text-white/80 transition-colors"
+          disabled={isFeedbackOnly}
+          className="text-xs font-bold text-white/50 hover:text-white/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title={isFeedbackOnly ? "Waiting for their reply" : ""}
         >
-          <span className="inline-flex items-center gap-1.5">{isReplying ? <><X className="w-3.5 h-3.5" /> cancel</> : <><Reply className="w-3.5 h-3.5" /> reply</>}</span>
+          <span className="inline-flex items-center gap-1.5">
+            {isReplying ? (
+              <>
+                <X className="w-3.5 h-3.5" /> cancel
+              </>
+            ) : (
+              <>
+                <Reply className="w-3.5 h-3.5" /> {isFeedbackOnly ? "waiting..." : "reply"}
+              </>
+            )}
+          </span>
         </button>
         {isOwner && (
           <>
@@ -137,6 +170,15 @@ function FeedbackThreadItem({
           </>
         )}
       </div>
+
+      {/* ✅ FIX: Show status indicator */}
+      {feedback.status === "feedback_only" && (
+        <div className="mt-2 text-[10px] text-yellow-400 font-semibold flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          Waiting for their reply...
+        </div>
+      )}
+
       {replies.length > 0 && (
         <div className="mt-3 space-y-2">
           {replies.map((r) => (
@@ -153,6 +195,7 @@ function FeedbackThreadItem({
               onDelete={onDelete}
               isOwner={isOwner}
               depth={depth + 1}
+              currentUserId={currentUserId}
             />
           ))}
         </div>
@@ -173,6 +216,7 @@ function FeedbackOnImageContent() {
   const [reportModal, setReportModal] = useState<Feedback | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -209,17 +253,22 @@ function FeedbackOnImageContent() {
     const init = async () => {
       try {
         await ensureFirestoreNetwork();
+
+        if (!isMountedRef.current) return;
+
         let imgSnap = await getDoc(doc(firestore, "images", imageId));
         if (!imgSnap.exists()) {
           await new Promise((r) => setTimeout(r, 500));
           imgSnap = await getDoc(doc(firestore, "images", imageId));
         }
+
         setFetchAttempted(true);
         if (!imgSnap.exists()) {
           setImage(null);
           setLoading(false);
           return;
         }
+
         const imgData = imgSnap.data() as { imageUrl: string; coolId: string; userId?: string };
         setImage(imgData);
 
@@ -238,35 +287,80 @@ function FeedbackOnImageContent() {
             /* ignore visit tracking errors */
           }
         }
+
         const currentUserId = user?.uid ?? null;
+
+        if (!isMountedRef.current) return;
 
         unsub = onSnapshot(
           query(collection(firestore, "feedbacks"), where("imageId", "==", imageId)),
           (fbSnap) => {
-            const list = fbSnap.docs
-              .filter((d) => d.data().deleted !== true)
-              .map((d) => ({ id: d.id, ...d.data() } as Feedback));
-            const withImages = list.filter((f) => f.feedbackImageUrl);
+            if (!isMountedRef.current) return;
 
-            if (isOwner) {
-              setFeedbacks(withImages);
-            } else if (currentUserId) {
-              setFeedbacks(withImages.filter((f) => f.submitterId === currentUserId));
+            try {
+              const list = fbSnap.docs
+                .filter((d) => d.data().deleted !== true)
+                .map((d) => {
+                  const data = d.data();
+                  return {
+                    id: d.id,
+                    imageId: data.imageId,
+                    parentId: data.parentId,
+                    feedbackImageUrl: data.feedbackImageUrl,
+                    createdAt: data.createdAt,
+                    submitterId: data.submitterId,
+                    threadId: data.threadId,
+                    status: data.status,
+                    mode: data.mode,
+                    hasReply: data.hasReply,
+                    senderCanReply: data.senderCanReply,
+                    receiverCanReply: data.receiverCanReply,
+                  } as Feedback;
+                });
+
+              const withImages = list.filter((f) => f.feedbackImageUrl);
+
+              if (isOwner) {
+                setFeedbacks(withImages);
+              } else if (currentUserId) {
+                setFeedbacks(withImages.filter((f) => f.submitterId === currentUserId));
+              } else {
+                setFeedbacks([]);
+              }
+            } catch (err) {
+              console.error("Error parsing feedbacks:", err);
+              setError("Failed to load reactions");
+            }
+          },
+          (err) => {
+            if (!isMountedRef.current) return;
+            console.error("Firestore error:", err);
+            if (err?.code === "permission-denied") {
+              setError("Access denied");
+            } else if (err?.code === "unavailable") {
+              setError("Service temporarily unavailable");
             } else {
-              setFeedbacks([]);
+              setError("Failed to load reactions");
             }
           }
         );
       } catch (err) {
+        console.error("Init error:", err);
         setFetchAttempted(true);
         setImage(null);
         setFeedbacks([]);
+        setError("Failed to connect");
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
+
     init();
-    return () => unsub?.();
+    return () => {
+      unsub?.();
+    };
   }, [imageId, user?.uid, authLoading]);
 
   useEffect(() => {
@@ -274,7 +368,7 @@ function FeedbackOnImageContent() {
     if (typeof window !== "undefined") {
       const universal = localStorage.getItem("picpop_legal_v1") === "true";
       const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
-      
+
       if (universal || userSpecific) {
         setShowTerms(false);
         return;
@@ -333,7 +427,7 @@ function FeedbackOnImageContent() {
 
       setSubmitted(true);
       setReplyingTo(null);
-      
+
       // Redirect to unified chat thread after a short delay to show "sent" state
       if (threadId && image?.coolId) {
         setTimeout(() => {
@@ -383,6 +477,13 @@ function FeedbackOnImageContent() {
   const threads = buildThread(feedbacks);
   const isOwner = !authLoading && !!user && !!image?.userId && image.userId === user.uid;
 
+  // ✅ FIX: Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   if (loading || authLoading) return null;
 
   return (
@@ -400,6 +501,7 @@ function FeedbackOnImageContent() {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <NotificationBell />
             <Link href={user ? "/dashboard" : "/login"} className="text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               {user ? "dashboard" : "sign in"}
             </Link>
@@ -408,6 +510,18 @@ function FeedbackOnImageContent() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
+        {/* ✅ FIX: Error display */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="flex items-center justify-between">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="ml-2 underline hover:text-red-300">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
         {!image && fetchAttempted ? (
           <div className="text-center py-16">
             <p className="text-white/50 font-semibold">
@@ -434,6 +548,7 @@ function FeedbackOnImageContent() {
                 src={image.imageUrl}
                 alt=""
                 className="w-full h-auto max-h-[400px] object-contain"
+                onError={() => setError("Failed to load image")}
               />
             </div>
 
@@ -529,6 +644,7 @@ function FeedbackOnImageContent() {
                         onReport={setReportModal}
                         onDelete={(fb) => setDeleteConfirm(fb)}
                         isOwner={isOwner}
+                        currentUserId={user?.uid ?? null}
                       />
                     ))}
                   </div>

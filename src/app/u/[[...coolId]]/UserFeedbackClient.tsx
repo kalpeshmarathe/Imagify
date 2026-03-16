@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
-import { Camera, X, Heart, Send, ChevronLeft, ImageIcon, Paperclip, FileText, Bell, Link as LinkIcon, ShieldCheck, Share2 } from "lucide-react";
+import { Camera, X, Heart, Send, ChevronLeft, ImageIcon, Paperclip, FileText, Bell, Link as LinkIcon, ShieldCheck, Share2, CheckCircle2, Sparkles, Zap } from "lucide-react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AiImagePrompts, openProvider, type AiImageProvider } from "@/components/AiImagePrompts";
 import { ExploreImages } from "@/components/ExploreImages";
+import { NotificationBell } from "@/components/NotificationBell";
 import { getErrorMessage } from "@/lib/error-utils";
 import { TermsModal } from "@/components/TermsModal";
 
@@ -56,10 +57,10 @@ function getRecentChats(): RecentChat[] {
 function saveRecentChat(coolId: string, userId: string, threadId: string | null, lastImageUrl?: string): RecentChat[] {
   if (typeof window === "undefined" || !coolId || !userId) return [];
   const recent = getRecentChats();
-  // Filter out the exact same thread to move it to the top
   const filtered = recent.filter(c => !(c.coolId === coolId && c.threadId === threadId));
   const newList = [{ coolId, userId, threadId, lastImageUrl, lastActive: new Date().toISOString() }, ...filtered].slice(0, 15);
   localStorage.setItem("picpop_recent_chats", JSON.stringify(newList));
+  window.dispatchEvent(new Event("recent_chats_updated"));
   return newList;
 }
 
@@ -81,6 +82,7 @@ function UserFeedbackContent() {
   const [myChatAnonId, setMyChatAnonId] = useState<string | null>(null);
   const [showGuestSuccessModal, setShowGuestSuccessModal] = useState(false);
   const [chatMode, setChatMode] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
@@ -107,6 +109,9 @@ function UserFeedbackContent() {
 
   useEffect(() => {
     setRecentChats(getRecentChats());
+    const handleUpdate = () => setRecentChats(getRecentChats());
+    window.addEventListener("recent_chats_updated", handleUpdate);
+    return () => window.removeEventListener("recent_chats_updated", handleUpdate);
   }, []);
 
   // Listen for foreground notifications
@@ -209,6 +214,15 @@ function UserFeedbackContent() {
     return () => { mounted = false; };
   }, [coolId]);
 
+
+  const handleInboxClick = () => {
+    if (!authUser) {
+      toast.info("Sign in to see who viewed your profile and read your messages!");
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+    } else {
+      router.push("/inbox");
+    }
+  };
 
   const activeThreadRef = useRef<string | null>(null);
 
@@ -396,11 +410,12 @@ function UserFeedbackContent() {
         threadId: threadId as string | null
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId) {
-        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
-        setChatMode(true);
-      }
+      
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId || threadId, attachmentUrl || urlToUse));
+      
+      setSubmitted(true);
+      toast.success("Reaction sent! You can send another.");
+      setTimeout(() => setSubmitted(false), 3000);
 
       // Cleanup optimist after successful sync
       setTimeout(() => {
@@ -459,11 +474,13 @@ function UserFeedbackContent() {
         setTimeout(() => setChatHistory(prev => prev.filter(m => m.id !== optimisticId)), 4000);
       }
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId) {
-        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
-        setChatMode(true);
-      }
+
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, url));
+      
+      setSubmitted(true);
+      toast.success("Reaction sent! You can send another.");
+      setTimeout(() => setSubmitted(false), 3000);
+
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
@@ -532,11 +549,13 @@ function UserFeedbackContent() {
         threadId: null // New thread for shared select
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId) {
-        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
-        setChatMode(true);
-      }
+
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, item.feedbackImageUrl));
+      
+      setSubmitted(true);
+      toast.success("Reaction sent! You can send another.");
+      setTimeout(() => setSubmitted(false), 3000);
+
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       const m = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to send.";
@@ -575,11 +594,13 @@ function UserFeedbackContent() {
         threadId: null // New thread for meme
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId) {
-        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
-        setChatMode(true);
-      }
+
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, meme.url));
+      
+      setSubmitted(true);
+      toast.success("Reaction sent! You can send another.");
+      setTimeout(() => setSubmitted(false), 3000);
+
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       const m = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to send.";
@@ -647,281 +668,224 @@ function UserFeedbackContent() {
   if (!userId) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center px-4">
-        <p className="text-[var(--text-muted)] font-semibold text-center">User @{coolId || "?"} not found.</p>
-        <Link href="/" className="mt-4 text-[var(--pink)] hover:underline font-bold">Back to home</Link>
+        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6">
+          <X className="w-10 h-10 text-white/20" />
+        </div>
+        <p className="text-[var(--text-muted)] font-black uppercase tracking-[0.2em] text-center">User not found</p>
+        <p className="text-white/40 text-sm mt-2 text-center">The link @{coolId || "someone"} shared might be incorrect.</p>
+        <Link href="/" className="mt-8 px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all">Back to home</Link>
       </div>
     );
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // CHAT MODE: Full-screen WhatsApp/Instagram-style dual channel chat
+  // CHAT MODAL INTERFACE
   // ─────────────────────────────────────────────────────────────────
-  if (chatMode) {
+  const renderChatModal = () => {
+    if (!chatMode) return null;
+
     return (
-      <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-          .chat-scroll::-webkit-scrollbar { width: 4px; }
-          .chat-scroll::-webkit-scrollbar-track { background: transparent; }
-          .chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-          @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-          .msg-in { animation: msg-in 0.2s ease-out; }
-        `}</style>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
+        <div className="w-full h-full sm:h-[85vh] sm:max-w-2xl sm:rounded-[40px] bg-[var(--bg-primary)] border border-white/10 shadow-2xl flex flex-col overflow-hidden relative">
+          <style>{`
+            .chat-scroll::-webkit-scrollbar { width: 4px; }
+            .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+            .chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+            @keyframes msg-in { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            .msg-in { animation: msg-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+          `}</style>
 
-        {/* Header */}
-        <div className="flex h-14 items-center justify-between px-4 border-b border-[var(--border)] bg-[#101010]/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setChatMode(false)}
-              className="p-2 -ml-2 rounded-lg hover:bg-white/5 text-[var(--text-primary)]">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <p className="text-sm font-black text-white">Chat with @{coolId}</p>
-              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1.5">
-                {authUser ? (
-                  <span className="text-blue-400">Verified · My ID: {authUser.uid.slice(0, 8)}...</span>
-                ) : (
-                  <span className="flex items-center gap-1 font-black text-[var(--pink)]">GUEST MODE</span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!authUser && (
+          {/* Modal Header */}
+          <div className="flex h-16 items-center justify-between px-6 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => setShowGuestSuccessModal(true)}
-                className={`p-2 rounded-xl transition-all active:scale-95 ${notifStatus === "enabled" ? "text-[var(--green)] bg-green-500/10" : "text-[var(--text-muted)] hover:bg-white/5"}`}
-                title={notifStatus === "enabled" ? "Notifications enabled" : "Enable notifications"}
+                onClick={() => {
+                  setChatMode(false);
+                  router.replace(window.location.pathname);
+                }}
+                className="p-2 -ml-2 rounded-2xl hover:bg-white/10 text-white/50 hover:text-white transition-all"
               >
-                <Bell className={`w-5 h-5 ${notifStatus === "idle" ? "animate-pulse" : ""}`} />
+                <ChevronLeft className="w-6 h-6" />
               </button>
-            )}
-            <div className="flex flex-col items-end mr-1 hidden sm:flex">
-              <span className="text-[10px] font-black text-[var(--green)]">LIVE</span>
-              <span className="text-[8px] font-bold text-[var(--text-muted)]">Encrypted</span>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto chat-scroll px-4 py-4 flex flex-col gap-3">
-          {chatHistory.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: "rgba(255,61,127,0.15)" }}>
-                <Heart className="w-8 h-8 text-[var(--pink)]" />
-              </div>
-              <p className="font-bold text-[var(--text-muted)]">Start the conversation</p>
-              <p className="text-sm text-[var(--text-muted)] mt-1">Send a message or image below</p>
-            </div>
-          )}
-          {chatHistory
-            .filter(item => {
-              // Client-side security filter
-              if (item.targetUid && item.targetUid !== authUser?.uid && item.submitterId !== authUser?.uid) return false;
-              return true;
-            })
-            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-            .map((msg, idx) => {
-              const isOwner = msg.isOwnerReply;
-              const isMe = msg.submitterId === authUser?.uid || (authUser?.uid !== userId && !msg.isOwnerReply && !msg.submitterId);
-
-              // GATE LOGIC: If guest and this is an owner reply, show the FIRST one as a preview, then gate
-              const isGuest = !authUser;
-              const isFirstOwnerReply = isOwner && !chatHistory.slice(0, idx).some(m => m.isOwnerReply);
-              const isGated = isGuest && isOwner && !isFirstOwnerReply;
-
-              if (isGated) return null;
-
-              return (
-                <div key={msg.id || idx} className={`flex flex-col gap-0.5 msg-in ${isMe ? "items-end" : "items-start"}`}>
-                  <div className={`flex items-end gap-2 max-w-[78%] ${isMe ? "flex-row-reverse" : ""}`}>
-                    {/* Avatar */}
-                    <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black text-white ${isMe
-                      ? "bg-gradient-to-br from-pink-500 to-purple-600"
-                      : "bg-gradient-to-br from-blue-500 to-purple-500"
-                      }`}>
-                      {isMe
-                        ? "You"
-                        : (msg.isOwnerReply ? coolId[0]?.toUpperCase() : (msg.submitterId ? "V" : "U"))}
-                    </div>
-                    {/* Bubble */}
-                    <div className={`rounded-2xl px-4 py-3 shadow-xl ${isMe
-                      ? "rounded-br-sm text-white"
-                      : "rounded-bl-sm border border-white/10"
-                      }`}
-                      style={isMe
-                        ? { background: "linear-gradient(135deg, var(--pink), var(--purple))", boxShadow: "0 8px 30px -8px rgba(255,61,127,0.5)" }
-                        : { background: "rgba(255,255,255,0.03)", backdropFilter: "blur(12px)" }}>
-                      {msg.feedbackImageUrl && (
-                        <div className="relative group/img">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={msg.feedbackImageUrl} alt="image" className="rounded-xl max-w-[240px] w-full object-contain mb-1" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShare(msg.message, msg.feedbackImageUrl);
-                            }}
-                            className="absolute top-2 right-2 p-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/img:opacity-100 transition-all hover:bg-[var(--pink)] active:scale-95 flex items-center gap-1.5 shadow-xl"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">Share to Story</span>
-                          </button>
-                        </div>
-                      )}
-                      {msg.attachmentUrl && (
-                        <div className="mb-2">
-                          {msg.attachmentUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
-                            <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
-                              <img src={msg.attachmentUrl} alt="attachment" className="rounded-xl max-w-[200px] w-full object-contain bg-black/20" />
-                            </a>
-                          ) : (
-                            <a
-                              href={msg.attachmentUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                            >
-                              <FileText className="w-5 h-5 text-[var(--blue)]" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold text-white truncate">{msg.attachmentName || 'Document'}</p>
-                                <p className="text-[8px] text-[var(--text-muted)] uppercase tracking-widest font-black">View Document</p>
-                              </div>
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      {msg.message && (
-                        <div className="flex flex-col gap-0.5">
-                          {isMe && msg.submitterId && (
-                            <span className="text-[7px] font-black text-white/60 uppercase tracking-tighter">Verified</span>
-                          )}
-                          <p className="text-sm font-semibold whitespace-pre-wrap leading-relaxed">{msg.message}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <span className={`text-[10px] text-[var(--text-muted)] ${isMe ? "mr-9" : "ml-9"}`}>
-                    {formatTime(msg.createdAt)}
-                  </span>
-
-                  {isOwner && isFirstOwnerReply && isGuest && chatHistory.length > idx + 1 && (
-                    <div className="w-full mt-8 mb-4 flex flex-col items-center gap-5 py-8 px-6 rounded-[32px] bg-white/[0.03] border border-white/10 backdrop-blur-2xl relative overflow-hidden text-center shadow-2xl">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--pink)]/10 blur-[80px] rounded-full" />
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-[0_8px_32px_rgba(255,61,127,0.3)] rotate-3">
-                        <Send className="w-6 h-6 text-white -rotate-12" />
-                      </div>
-                      <div>
-                        <p className="font-black text-xl text-white tracking-tight">They replied!</p>
-                        <p className="text-sm text-white/50 font-bold mt-1">Reply anonymously to continue the conversation</p>
-                      </div>
-                      <Link
-                        href="/login"
-                        className="w-full py-4 rounded-2xl font-black text-white text-center shadow-xl hover:scale-[1.02] transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-2"
-                        style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
-                      >
-                        Continue with Google
-                      </Link>
-                    </div>
-                  )}
+              <div>
+                <p className="text-base font-black text-white leading-tight">@{coolId}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                    {authUser ? "Verified" : "Anonymous"}
+                  </p>
                 </div>
-              );
-            })}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Image preview confirm overlay */}
-        {pendingShare && (
-          <div className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center p-6">
-            <div className="rounded-2xl p-5 w-full max-w-sm flex flex-col gap-4" style={{ background: "var(--bg-card)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={pendingShare.previewUrl} alt="Preview" className="w-full rounded-xl max-h-64 object-contain" />
-              <div className="flex gap-3">
-                <button type="button" onClick={() => { URL.revokeObjectURL(pendingShare.previewUrl); setPendingShare(null); }}
-                  className="flex-1 py-3 rounded-xl font-bold border border-[var(--border)] text-[var(--text-muted)]">Cancel</button>
-                <button type="button" onClick={pendingShare.confirm} disabled={submitting}
-                  className="flex-1 py-3 rounded-xl font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}>
-                  {submitting ? "Sending..." : "Send"}
-                </button>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Upload loader */}
-        {submitting && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/50">
-            <div className="w-10 h-10 rounded-full animate-spin" style={{ border: "4px solid transparent", borderTopColor: "var(--pink)", borderRightColor: "var(--purple)" }} />
-          </div>
-        )}
-
-        {/* Input Bar */}
-        <div className="shrink-0 border-t border-[var(--border)] px-3 py-3" style={{ background: "var(--bg-card)" }}>
-          <div className="flex items-end gap-2 max-w-2xl mx-auto">
-            {/* Camera button */}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={submitting || (isGuest && !hasOwnerReply)}
-              className="p-2.5 rounded-full shrink-0 text-[var(--text-muted)] hover:text-[var(--pink)] hover:bg-white/5 transition-colors disabled:opacity-40">
-              <Camera className="w-5 h-5" />
-            </button>
-
-            {/* Text input box */}
-            <div className="flex-1 flex flex-col gap-2">
-              {isGuest && !hasOwnerReply ? (
-                <div className="flex-1 py-3 px-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-center">
-                  Waiting for @{coolId} to reply...
-                </div>
-              ) : isGuest && hasOwnerReply ? (
-                <Link
-                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
-                  className="flex-1 py-3 px-4 rounded-2xl font-black text-center text-[10px] bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[var(--text-muted)] uppercase tracking-widest flex items-center justify-center gap-2 group"
+            <div className="flex items-center gap-2">
+              {!authUser && (
+                <button
+                  type="button"
+                  onClick={() => setShowGuestSuccessModal(true)}
+                  className={`p-2.5 rounded-2xl transition-all active:scale-95 ${notifStatus === "enabled" ? "text-[var(--green)] bg-green-500/10" : "text-[var(--text-muted)] hover:bg-white/5 backdrop-blur-sm"}`}
+                  title="Notifications"
                 >
-                  Sign in to check the reply & continue <Heart className="w-3 h-3 text-[var(--pink)] group-hover:scale-125 transition-transform" />
-                </Link>
-              ) : (
-                <>
-                  {authUser && (
-                    <div className="flex items-end gap-2">
-                      <input ref={docInputRef} type="file" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setPendingFile(file);
-                      }} className="hidden" />
-                      <button type="button" onClick={() => docInputRef.current?.click()} disabled={submitting}
-                        className="p-2.5 rounded-full shrink-0 text-[var(--text-muted)] hover:text-[var(--pink)] hover:bg-white/5 transition-colors">
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-
-                      <textarea
-                        value={textMessage}
-                        onChange={(e) => setTextMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTextMessage(textMessage); }
-                        }}
-                        placeholder="Type a message..."
-                        rows={1}
-                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-[var(--pink)]/50 transition-all placeholder:text-white/20"
-                        style={{ maxHeight: "120px", minHeight: "46px" }}
-                      />
-                      <button type="button"
-                        onClick={() => sendTextMessage(textMessage)}
-                        disabled={(!textMessage.trim() && !pendingFile) || submitting}
-                        className="p-2.5 rounded-full shrink-0 text-white disabled:opacity-40 transition-all hover:scale-105"
-                        style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}>
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </>
+                  <Bell className="w-5 h-5" />
+                </button>
               )}
+              <ThemeToggle />
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto chat-scroll px-6 py-8 flex flex-col gap-6">
+            {chatHistory.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 bg-white/[0.03] border border-white/10">
+                  <Heart className="w-10 h-10 text-white/20" />
+                </div>
+                <p className="font-black text-xl text-white">No vibes yet</p>
+                <p className="text-sm text-[var(--text-muted)] font-bold mt-2 max-w-[200px]">Send an image or message to start the thread.</p>
+              </div>
+            ) : (
+              chatHistory
+                .filter(item => !(item.targetUid && item.targetUid !== authUser?.uid && item.submitterId !== authUser?.uid))
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                .map((msg, idx) => {
+                  const isMe = msg.submitterId === authUser?.uid || (authUser?.uid !== userId && !msg.isOwnerReply && !msg.submitterId);
+                  const isFirstOwnerReply = msg.isOwnerReply && !chatHistory.slice(0, idx).some(m => m.isOwnerReply);
+
+                  if (isGuest && msg.isOwnerReply && !isFirstOwnerReply) return null;
+
+                  return (
+                    <div key={msg.id || idx} className={`flex flex-col gap-2 msg-in ${isMe ? "items-end" : "items-start"}`}>
+                      <div className={`flex items-end gap-3 max-w-[85%] ${isMe ? "flex-row-reverse" : ""}`}>
+                        {/* Avatar / Icon */}
+                        <div className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center text-xs font-black text-white shadow-xl ${isMe
+                          ? "bg-gradient-to-br from-pink-500 to-purple-600 rotate-3"
+                          : "bg-gradient-to-br from-blue-500 to-purple-500 -rotate-3"
+                          }`}>
+                          {isMe ? "YOU" : (msg.isOwnerReply ? coolId[0].toUpperCase() : "G")}
+                        </div>
+
+                        {/* Bubble */}
+                        <div className={`rounded-3xl p-4 shadow-2xl relative group/bubble ${isMe
+                          ? "rounded-br-sm text-white"
+                          : "rounded-bl-sm border border-white/5"
+                          }`}
+                          style={isMe
+                            ? { background: "linear-gradient(135deg, var(--pink), var(--purple))" }
+                            : { background: "rgba(255,255,255,0.03)", backdropFilter: "blur(20px)" }}>
+
+                          {msg.feedbackImageUrl && (
+                            <div className="relative group/img mb-2">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={msg.feedbackImageUrl} alt="reaction" className="rounded-2xl w-full max-h-[350px] object-contain shadow-lg" />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleShare("Check out this reaction on PicPop!", msg.feedbackImageUrl); }}
+                                className="absolute top-2 right-2 p-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/img:opacity-100 transition-all hover:bg-[var(--pink)] flex items-center gap-2"
+                              >
+                                <Share2 className="w-4 h-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Share</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {msg.attachmentUrl && (
+                            <div className="mb-2">
+                              {msg.attachmentUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                                <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                                  <img src={msg.attachmentUrl} alt="attachment" className="rounded-2xl w-full max-h-[200px] object-contain bg-black/10" />
+                                </a>
+                              ) : (
+                                <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                                  <div className="w-10 h-10 rounded-xl bg-[var(--blue)]/10 flex items-center justify-center"><FileText className="w-5 h-5 text-[var(--blue)]" /></div>
+                                  <div className="min-w-0 pr-2">
+                                    <p className="text-[11px] font-black text-white truncate">{msg.attachmentName || 'Doc'}</p>
+                                    <p className="text-[9px] text-white/40 font-bold uppercase tracking-wider">Download</p>
+                                  </div>
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          {msg.message && (
+                            <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span className={`text-[9px] font-black uppercase tracking-[0.1em] text-white/30 ${isMe ? "mr-12" : "ml-12"}`}>
+                        {formatTime(msg.createdAt)}
+                      </span>
+
+                      {/* Guest Sign-in Nudge inside chat */}
+                      {!authUser && isFirstOwnerReply && (
+                        <div className="w-full mt-4 p-6 rounded-[32px] bg-gradient-to-br from-pink-600/20 to-purple-600/20 border border-white/10 backdrop-blur-xl text-center msg-in">
+                          <p className="text-sm font-black text-white mb-4">Reply anonymously to keep the chat going!</p>
+                          <Link
+                            href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-black text-white transition-all hover:scale-105 active:scale-95 shadow-xl"
+                            style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
+                          >
+                            Sign in to reply <Heart className="w-4 h-4 fill-white" />
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input Bar */}
+          <div className="p-4 sm:p-6 border-t border-white/5 bg-white/[0.01]">
+            <div className="max-w-xl mx-auto flex items-end gap-3">
+              {/* Attachment Button */}
+              <input ref={docInputRef} type="file" onChange={(e) => { const file = e.target.files?.[0]; if (file) setPendingFile(file); }} className="hidden" />
+              <button
+                type="button"
+                onClick={() => docInputRef.current?.click()}
+                disabled={submitting}
+                className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all disabled:opacity-30"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+
+              {/* Input wrapper */}
+              <div className="flex-1 relative">
+                {isGuest && !hasOwnerReply ? (
+                  <div className="w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/30 bg-white/5 rounded-2xl border border-white/5">
+                    Waiting for @{coolId} to reply...
+                  </div>
+                ) : (
+                  <div className="relative flex items-end gap-3">
+                    <textarea
+                      value={textMessage}
+                      onChange={(e) => setTextMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTextMessage(textMessage); }
+                      }}
+                      placeholder="Type your reaction..."
+                      rows={1}
+                      className="flex-1 max-h-32 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:border-[var(--pink)] transition-all resize-none placeholder:text-white/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => sendTextMessage(textMessage)}
+                      disabled={(!textMessage.trim() && !pendingFile) || submitting}
+                      className="p-4 rounded-2xl text-white shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:scale-100"
+                      style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
     );
-  }
+  };
 
   // ─────────────────────────────────────────────────────────────────
   // LANDING MODE: First-time visitor experience
@@ -962,26 +926,7 @@ function UserFeedbackContent() {
             <img src="/logo.svg" alt="picpop" className="h-6 sm:h-7 w-auto hover:scale-105 transition-transform duration-300" />
           </Link>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  const latest = [...chatHistory].reverse().find(m => m.threadId);
-                  if (latest?.threadId) {
-                    router.push(`${window.location.pathname}?thread=${latest.threadId}`);
-                    setChatMode(true);
-                  } else {
-                    setChatMode(true);
-                  }
-                }}
-                className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
-              >
-                <Bell className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--pink)]" />
-                {hasOwnerReply && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--pink)] rounded-full animate-pulse shadow-[0_0_8px_var(--pink)]" />
-                )}
-              </button>
-            </div>
+            <NotificationBell onGuestClick={() => setShowLoginRequiredPopup(true)} />
             <ThemeToggle />
             {authUser ? (
               <Link href="/dashboard" className="text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Dashboard</Link>
@@ -992,29 +937,51 @@ function UserFeedbackContent() {
         </nav>
       </header>
 
-      <main className="relative max-w-xl mx-auto px-4 py-8 sm:py-12 pb-16">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold mb-4" style={{ background: "rgba(255,61,127,0.15)", border: "1px solid rgba(255,61,127,0.3)" }}>
-            <Heart className="w-4 h-4 text-[var(--pink)]" /> 100% anonymous · no sign-up
+      <main className="relative max-w-2xl mx-auto px-4 py-12 pb-32">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6" 
+            style={{ background: "rgba(255,61,127,0.1)", border: "1px solid rgba(255,61,127,0.2)", color: "var(--pink)" }}>
+            <Heart className="w-3.5 h-3.5 fill-[var(--pink)]" /> anonymous vibes only
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] leading-tight">
-            <span className="text-[var(--pink)]">@{coolId}</span> is waiting for your feedback
+          <h1 className="text-4xl sm:text-6xl font-black text-white leading-[0.9] tracking-tight mb-4">
+            react to <span className="text-[var(--pink)]">@{coolId}</span>
           </h1>
-          <p className="text-base text-[var(--text-muted)] mt-3 font-semibold max-w-sm mx-auto">
-            Send one honest reaction — screenshot, selfie, meme, anything. They&apos;ll love it.
+          <p className="text-base text-[var(--text-muted)] font-bold max-w-sm mx-auto leading-relaxed">
+            Drop an image or share a reaction. Your identity is 100% protected. No sign-up required.
           </p>
         </div>
 
-        {/* Response preview scrollbar */}
-        <div className="mb-8">
-          <p className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] mb-3 text-center">✨ Ideas: reactions like these</p>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 preview-scroll">
+        {/* Primary CTA: Huge Camera Button */}
+        <div className="relative mb-16 px-2">
+          <div className="absolute -inset-4 bg-gradient-to-r from-[var(--pink)] via-[var(--purple)] to-[var(--blue)] rounded-[40px] opacity-20 blur-2xl animate-pulse" />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={submitting}
+            className="w-full aspect-[4/3] sm:aspect-[16/9] rounded-[32px] bg-[var(--bg-card)] border-2 border-white/5 flex flex-col items-center justify-center gap-6 transition-all hover:scale-[1.02] hover:border-[var(--pink)]/50 group active:scale-[0.98] relative overflow-hidden shadow-2xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[var(--pink)]/10 group-hover:border-[var(--pink)]/20 transition-all duration-500 rotate-3 group-hover:rotate-0">
+              <Camera className="w-10 h-10 sm:w-14 h-14 text-[var(--pink)] transition-transform duration-500 group-hover:scale-110" />
+            </div>
+            <div className="text-center">
+              <span className="block text-2xl sm:text-3xl font-black text-white mb-2">{submitting ? "UPLOADING..." : "TAP TO SEND"}</span>
+              <span className="block text-xs font-black uppercase tracking-[0.2em] text-white/30">screenshot · selfie · meme</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Ideas Carousel Placeholder/Hint */}
+        <div className="mb-16">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 mb-6 text-center">inspo for you</p>
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 preview-scroll">
             {RESPONSE_PREVIEWS.map((r, i) => (
-              <div key={i} className="flex-shrink-0 group cursor-default">
-                <div className="p-[2px] rounded-xl transition-transform duration-300 group-hover:scale-105" style={{ background: r.bg, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-black">
+              <div key={i} className="flex-shrink-0 group">
+                <div className="p-1 rounded-2xl bg-white/5 border border-white/10 transition-all group-hover:border-[var(--pink)]/50">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-black grayscale group-hover:grayscale-0 transition-all duration-500">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.src} alt="reaction idea" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                    <img src={r.src} alt="reaction idea" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   </div>
                 </div>
               </div>
@@ -1022,34 +989,61 @@ function UserFeedbackContent() {
           </div>
         </div>
 
-        {/* Recent Chats Section */}
+        {/* Recent Chats Section - Modernized */}
         {recentChats.length > 0 && (
-          <div className="mb-10 max-w-[400px] mx-auto">
-            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-[var(--text-muted)] mb-5 text-center">Your Recent Chats</p>
-            <div className="flex flex-wrap justify-center gap-4">
+          <div className="mb-16 max-w-xl mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className="h-px flex-1 bg-white/5" />
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">your history</p>
+              <div className="h-px flex-1 bg-white/5" />
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-6 justify-center">
               {recentChats.map((chat) => (
-                <Link
+                <button
                   key={`${chat.coolId}-${chat.threadId}`}
-                  href={`/u/${chat.coolId}${chat.threadId ? `?thread=${chat.threadId}` : ""}`}
-                  className="group flex flex-col items-center gap-2"
+                  onClick={() => {
+                    if (chat.threadId) {
+                      router.push(`${window.location.pathname}?thread=${chat.threadId}`);
+                    }
+                  }}
+                  className="group flex flex-col items-center gap-3 transition-all hover:-translate-y-1"
                 >
-                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all group-hover:scale-110 group-hover:border-[var(--pink)] overflow-hidden group-pulse-glow group-hover:bg-[var(--pink)]/10 shadow-lg relative">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-[var(--pink)] group-hover:bg-[var(--pink)]/10 shadow-xl relative">
                     {chat.lastImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={chat.lastImageUrl} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                     ) : (
-                      <span className="text-lg font-black text-[var(--pink)] group-hover:text-white">
+                      <span className="text-xl font-black text-white/20 group-hover:text-[var(--pink)]">
                         {chat.coolId.charAt(0).toUpperCase()}
                       </span>
                     )}
+                    {chat.threadId && <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-[var(--green)] rounded-full border-2 border-[#000] shadow-sm" />}
                   </div>
-                  <span className="text-[10px] font-bold text-[var(--text-muted)] group-hover:text-white transition-colors">
-                    @{chat.coolId}
+                  <span className="text-[9px] font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">
+                    {chat.coolId}
                   </span>
-                </Link>
+                </button>
               ))}
             </div>
-            <div className="h-px w-20 bg-white/10 mx-auto mt-8" />
+          </div>
+        )}
+
+        {/* Sections: Explore & AI Ideas */}
+        <div className="space-y-20">
+          <ExploreImages onSubmitShared={handleSharedSelectWithConfirm} disabled={submitting} />
+          <AiImagePrompts onPromptClick={openAiImageWithPrompt} onPromptCopy={() => toast.success("Copied prompt! Opening generator...")} />
+        </div>
+
+        {/* Unified Chat Modal Render */}
+        {renderChatModal()}
+
+        {/* Global Loading Overlay */}
+        {submitting && (
+          <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center">
+            <div className="flex flex-col items-center gap-6">
+              <div className="w-16 h-16 rounded-full border-4 border-white/5 border-t-[var(--pink)] animate-spin" />
+              <p className="text-sm font-black text-white uppercase tracking-[0.3em] animate-pulse">Delivering Vibes...</p>
+            </div>
           </div>
         )}
 
@@ -1151,8 +1145,8 @@ function UserFeedbackContent() {
               <Camera className="w-12 h-12 sm:w-14 sm:h-14 text-[var(--pink)]" />
             </div>
             <div className="text-center">
-              <span className="font-black text-[var(--text-primary)] block text-xl sm:text-2xl">{submitting ? "Sending..." : "Tap to send image"}</span>
-              <span className="text-sm text-[var(--text-muted)] font-semibold mt-2 block">Pick any image — takes 2 seconds</span>
+              <span className="font-black text-[var(--text-primary)] block text-xl sm:text-2xl">{submitting ? "Sending..." : submitted ? "Send another vibe!" : "Tap to send image"}</span>
+              <span className="text-sm text-[var(--text-muted)] font-semibold mt-2 block">{submitted ? "Nice! @"+coolId+" will get it soon." : "Pick any image — takes 2 seconds"}</span>
             </div>
 
             <div className="flex items-center gap-2 mt-1">
@@ -1172,117 +1166,118 @@ function UserFeedbackContent() {
           <ImageIcon className="w-4 h-4 text-[var(--pink)]" /> Send one. @{coolId} will appreciate it.
         </p>
 
-        {/* Guest Success Modal */}
-        {showGuestSuccessModal && (
-          <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-500">
-            <div className="bg-[#0a0a0a] rounded-[32px] p-5 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10 max-h-[85vh] overflow-y-auto"
-              style={{ boxShadow: "0 0 100px -20px rgba(255, 61, 127, 0.3)" }}>
-              {/* Top animated icon */}
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 relative group"
-                style={{ background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))", border: "2px solid rgba(255,61,127,0.3)" }}>
-                <div className="absolute inset-0 bg-[var(--pink)]/20 blur-lg rounded-full animate-pulse group-hover:blur-xl transition-all" />
-                <Heart className="w-8 h-8 text-[var(--pink)] relative z-10 transition-transform group-hover:scale-110" />
+        {/* Success Modal (Ultra-Premium Redesign) */}
+        {(showGuestSuccessModal || (submitted && !authUser)) && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-hidden">
+            {/* Backdrop with extreme blur and subtle gradient pulse */}
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-[20px] animate-in fade-in duration-700" />
+            
+            {/* Floating background blobs for depth */}
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[var(--pink)]/20 blur-[100px] animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[var(--purple)]/20 blur-[100px] animate-pulse delay-700" />
+
+            <div className="bg-[#0b0b0b]/90 rounded-[48px] p-8 w-full max-w-sm flex flex-col items-center text-center shadow-[0_32px_120px_-20px_rgba(255,61,127,0.5)] relative border border-white/10 max-h-[92vh] overflow-y-auto preview-scroll animate-in zoom-in-95 fade-in duration-500">
+              {/* Particle Sparkles */}
+              <Sparkles className="absolute top-8 left-8 w-4 h-4 text-[var(--pink)] animate-pulse opacity-40" />
+              <Sparkles className="absolute bottom-12 right-12 w-5 h-5 text-[var(--purple)] animate-pulse delay-500 opacity-40" />
+              <Zap className="absolute top-1/2 right-6 w-3 h-3 text-[var(--yellow)] animate-bounce opacity-30" />
+              
+              {/* Main Animated Icon Container */}
+              <div className="relative mb-8 pt-2">
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] blur-2xl opacity-40 rounded-full animate-pulse scale-150" />
+                <div className="w-24 h-24 rounded-[32px] flex items-center justify-center relative group overflow-hidden"
+                  style={{ 
+                    background: "linear-gradient(135deg, rgba(255,61,127,0.3), rgba(124,58,255,0.3))", 
+                    border: "2.5px solid rgba(255,61,127,0.4)",
+                    boxShadow: "0 0 50px rgba(255,61,127,0.3), inset 0 0 20px rgba(255,255,255,0.1)"
+                  }}>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <CheckCircle2 className="w-12 h-12 text-white relative z-10 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
+                </div>
               </div>
 
-              <h3 className="text-2xl font-black text-white mb-1 tracking-tight">Sent!</h3>
-              <p className="text-[var(--text-muted)] text-[10px] mb-6 font-bold uppercase tracking-widest opacity-60">Delivered to Owner</p>
+              <div className="space-y-1 mb-10">
+                <h3 className="text-4xl font-[900] text-white tracking-tighter italic">VIBE SENT!</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="h-px w-4 bg-[var(--pink)]/40" />
+                  <p className="text-[11px] font-black text-[var(--pink)] uppercase tracking-[0.4em]">Delivered to @{coolId}</p>
+                  <span className="h-px w-4 bg-[var(--pink)]/40" />
+                </div>
+              </div>
 
-              <div className="flex flex-col w-full gap-4">
-                <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-1">If they reply, do you want to know?</p>
+              <div className="flex flex-col w-full gap-4 mb-10">
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] text-left ml-2">Secure your vibe</p>
 
                 <button
                   onClick={handleEnablePushNotifications}
                   disabled={notifStatus === "loading" || notifStatus === "enabled"}
-                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
+                  className="w-full p-4 rounded-[28px] bg-white/[0.03] border border-white/5 flex items-center gap-5 transition-all hover:bg-white/[0.08] hover:border-white/10 group active:scale-[0.97]"
                 >
-                  <div className={`p-2 rounded-xl transition-colors ${notifStatus === "enabled" ? "bg-green-500/20 text-green-400" : "bg-pink-500/10 text-pink-400 group-hover:bg-pink-500/20"}`}>
-                    <Bell className="w-5 h-5" />
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${notifStatus === "enabled" ? "bg-green-500/20 text-green-400 rotate-12" : "bg-gradient-to-br from-[#ff3d7f20] to-[#7c3aff20] text-[var(--pink)] group-hover:scale-110 shadow-lg shadow-pink-500/10"}`}>
+                    <Bell className="w-6 h-6" />
                   </div>
                   <div className="text-left flex-1 min-w-0">
-                    <p className="text-xs font-black text-white">Enable Notifications</p>
-                    <p className="text-[10px] text-[var(--text-muted)] font-bold truncate">Get alerted when they reply</p>
+                    <p className="text-sm font-black text-white group-hover:text-[var(--pink)] transition-colors">Notify Me</p>
+                    <p className="text-[10px] text-[var(--text-muted)] font-bold">Get alerted on @{coolId}'s reply</p>
                   </div>
                 </button>
 
-                <button
-                  onClick={handleGetMagicLink}
-                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
-                >
-                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
-                    <LinkIcon className="w-5 h-5" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <p className="text-xs font-black text-white">Get update link</p>
-                    <p className="text-[10px] text-[var(--text-muted)] font-bold truncate">Save this chat to your notes</p>
-                  </div>
-                </button>
-
-                <Link
-                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
-                  className="w-full p-3 rounded-2xl bg-[#FF3D7F]/10 border border-[#FF3D7F]/20 flex items-center gap-4 transition-all hover:bg-[#FF3D7F]/20 group active:scale-95 shadow-[0_4px_24px_rgba(255,61,127,0.1)]"
-                >
-                  <div className="p-2 rounded-xl bg-[var(--pink)] text-white group-hover:scale-110 transition-transform shadow-lg">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <p className="text-xs font-black text-white">Save anonymous thread</p>
-                    <p className="text-[10px] text-[var(--pink)] font-black uppercase tracking-tighter">Recommended</p>
-                  </div>
-                </Link>
+                {!authUser && (
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                    className="w-full p-4 rounded-[28px] bg-gradient-to-r from-[var(--pink)]/10 to-[var(--purple)]/10 border border-white/5 flex items-center gap-5 transition-all hover:from-[var(--pink)]/20 hover:to-[var(--purple)]/20 group active:scale-[0.97]"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--pink)] to-[var(--purple)] text-white group-hover:rotate-6 transition-all flex items-center justify-center shadow-[0_8px_32px_rgba(255,61,127,0.3)]">
+                      <ShieldCheck className="w-7 h-7" />
+                    </div>
+                    <div className="text-left flex-1 min-w-0">
+                      <p className="text-sm font-black text-white group-hover:text-[var(--pink)] transition-colors">Join PicPop</p>
+                      <p className="text-[10px] text-[var(--pink)] font-black uppercase tracking-widest flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" /> Recommended
+                      </p>
+                    </div>
+                  </Link>
+                )}
 
                 <button
                   onClick={() => handleShare()}
-                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
+                  className="w-full p-4 rounded-[28px] bg-white/[0.03] border border-white/5 flex items-center gap-5 transition-all hover:bg-white/[0.08] hover:border-white/10 group active:scale-[0.97]"
                 >
-                  <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
-                    <Share2 className="w-5 h-5" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-400 group-hover:scale-110 flex items-center justify-center transition-all">
+                    <Share2 className="w-6 h-6" />
                   </div>
                   <div className="text-left flex-1 min-w-0">
-                    <p className="text-xs font-black text-white">Share link</p>
-                    <p className="text-[10px] text-[var(--text-muted)] font-bold truncate">Invite others to this chat</p>
+                    <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">Tell Friends</p>
+                    <p className="text-[10px] text-[var(--text-muted)] font-bold">Invite others to react</p>
                   </div>
                 </button>
               </div>
 
-              <div className="h-px w-full bg-white/5 my-4" />
-
               <button
                 onClick={() => {
                   setShowGuestSuccessModal(false);
-                  setChatMode(true);
+                  setChatMode(false);
+                  setSubmitted(false);
+                  toast.success("Ready for another!");
                 }}
-                className="w-full py-2 text-xs font-black uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-white transition-colors"
+                className="w-full py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.4em] text-white relative overflow-hidden group/cta flex items-center justify-center gap-3 transition-all hover:scale-[1.03] active:scale-[0.98] shadow-2xl"
+                style={{ 
+                  background: "linear-gradient(135deg, var(--pink), var(--purple))",
+                  boxShadow: "0 15px 45px -10px rgba(255,61,127,0.5)"
+                }}
               >
-                Skip for now
+                <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover/cta:translate-y-0 transition-transform duration-500" />
+                <Camera className="w-4 h-4 mb-0.5" /> Send another vibe
               </button>
             </div>
           </div>
         )}
         {/* Notification Icon for Landing Page */}
-        {!chatMode && !loading && userId && (
-          <button
-            onClick={() => {
-              const latest = [...chatHistory].reverse().find(m => m.threadId);
-              if (latest?.threadId) {
-                router.push(`${window.location.pathname}?thread=${latest.threadId}`);
-                setChatMode(true);
-              } else {
-                setChatMode(true);
-              }
-            }}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl z-[100] hover:scale-110 transition-all active:scale-95 group"
-          >
-            <Bell className="w-6 h-6 text-white group-hover:text-[var(--pink)] transition-colors" />
-            {chatHistory.some(m => m.isOwnerReply) && (
-              <>
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--pink)] rounded-full border-2 border-[var(--bg-primary)] flex items-center justify-center text-[10px] font-black text-white animate-bounce shadow-lg">
-                  1
-                </span>
-                <span className="absolute inset-0 rounded-full bg-[var(--pink)]/20 animate-ping" />
-              </>
-            )}
-          </button>
-        )}
+          <NotificationBell 
+            className="fixed bottom-6 right-6 z-[100]" 
+            onGuestClick={() => setShowLoginRequiredPopup(true)}
+          />
+
       </main>
     </div>
   );

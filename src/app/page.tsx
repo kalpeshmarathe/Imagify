@@ -6,6 +6,7 @@ import { ImageShowcase } from "@/components/ImageShowcase";
 import { ImageResponseCards } from "@/components/ImageResponseCards";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GoogleAd } from "@/components/GoogleAd";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
   { Icon: Flame, label: "roast me" },
@@ -223,6 +224,7 @@ export default function Home() {
 
           {/* CTA */}
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <Link
               href="/dashboard"
               className="hidden sm:inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white cta-btn"

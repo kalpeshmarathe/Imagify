@@ -18,6 +18,7 @@ import {
 import { db, ensureFirestoreNetwork } from "@/lib/firebase";
 import { HowToPlayModal } from "@/components/HowToPlayModal";
 import { TermsModal } from "@/components/TermsModal";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -177,6 +178,7 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <NotificationBell />
             <div className="relative">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
