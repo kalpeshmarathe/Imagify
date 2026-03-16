@@ -274,6 +274,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     console.log("[Auth] signOut called");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("picpop_recent_chats");
+    }
     if (auth) await firebaseSignOut(auth);
     setUser(null);
     setProfile(null);

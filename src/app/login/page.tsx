@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock, Sparkles, MessageCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -9,8 +10,23 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { getErrorMessage } from "@/lib/error-utils";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: "var(--pink)" }} />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const { user, profile, loading, isSigningIn, isConfigured, signInWithGoogle, signInWithFacebook, signInWithYahoo } = useAuth();
   const toast = useToast();
+
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
 
   useEffect(() => {
     console.log("[Login] state:", { loading, hasUser: !!user, hasProfile: !!profile, coolId: profile?.coolId });
@@ -18,13 +34,14 @@ export default function LoginPage() {
     if (!user) return;
     if (!profile) return;
 
-    console.log("[Login] User + profile ready, redirecting...", { coolId: profile.coolId });
+    console.log("[Login] User + profile ready, redirecting...", { coolId: profile.coolId, redirectPath });
     if (profile.coolId) {
-      window.location.replace("/dashboard");
+      window.location.replace(redirectPath || "/dashboard");
     } else {
-      window.location.replace("/create-id");
+      const target = redirectPath ? `/create-id?redirect=${encodeURIComponent(redirectPath)}` : "/create-id";
+      window.location.replace(target);
     }
-  }, [user, profile, loading]);
+  }, [user, profile, loading, redirectPath]);
 
   const handleSignIn = async (fn: () => Promise<void>, provider: string) => {
     console.log("[Login] handleSignIn clicked:", provider);

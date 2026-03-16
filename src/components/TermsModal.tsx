@@ -23,19 +23,9 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
   if (!isOpen) return null;
 
   const handleAccept = async () => {
-    if (!user || !db) return;
     setAccepting(true);
     try {
-      const userRef = doc(db, "users", user.uid);
-      const timestamp = new Date().toISOString();
-      await updateDoc(userRef, {
-        termsAccepted: true,
-        termsAcceptedAt: timestamp,
-        privacyAccepted: true,
-        privacyAcceptedAt: timestamp,
-      });
-
-      // Save to localStorage as a fallback/quick check
+      // 1. Save to localStorage as a primary/fast check (works for guests too)
       try {
         localStorage.setItem("picpop_legal_v1", "true");
         if (user?.uid) {
@@ -45,7 +35,19 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
         console.warn("Failed to save terms acceptance to localStorage:", e);
       }
 
-      await refreshProfile();
+      // 2. Sync to Firestore if user is logged in
+      if (user && db) {
+        const userRef = doc(db, "users", user.uid);
+        const timestamp = new Date().toISOString();
+        await updateDoc(userRef, {
+          termsAccepted: true,
+          termsAcceptedAt: timestamp,
+          privacyAccepted: true,
+          privacyAcceptedAt: timestamp,
+        });
+      }
+
+      if (refreshProfile) await refreshProfile();
       onAccept();
       toast.success("Legal terms accepted. Welcome!");
     } catch (err) {

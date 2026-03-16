@@ -156,7 +156,10 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
     if (fcmToken) {
       const message = {
         token: fcmToken,
-        notification: { title, body },
+        notification: { 
+          title, 
+          body,
+        },
         data: {
           type: isOwnerReply ? "reply" : "feedback",
           feedbackId: String(feedbackId),
@@ -164,7 +167,16 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
           body,
           link: clickLink,
         },
-        webpush: { fcmOptions: { link: clickLink } },
+        webpush: {
+          notification: {
+            icon: "/logo.svg",
+            badge: "/logo.svg",
+            click_action: clickLink,
+          },
+          fcmOptions: {
+            link: clickLink
+          }
+        },
       };
       await getMessaging().send(message);
       console.log(`Push sent to ${notifyUid || notifySessionId}`);
@@ -496,6 +508,21 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
     }
 
     const visitorId = uid || anonymousId;
+    let threadId = request.data.threadId || null;
+
+    // If we have a parentId but no threadId, try to inherit threadId from parent
+    if (parentId && !threadId) {
+      const parentSnap = await db.doc(`feedbacks/${parentId}`).get();
+      if (parentSnap.exists) {
+        threadId = parentSnap.data().threadId || parentId;
+      }
+    }
+
+    // Fallback to new threadId if still null
+    if (!threadId) {
+      threadId = require("crypto").randomUUID();
+    }
+
     const feedbackData = {
       createdAt: new Date().toISOString(),
       submitterId: uid,
@@ -503,7 +530,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
       anonymousId,
       visitorId, // NEW: Thread Identifier
       sessionId: request.data.sessionId || null,
-      threadId: request.data.threadId || require("crypto").randomUUID(),
+      threadId,
       deleted: false,
       recipientId: resolvedRecipientId, // The profile owner
     };
@@ -527,7 +554,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
       }, { merge: true });
     }
 
-    return { success: true, anonymousId, threadId: feedbackData.threadId };
+    return { success: true, anonymousId, threadId };
   } catch (err) {
     if (err && err.code) throw err;
     console.error("submitFeedback error:", err);
@@ -548,26 +575,35 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
 
     const ip = getClientIp(request.rawRequest);
     const anonymousId = getIpHash(ip);
-    const db = getFirestore();
-
-    // If threadId is provided, we only want THAT thread's history
-    if (threadId) {
-      const snap = await db.collection("feedbacks")
+    const [snapIp, snapVisitor, snapThread] = await Promise.all([
+      db.collection("feedbacks")
+        .where("recipientId", "==", recipientId)
+        .where("anonymousId", "==", anonymousId)
+        .orderBy("createdAt", "desc")
+        .limit(100)
+        .get(),
+      db.collection("feedbacks")
+        .where("recipientId", "==", recipientId)
+        .where("visitorId", "==", anonymousId)
+        .orderBy("createdAt", "desc")
+        .limit(100)
+        .get(),
+      threadId ? db.collection("feedbacks")
+        .where("recipientId", "==", recipientId)
         .where("threadId", "==", threadId)
-        .limit(200)
-        .get();
-      
-      const items = snap.docs
-        .filter(d => d.data().deleted !== true)
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      
-      return { success: true, anonymousId, items };
-    }
+        .orderBy("createdAt", "desc")
+        .limit(100)
+        .get() : Promise.resolve({ docs: [] })
+    ]);
 
-    let finalItems = snapIp.docs
+    const initialDocs = [...snapIp.docs, ...snapVisitor.docs, ...snapThread.docs]
       .filter(d => d.data().deleted !== true)
       .map(d => ({ id: d.id, ...d.data() }));
+    
+    // De-duplicate
+    const seenMap = new Map();
+    initialDocs.forEach(d => seenMap.set(d.id, d));
+    let finalItems = Array.from(seenMap.values());
 
     // Query 2: By sessionId if provided
     if (sessionId) {
@@ -581,11 +617,10 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
         .filter(d => d.data().deleted !== true)
         .map(d => ({ id: d.id, ...d.data() }));
       
-      const seenIds = new Set(finalItems.map(i => i.id));
       for (const item of sessionItems) {
-        if (!seenIds.has(item.id)) {
+        if (!seenMap.has(item.id)) {
           finalItems.push(item);
-          seenIds.add(item.id);
+          seenMap.set(item.id, item);
         }
       }
     }
@@ -593,7 +628,6 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
     // Query 3: By UID if authenticated
     if (request.auth?.uid) {
       const uid = request.auth.uid;
-      // Items sent by this user or targeted to this user
       const [snapSent, snapReplies] = await Promise.all([
         db.collection("feedbacks").where("recipientId", "==", recipientId).where("submitterId", "==", uid).limit(100).get(),
         db.collection("feedbacks").where("submitterId", "==", recipientId).where("recipientId", "==", uid).limit(100).get()
@@ -603,20 +637,23 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
         .filter(d => d.data().deleted !== true)
         .map(d => ({ id: d.id, ...d.data() }));
 
-      const seenIds = new Set(finalItems.map(i => i.id));
       for (const item of uidItems) {
-        if (!seenIds.has(item.id)) {
+        if (!seenMap.has(item.id)) {
           finalItems.push(item);
-          seenIds.add(item.id);
+          seenMap.set(item.id, item);
         }
       }
+    }
+
+    // Strict Thread Filter: If threadId is provided, ONLY return items from that thread
+    if (threadId) {
+      finalItems = finalItems.filter(item => item.threadId === threadId);
     }
 
     // Sort by time
     finalItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     // Security Filter: If an item has a targetUid, and it's NOT the current user's UID, remove it.
-    // This prevents anon users on the same IP from seeing private replies meant for a verified user.
     finalItems = finalItems.filter(item => {
       if (!item.targetUid) return true;
       return item.targetUid === request.auth?.uid;
@@ -629,6 +666,7 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
     throw new HttpsError("internal", "Failed to load chat history.");
   }
 });
+
 
 /**
  * Called when a user logs in — maps their current IP hash to their uid.
@@ -669,9 +707,7 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
     if (!anonymousIdClean && !targetUidClean) {
       throw new HttpsError("invalid-argument", "Either anonymousId or targetUid is required");
     }
-    if (!threadId) {
-      throw new HttpsError("invalid-argument", "threadId is required for replies");
-    }
+    const threadIdToUse = threadId || require("crypto").randomUUID();
     if (!request.auth || !request.auth.uid) {
       throw new HttpsError("unauthenticated", "You must be logged in to reply");
     }
@@ -680,16 +716,17 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
     const db = getFirestore();
     const visitorId = targetUidClean || anonymousIdClean || getIpHash(ip);
 
+    // FIX: Ensure anonymousId is set correctly in the reply for retrieval
     const replyData = {
       message: message ? message.trim() : "",
       createdAt: new Date().toISOString(),
       submitterId: request.auth.uid,
       submitterIp: ip,
-      anonymousId: anonymousIdClean,
+      anonymousId: anonymousIdClean || (!targetUidClean ? visitorId : null),
       visitorId, 
       sessionId: sessionId || null, 
       targetUid: targetUidClean,
-      threadId: threadId,
+      threadId: threadIdToUse,
       recipientId: targetUidClean || request.auth.uid, 
       isOwnerReply: true,
       deleted: false,

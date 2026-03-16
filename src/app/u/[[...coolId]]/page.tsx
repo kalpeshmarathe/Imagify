@@ -1,6 +1,6 @@
 /** Required for static export - generates base /u path. Use /u?user=username format for share links. */
 export function generateStaticParams() {
-  return [{ coolId: undefined }];
+  return [];
 }
 
 import UserFeedbackClient from "./UserFeedbackClient";

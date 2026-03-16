@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { Camera, X, Heart, Send, ChevronLeft, ImageIcon, Paperclip, FileText, Bell, Link as LinkIcon, ShieldCheck, Share2 } from "lucide-react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, ensureFirestoreNetwork } from "@/lib/firebase";
@@ -15,8 +15,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AiImagePrompts, openProvider, type AiImageProvider } from "@/components/AiImagePrompts";
 import { ExploreImages } from "@/components/ExploreImages";
 import { getErrorMessage } from "@/lib/error-utils";
+import { TermsModal } from "@/components/TermsModal";
 
-import { requestNotificationPermission, getIosPushHint } from "@/lib/notifications";
+import { requestNotificationPermission, getIosPushHint, onForegroundMessage } from "@/lib/notifications";
 
 const SIGN_IN_NUDGE_INTERVAL_MS = 20_000;
 
@@ -28,6 +29,8 @@ function formatTime(iso: string) {
 interface RecentChat {
   coolId: string;
   userId: string;
+  threadId: string | null;
+  lastImageUrl?: string;
   lastActive: string;
 }
 
@@ -50,17 +53,20 @@ function getRecentChats(): RecentChat[] {
   } catch { return []; }
 }
 
-function saveRecentChat(coolId: string, userId: string) {
-  if (typeof window === "undefined" || !coolId || !userId) return;
+function saveRecentChat(coolId: string, userId: string, threadId: string | null, lastImageUrl?: string): RecentChat[] {
+  if (typeof window === "undefined" || !coolId || !userId) return [];
   const recent = getRecentChats();
-  const filtered = recent.filter(c => c.coolId !== coolId);
-  filtered.unshift({ coolId, userId, lastActive: new Date().toISOString() });
-  localStorage.setItem("picpop_recent_chats", JSON.stringify(filtered.slice(0, 10)));
+  // Filter out the exact same thread to move it to the top
+  const filtered = recent.filter(c => !(c.coolId === coolId && c.threadId === threadId));
+  const newList = [{ coolId, userId, threadId, lastImageUrl, lastActive: new Date().toISOString() }, ...filtered].slice(0, 15);
+  localStorage.setItem("picpop_recent_chats", JSON.stringify(newList));
+  return newList;
 }
 
 function UserFeedbackContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { user: authUser, loading: authLoading } = useAuth();
   const [coolId, setCoolId] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
@@ -77,6 +83,7 @@ function UserFeedbackContent() {
   const [chatMode, setChatMode] = useState(false);
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +108,32 @@ function UserFeedbackContent() {
   useEffect(() => {
     setRecentChats(getRecentChats());
   }, []);
+
+  // Listen for foreground notifications
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    let mounted = true;
+
+    const setup = async () => {
+      try {
+        const cleanup = await onForegroundMessage((payload) => {
+          if (!mounted) return;
+          const title = payload.notification?.title || "New notification";
+          const body = payload.notification?.body || "You have a new message.";
+          toast.success(`${title}: ${body}`);
+        });
+        unsub = cleanup;
+      } catch (err) {
+        console.warn("Foreground notification setup failed:", err);
+      }
+    };
+
+    setup();
+    return () => {
+      mounted = false;
+      if (unsub) unsub();
+    };
+  }, [toast]);
 
   const handleDismissNudge = () => {
     localStorage.setItem("signInNudgeDismissedAt", Date.now().toString());
@@ -176,18 +209,29 @@ function UserFeedbackContent() {
     return () => { mounted = false; };
   }, [coolId]);
 
+
+  const activeThreadRef = useRef<string | null>(null);
+
   // Load initial chat history from server (IP-based + Session-based), then set up real-time listener
   useEffect(() => {
-    if (!userId) return;
-    let unsub: (() => void) | null = null;
+    if (!userId || authLoading) return;
+    
+    let unsubListeners: (() => void) | null = null;
     let cancelled = false;
+
+    const threadParam = searchParams.get("thread");
+    
+    // Only reset if we are switching to a DIFFERENT thread
+    if (activeThreadRef.current !== threadParam) {
+      setChatHistory([]);
+      activeThreadRef.current = threadParam;
+    }
 
     const init = async () => {
       try {
         const fns = getAppFunctions();
         if (!fns || !db) return;
         const sessionId = getSessionId();
-        const threadParam = searchParams.get("thread");
         const getHistory = httpsCallable<{ recipientId: string; sessionId: string | null; threadId?: string | null }, { anonymousId: string; items: any[] }>(
           fns, "getAnonymousChatHistory"
         );
@@ -197,11 +241,12 @@ function UserFeedbackContent() {
         const anonId = result.data.anonymousId;
         setMyChatAnonId(anonId);
 
-        if (result.data.items.length > 0) {
+        if (result.data.items && result.data.items.length > 0) {
           setChatHistory(result.data.items);
-          const hasReply = result.data.items.some((i: any) => i.isOwnerReply);
-          if (hasReply) setChatMode(true);
-          saveRecentChat(coolId, userId);
+          if (threadParam) setChatMode(true);
+          const lastWithImg = [...result.data.items].reverse().find(i => i.feedbackImageUrl || i.attachmentUrl);
+          const updated = saveRecentChat(coolId, userId, threadParam, lastWithImg?.feedbackImageUrl || lastWithImg?.attachmentUrl);
+          setRecentChats(updated);
         }
 
         const currentSessionId = getSessionId();
@@ -210,16 +255,12 @@ function UserFeedbackContent() {
         const qVisitorThread = query(
           collection(db, "feedbacks"),
           where("recipientId", "==", userId),
-          where(threadParam ? "threadId" : "visitorId", "==", threadParam || anonId),
-          limit(100)
-        );
-
-        // 2. Listen for session-specific targeted replies (for shared IPs)
+          where(threadParam ? "threadId" : "visitorId", "==", threadParam || anonId)
+        );        // 2. Listen for session-specific targeted replies (for shared IPs)
         const qSessionThread = query(
           collection(db, "feedbacks"),
           where("recipientId", "==", userId),
-          where(threadParam ? "threadId" : "sessionId", "==", threadParam || currentSessionId),
-          limit(50)
+          where(threadParam ? "threadId" : "sessionId", "==", threadParam || currentSessionId)
         );
 
         const processSnap = (snap: any) => {
@@ -242,48 +283,58 @@ function UserFeedbackContent() {
           });
 
           if (newItems.length > 0) {
-            const hasReply = newItems.some((i: any) => i.isOwnerReply);
-            if (hasReply) setChatMode(true);
-            saveRecentChat(coolId, userId);
+            // Only automatically enter chat mode if a specific thread is being viewed
+            if (threadParam) setChatMode(true);
+            const lastWithImg = [...newItems].reverse().find(i => i.feedbackImageUrl || i.attachmentUrl);
+            const updated = saveRecentChat(coolId, userId, threadParam, lastWithImg?.feedbackImageUrl || lastWithImg?.attachmentUrl);
+            setRecentChats(updated);
           }
         };
 
-        let unSubs: (() => void)[] = [
-          onSnapshot(qVisitorThread, processSnap),
-          onSnapshot(qSessionThread, processSnap)
-        ];
+        const unsubVisitor = onSnapshot(qVisitorThread, processSnap);
+        const unsubSession = onSnapshot(qSessionThread, processSnap);
+
+        unsubListeners = () => {
+          unsubVisitor();
+          unsubSession();
+        };
 
         if (authUser?.uid) {
-          // 3. Listen for Messages sent BY ME to this specific owner
           const qSentToOwner = query(
             collection(db, "feedbacks"),
             where("recipientId", "==", userId),
             where("submitterId", "==", authUser.uid),
-            limit(100)
+            ...(threadParam ? [where("threadId", "==", threadParam)] : [])
           );
-          unSubs.push(onSnapshot(qSentToOwner, processSnap));
-
-          // 4. Listen for verified replies sent BY this owner TO ME
+          const unsubSent = onSnapshot(qSentToOwner, processSnap);
+          
           const qRepliesFromOwner = query(
             collection(db, "feedbacks"),
             where("recipientId", "==", authUser.uid),
             where("submitterId", "==", userId),
+            ...(threadParam ? [where("threadId", "==", threadParam)] : []),
             limit(100)
           );
-          unSubs.push(onSnapshot(qRepliesFromOwner, processSnap));
-        }
+          const unsubReplies = onSnapshot(qRepliesFromOwner, processSnap);
 
-        unsub = () => {
-          unSubs.forEach(u => u());
-        };
+          const baseUnsub = unsubListeners;
+          unsubListeners = () => {
+            if (baseUnsub) baseUnsub();
+            unsubSent();
+            unsubReplies();
+          };
+        }
       } catch (err) {
         // silently ignore — new user with no history is fine
       }
     };
 
     init();
-    return () => { cancelled = true; unsub?.(); };
-  }, [userId, coolId, authUser?.uid]);
+    return () => { 
+      cancelled = true; 
+      if (unsubListeners) unsubListeners(); 
+    };
+  }, [userId, coolId, authUser?.uid, searchParams.toString()]);
 
   const sendTextMessage = useCallback(async (msg: string) => {
     if (!userId || (!msg.trim() && !pendingFile)) return;
@@ -292,7 +343,8 @@ function UserFeedbackContent() {
     setTextMessage("");
     setPendingFile(null);
 
-    const threadId = chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null;
+    const isAttachment = !!fileToUpload;
+    const threadId = searchParams.get("thread") || (chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null);
 
     // OPTIMISTIC UPDATE: Add to UI immediately for speed feel
     const optimisticId = "opt_" + Math.random().toString(36).substring(2, 9);
@@ -336,18 +388,19 @@ function UserFeedbackContent() {
         fns, "submitFeedback"
       );
       const result = await submitFeedback({
-        recipientId: userId,
+        recipientId: userId!,
         message: text,
         sessionId,
         attachmentUrl,
         attachmentName,
-        threadId: threadId
+        threadId: threadId as string | null
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId && !searchParams.get("thread")) {
-        window.history.replaceState(null, "", `${window.location.pathname}?thread=${result.data.threadId}`);
+      if (result.data.threadId) {
+        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
+        setChatMode(true);
       }
-      saveRecentChat(coolId, userId);
+      setRecentChats(saveRecentChat(coolId, userId, result.data.threadId || threadId, attachmentUrl || urlToUse));
 
       // Cleanup optimist after successful sync
       setTimeout(() => {
@@ -363,7 +416,7 @@ function UserFeedbackContent() {
     } finally {
       setSubmitting(false);
     }
-  }, [userId, myChatAnonId, toast, coolId, pendingFile]);
+  }, [userId, myChatAnonId, toast, coolId, pendingFile, chatMode, chatHistory, searchParams]);
 
   const doFileUpload = async (file: File) => {
     if (!userId || !db) return;
@@ -372,7 +425,7 @@ function UserFeedbackContent() {
       await ensureFirestoreNetwork();
       const feedbackId = crypto.randomUUID();
 
-      const threadId = chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null;
+      const threadId = null; // Forces brand-new thread for every image upload
       let optimisticId = "";
       if (authUser) {
         optimisticId = "opt_" + Math.random().toString(36).substring(2, 9);
@@ -395,16 +448,22 @@ function UserFeedbackContent() {
       const submitFeedback = httpsCallable<{ recipientId: string; feedbackImageUrl: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(
         fns, "submitFeedback"
       );
-      const result = await submitFeedback({ recipientId: userId, feedbackImageUrl: url, sessionId, threadId: threadId }) as any;
+      const result = await submitFeedback({ 
+        recipientId: userId!, 
+        feedbackImageUrl: url, 
+        sessionId, 
+        threadId: null // Force brand-new thread server-side
+      }) as any;
 
       if (authUser && optimisticId) {
         setTimeout(() => setChatHistory(prev => prev.filter(m => m.id !== optimisticId)), 4000);
       }
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId && !searchParams.get("thread")) {
-        window.history.replaceState(null, "", `${window.location.pathname}?thread=${result.data.threadId}`);
+      if (result.data.threadId) {
+        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
+        setChatMode(true);
       }
-      saveRecentChat(coolId, userId);
+      setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, url));
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
@@ -414,7 +473,7 @@ function UserFeedbackContent() {
   };
 
   const checkChatModeOrSuccess = () => {
-    if (!chatMode) {
+    if (!authUser) {
       setShowGuestSuccessModal(true);
     }
   };
@@ -447,7 +506,7 @@ function UserFeedbackContent() {
     setSubmitting(true);
     try {
       await ensureFirestoreNetwork();
-      const threadId = chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null;
+      const threadId = null; // Image sharing always starts a new thread
       let optimisticId = "";
       if (authUser) {
         optimisticId = "opt_" + Math.random().toString(36).substring(2, 9);
@@ -466,12 +525,18 @@ function UserFeedbackContent() {
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
       const submit = httpsCallable<{ recipientId: string; feedbackImageUrl: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(fns, "submitFeedback");
-      const result = await submit({ recipientId: userId, feedbackImageUrl: item.feedbackImageUrl, sessionId, threadId: threadId }) as any;
+      const result = await submit({ 
+        recipientId: userId!, 
+        feedbackImageUrl: item.feedbackImageUrl, 
+        sessionId, 
+        threadId: null // New thread for shared select
+      }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId && !searchParams.get("thread")) {
-        window.history.replaceState(null, "", `${window.location.pathname}?thread=${result.data.threadId}`);
+      if (result.data.threadId) {
+        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
+        setChatMode(true);
       }
-      saveRecentChat(coolId, userId);
+      setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, item.feedbackImageUrl));
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       const m = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to send.";
@@ -484,7 +549,7 @@ function UserFeedbackContent() {
     setSubmitting(true);
     try {
       await ensureFirestoreNetwork();
-      const threadId = chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null;
+      const threadId = null; // Memes always start a new thread
       let optimisticId = "";
       if (authUser) {
         optimisticId = "opt_" + Math.random().toString(36).substring(2, 9);
@@ -503,12 +568,18 @@ function UserFeedbackContent() {
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
       const submit = httpsCallable<{ imageUrl: string; recipientId: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(fns, "submitFeedbackFromImgflip");
-      const result = await submit({ imageUrl: meme.url, recipientId: userId, sessionId, threadId: threadId }) as any;
+      const result = await submit({ 
+        imageUrl: meme.url, 
+        recipientId: userId!, 
+        sessionId, 
+        threadId: null // New thread for meme
+      }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      if (result.data.threadId && !searchParams.get("thread")) {
-        window.history.replaceState(null, "", `${window.location.pathname}?thread=${result.data.threadId}`);
+      if (result.data.threadId) {
+        router.replace(`${window.location.pathname}?thread=${result.data.threadId}`);
+        setChatMode(true);
       }
-      saveRecentChat(coolId, userId);
+      setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, meme.url));
       checkChatModeOrSuccess();
     } catch (err: unknown) {
       const m = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to send.";
@@ -617,6 +688,16 @@ function UserFeedbackContent() {
           </div>
 
           <div className="flex items-center gap-3">
+            {!authUser && (
+              <button
+                type="button"
+                onClick={() => setShowGuestSuccessModal(true)}
+                className={`p-2 rounded-xl transition-all active:scale-95 ${notifStatus === "enabled" ? "text-[var(--green)] bg-green-500/10" : "text-[var(--text-muted)] hover:bg-white/5"}`}
+                title={notifStatus === "enabled" ? "Notifications enabled" : "Enable notifications"}
+              >
+                <Bell className={`w-5 h-5 ${notifStatus === "idle" ? "animate-pulse" : ""}`} />
+              </button>
+            )}
             <div className="flex flex-col items-end mr-1 hidden sm:flex">
               <span className="text-[10px] font-black text-[var(--green)]">LIVE</span>
               <span className="text-[8px] font-bold text-[var(--text-muted)]">Encrypted</span>
@@ -794,14 +875,17 @@ function UserFeedbackContent() {
                   Waiting for @{coolId} to reply...
                 </div>
               ) : isGuest && hasOwnerReply ? (
-                <Link href="/login" className="flex-1 py-3 px-4 rounded-2xl font-black text-center text-[10px] bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[var(--text-muted)] uppercase tracking-widest flex items-center justify-center gap-2 group">
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                  className="flex-1 py-3 px-4 rounded-2xl font-black text-center text-[10px] bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[var(--text-muted)] uppercase tracking-widest flex items-center justify-center gap-2 group"
+                >
                   Sign in to check the reply & continue <Heart className="w-3 h-3 text-[var(--pink)] group-hover:scale-125 transition-transform" />
                 </Link>
               ) : (
                 <>
                   {authUser && (
                     <div className="flex items-end gap-2">
-                       <input ref={docInputRef} type="file" onChange={(e) => {
+                      <input ref={docInputRef} type="file" onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) setPendingFile(file);
                       }} className="hidden" />
@@ -809,7 +893,7 @@ function UserFeedbackContent() {
                         className="p-2.5 rounded-full shrink-0 text-[var(--text-muted)] hover:text-[var(--pink)] hover:bg-white/5 transition-colors">
                         <Paperclip className="w-5 h-5" />
                       </button>
-                      
+
                       <textarea
                         value={textMessage}
                         onChange={(e) => setTextMessage(e.target.value)}
@@ -881,7 +965,15 @@ function UserFeedbackContent() {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setChatMode(true)}
+                onClick={() => {
+                  const latest = [...chatHistory].reverse().find(m => m.threadId);
+                  if (latest?.threadId) {
+                    router.push(`${window.location.pathname}?thread=${latest.threadId}`);
+                    setChatMode(true);
+                  } else {
+                    setChatMode(true);
+                  }
+                }}
                 className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
               >
                 <Bell className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--pink)]" />
@@ -937,14 +1029,19 @@ function UserFeedbackContent() {
             <div className="flex flex-wrap justify-center gap-4">
               {recentChats.map((chat) => (
                 <Link
-                  key={chat.coolId}
-                  href={`/u/${chat.coolId}`}
+                  key={`${chat.coolId}-${chat.threadId}`}
+                  href={`/u/${chat.coolId}${chat.threadId ? `?thread=${chat.threadId}` : ""}`}
                   className="group flex flex-col items-center gap-2"
                 >
-                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all group-hover:scale-110 group-hover:border-[var(--pink)] group-pulse-glow group-hover:bg-[var(--pink)]/10 shadow-lg">
-                    <span className="text-lg font-black text-[var(--pink)] group-hover:text-white">
-                      {chat.coolId.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all group-hover:scale-110 group-hover:border-[var(--pink)] overflow-hidden group-pulse-glow group-hover:bg-[var(--pink)]/10 shadow-lg relative">
+                    {chat.lastImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={chat.lastImageUrl} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                    ) : (
+                      <span className="text-lg font-black text-[var(--pink)] group-hover:text-white">
+                        {chat.coolId.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] font-bold text-[var(--text-muted)] group-hover:text-white transition-colors">
                     @{chat.coolId}
@@ -963,7 +1060,52 @@ function UserFeedbackContent() {
               <button type="button" onClick={handleDismissNudge} className="absolute top-3 right-3 p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-white/10"><X className="w-4 h-4" /></button>
               <p className="font-black text-lg">Get notified of replies!</p>
               <p className="text-sm text-[var(--text-muted)]">Sign in to see when @{coolId} replies to you.</p>
-              <Link href="/login" className="w-full py-3 rounded-xl font-bold text-white text-center block" style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}>Sign in</Link>
+              <Link
+                href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                className="w-full py-3 rounded-xl font-bold text-white text-center block"
+                style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
+              >
+                Sign in
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Login Required Modal */}
+        {showLoginRequiredPopup && !authUser && (
+          <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300" onClick={() => setShowLoginRequiredPopup(false)}>
+            <div className="bg-[#0a0a0a] rounded-[32px] p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10"
+              style={{ boxShadow: "0 0 100px -20px rgba(255, 61, 127, 0.3)" }}
+              onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setShowLoginRequiredPopup(false)} className="absolute top-4 right-4 p-2 rounded-xl text-white/40 hover:bg-white/5 hover:text-white transition-all">
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 relative group"
+                style={{ background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))", border: "2px solid rgba(255,61,127,0.3)" }}>
+                <ShieldCheck className="w-10 h-10 text-[var(--pink)] relative z-10" />
+              </div>
+
+              <h3 className="text-2xl font-black text-white mb-2">Continue Conversation</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-8 font-semibold">
+                To continue chat login plz. This keeps your anonymous thread safe and accessible only to you.
+              </p>
+
+              <div className="flex flex-col w-full gap-3">
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                  className="w-full py-4 rounded-2xl font-black text-white text-center shadow-xl hover:scale-[1.02] transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-2"
+                  style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
+                >
+                  Continue with Google
+                </Link>
+                <button
+                  onClick={() => setShowLoginRequiredPopup(false)}
+                  className="w-full py-4 rounded-2xl font-bold text-[var(--text-muted)] text-sm hover:text-white transition-colors"
+                >
+                  Maybe later
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1032,26 +1174,26 @@ function UserFeedbackContent() {
 
         {/* Guest Success Modal */}
         {showGuestSuccessModal && (
-          <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
-            <div className="bg-[#0a0a0a] rounded-[32px] p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10"
+          <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-500">
+            <div className="bg-[#0a0a0a] rounded-[32px] p-5 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10 max-h-[85vh] overflow-y-auto"
               style={{ boxShadow: "0 0 100px -20px rgba(255, 61, 127, 0.3)" }}>
               {/* Top animated icon */}
-              <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 relative group"
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 relative group"
                 style={{ background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))", border: "2px solid rgba(255,61,127,0.3)" }}>
-                <div className="absolute inset-0 bg-[var(--pink)]/20 blur-xl rounded-full animate-pulse group-hover:blur-2xl transition-all" />
-                <Heart className="w-12 h-12 text-[var(--pink)] relative z-10 transition-transform group-hover:scale-110" />
+                <div className="absolute inset-0 bg-[var(--pink)]/20 blur-lg rounded-full animate-pulse group-hover:blur-xl transition-all" />
+                <Heart className="w-8 h-8 text-[var(--pink)] relative z-10 transition-transform group-hover:scale-110" />
               </div>
 
-              <h3 className="text-3xl font-black text-white mb-2 tracking-tight">Sent!</h3>
-              <p className="text-[var(--text-muted)] text-sm mb-10 font-bold uppercase tracking-widest opacity-60">Delivered to @{coolId}</p>
+              <h3 className="text-2xl font-black text-white mb-1 tracking-tight">Sent!</h3>
+              <p className="text-[var(--text-muted)] text-[10px] mb-6 font-bold uppercase tracking-widest opacity-60">Delivered to Owner</p>
 
               <div className="flex flex-col w-full gap-4">
-                <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-1">What&apos;s Next?</p>
+                <p className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-1">If they reply, do you want to know?</p>
 
                 <button
                   onClick={handleEnablePushNotifications}
                   disabled={notifStatus === "loading" || notifStatus === "enabled"}
-                  className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
+                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
                 >
                   <div className={`p-2 rounded-xl transition-colors ${notifStatus === "enabled" ? "bg-green-500/20 text-green-400" : "bg-pink-500/10 text-pink-400 group-hover:bg-pink-500/20"}`}>
                     <Bell className="w-5 h-5" />
@@ -1064,7 +1206,7 @@ function UserFeedbackContent() {
 
                 <button
                   onClick={handleGetMagicLink}
-                  className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
+                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
                 >
                   <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
                     <LinkIcon className="w-5 h-5" />
@@ -1076,8 +1218,8 @@ function UserFeedbackContent() {
                 </button>
 
                 <Link
-                  href="/login"
-                  className="w-full p-4 rounded-2xl bg-[#FF3D7F]/10 border border-[#FF3D7F]/20 flex items-center gap-4 transition-all hover:bg-[#FF3D7F]/20 group active:scale-95 shadow-[0_4px_24px_rgba(255,61,127,0.1)]"
+                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
+                  className="w-full p-3 rounded-2xl bg-[#FF3D7F]/10 border border-[#FF3D7F]/20 flex items-center gap-4 transition-all hover:bg-[#FF3D7F]/20 group active:scale-95 shadow-[0_4px_24px_rgba(255,61,127,0.1)]"
                 >
                   <div className="p-2 rounded-xl bg-[var(--pink)] text-white group-hover:scale-110 transition-transform shadow-lg">
                     <ShieldCheck className="w-5 h-5" />
@@ -1090,7 +1232,7 @@ function UserFeedbackContent() {
 
                 <button
                   onClick={() => handleShare()}
-                  className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
+                  className="w-full p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 transition-all hover:bg-white/10 group active:scale-95"
                 >
                   <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
                     <Share2 className="w-5 h-5" />
@@ -1119,7 +1261,15 @@ function UserFeedbackContent() {
         {/* Notification Icon for Landing Page */}
         {!chatMode && !loading && userId && (
           <button
-            onClick={() => setChatMode(true)}
+            onClick={() => {
+              const latest = [...chatHistory].reverse().find(m => m.threadId);
+              if (latest?.threadId) {
+                router.push(`${window.location.pathname}?thread=${latest.threadId}`);
+                setChatMode(true);
+              } else {
+                setChatMode(true);
+              }
+            }}
             className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl z-[100] hover:scale-110 transition-all active:scale-95 group"
           >
             <Bell className="w-6 h-6 text-white group-hover:text-[var(--pink)] transition-colors" />
@@ -1139,13 +1289,57 @@ function UserFeedbackContent() {
 }
 
 export default function UserFeedbackClient() {
+  const { user, profile, loading } = useAuth();
+  const [showTerms, setShowTerms] = useState(() => {
+    if (typeof window !== "undefined") {
+      const universal = localStorage.getItem("picpop_legal_v1") === "true";
+      if (universal) return false;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    // 1. FAST CHECK: If this device has accepted terms, don't show the modal
+    if (typeof window !== "undefined") {
+      const universal = localStorage.getItem("picpop_legal_v1") === "true";
+      const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
+      
+      if (universal || userSpecific) {
+        setShowTerms(false);
+        return;
+      }
+    }
+
+    // 2. BACKUP CHECK: If profile is loaded, check Firestore status
+    if (!loading && user && profile && profile.coolId) {
+      const isAcceptedInStore = profile.termsAccepted && profile.privacyAccepted;
+      if (!isAcceptedInStore) {
+        setShowTerms(true);
+      } else {
+        setShowTerms(false);
+      }
+    } else if (!loading && !user) {
+      // 3. GUEST CHECK: Prompt if on this device haven't accepted yet
+      const universal = typeof window !== "undefined" ? localStorage.getItem("picpop_legal_v1") === "true" : false;
+      if (!universal) {
+        setShowTerms(true);
+      }
+    }
+  }, [user, profile, loading]);
+
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: "var(--pink)" }} />
-      </div>
-    }>
-      <UserFeedbackContent />
-    </Suspense>
+    <div className="relative">
+      <Suspense fallback={
+        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: "var(--pink)" }} />
+        </div>
+      }>
+        <UserFeedbackContent />
+      </Suspense>
+      <TermsModal
+        isOpen={showTerms}
+        onAccept={() => setShowTerms(false)}
+      />
+    </div>
   );
 }
