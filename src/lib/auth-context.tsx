@@ -13,6 +13,7 @@ import {
   signInWithPopup,
   getRedirectResult,
   signOut as firebaseSignOut,
+  signInAnonymously,
   GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
@@ -34,6 +35,7 @@ export interface UserProfile {
   termsAcceptedAt?: string;
   privacyAccepted?: boolean;
   privacyAcceptedAt?: string;
+  isAnonymous?: boolean;
 }
 
 interface AuthContextType {
@@ -73,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = snap.data() as UserProfile;
           console.log("[Auth] fetchOrCreateProfile: found existing profile", { coolId: data.coolId });
 
-          if (!data.coolId) {
+          if (!data.coolId && !firebaseUser.isAnonymous) {
             try {
               const { collection, query, where, getDocs, limit } = await import("firebase/firestore");
               const q = query(collection(database, "usernames"), where("uid", "==", firebaseUser.uid), limit(1));
@@ -98,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           displayName: firebaseUser.displayName ?? null,
           photoURL: firebaseUser.photoURL ?? null,
           createdAt: new Date().toISOString(),
+          isAnonymous: firebaseUser.isAnonymous,
         };
         await setDoc(userRef, newProfile, { merge: true });
         console.log("[Auth] fetchOrCreateProfile: created new profile / merged defaults");
@@ -174,22 +177,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("[Auth] onAuthStateChanged:", firebaseUser ? `${firebaseUser.email} (${firebaseUser.uid})` : "signed out");
+      console.log("[Auth] onAuthStateChanged:", firebaseUser ? `${firebaseUser.email || "anonymous"} (${firebaseUser.uid})` : "signed out");
+
       setUser(firebaseUser);
       try {
         if (firebaseUser) {
           const p = await fetchOrCreateProfile(firebaseUser);
           setProfile(p);
-          // Map this IP to the logged-in user so anonymous feedback history is linked
+
+          // IMPORTANT: Link current anonymous session to this user
           try {
+            const { getSessionId } = await import("@/lib/session-utils");
+            const { linkSessionToUser } = await import("@/lib/realtime-notifications");
             const { httpsCallable } = await import("firebase/functions");
             const { getAppFunctions } = await import("@/lib/functions");
+
+            const sessionId = getSessionId();
             const functions = getAppFunctions();
-            if (functions) {
-              await httpsCallable(functions, "mapIpToUser")({});
+
+            // 1. Link RTDB Session
+            if (sessionId) {
+              
+
+              await linkSessionToUser(sessionId, firebaseUser.uid);
             }
-          } catch {
-            // non-critical — don't fail auth if this errors
+
+            // 2. Link IP-based history + Firestore documents
+            if (functions) {
+              const result = await httpsCallable(functions, "mapIpToUser")({});
+              const data = result.data as { anonymousId: string };
+
+              // 3. Link Firestore Documents (Batch update)
+              try {
+                const linkFn = httpsCallable(functions, "linkAnonymousToUser");
+                const linkResult = await linkFn({ 
+                  anonymousId: data.anonymousId, 
+                  sessionId: sessionId 
+                }) as any;
+              } catch (linkErr) {
+              }
+            }
+          } catch (err) {
           }
         } else {
           setProfile(null);
@@ -229,44 +257,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSigningIn(true);
     try {
       let provider;
-    switch (providerType) {
-      case "google":
-        provider = new GoogleAuthProvider();
-        break;
-      case "facebook":
-        provider = new FacebookAuthProvider();
-        break;
-      case "yahoo":
-        provider = new OAuthProvider("yahoo.com");
-        break;
-      default:
-        throw new Error("Unknown provider");
-    }
-
-    // Use popup for Google (shows account picker) - fall back to redirect if blocked
-    if (providerType === "google") {
-      try {
-        console.log("[Auth] signInWithProvider(google): opening popup...");
-        const cred = await signInWithPopup(auth, provider);
-        console.log("[Auth] signInWithProvider(google): popup succeeded", cred.user.email);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        const isUserCancelled =
-          msg.includes("auth/cancelled-popup-request") || msg.includes("auth/popup-closed-by-user");
-        if (msg.includes("auth/popup-blocked") || (msg.includes("popup") && msg.includes("blocked"))) {
-          console.log("[Auth] signInWithProvider(google): popup blocked, falling back to redirect");
-          await signInWithRedirect(auth, provider);
-        } else if (isUserCancelled) {
-          throw err; // UI will show friendly "Sign-in cancelled" message
-        } else {
-          console.warn("[Auth] signInWithProvider(google): popup failed", err);
-          throw err;
-        }
+      switch (providerType) {
+        case "google":
+          provider = new GoogleAuthProvider();
+          break;
+        case "facebook":
+          provider = new FacebookAuthProvider();
+          break;
+        case "yahoo":
+          provider = new OAuthProvider("yahoo.com");
+          break;
+        default:
+          throw new Error("Unknown provider");
       }
-    } else {
-      console.log("[Auth] signInWithProvider(" + providerType + "): redirecting...");
-      await signInWithRedirect(auth, provider);
-    }
+
+      // Use popup for Google (shows account picker) - fall back to redirect if blocked
+      if (providerType === "google") {
+        try {
+          console.log("[Auth] signInWithProvider(google): opening popup...");
+          const cred = await signInWithPopup(auth, provider);
+          console.log("[Auth] signInWithProvider(google): popup succeeded", cred.user.email);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          const isUserCancelled =
+            msg.includes("auth/cancelled-popup-request") || msg.includes("auth/popup-closed-by-user");
+          if (msg.includes("auth/popup-blocked") || (msg.includes("popup") && msg.includes("blocked"))) {
+            console.log("[Auth] signInWithProvider(google): popup blocked, falling back to redirect");
+            await signInWithRedirect(auth, provider);
+          } else if (isUserCancelled) {
+            throw err; // UI will show friendly "Sign-in cancelled" message
+          } else {
+            console.warn("[Auth] signInWithProvider(google): popup failed", err);
+            throw err;
+          }
+        }
+      } else {
+        console.log("[Auth] signInWithProvider(" + providerType + "): redirecting...");
+        await signInWithRedirect(auth, provider);
+      }
     } finally {
       setIsSigningIn(false);
     }
@@ -277,7 +305,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (auth) await firebaseSignOut(auth);
     if (typeof window !== "undefined") {
       localStorage.clear();
-      window.location.href = "/";
+      // We'll let the components handle the redirect to avoid conflict 
+      // with Next.js router transitions which can cause RSC payload leaks.
     }
   };
 

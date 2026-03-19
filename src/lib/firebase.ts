@@ -7,6 +7,7 @@ import {
   enableNetwork,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database";
 import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -16,6 +17,7 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  databaseURL: "https://imagify-5f3d5-default-rtdb.firebaseio.com",
 };
 
 // Initialize Firebase (client-side only)
@@ -73,6 +75,7 @@ export function ensureFirestoreNetwork(): Promise<void> {
 }
 
 export const storage = app ? getStorage(app) : null;
+export const rtdb = app ? getDatabase(app) : null;
 
 let _messaging: Messaging | null = null;
 export async function getMessagingSafe(): Promise<Messaging | null> {

@@ -35,12 +35,24 @@ export default function DashboardPage() {
     return false;
   });
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   const handleSignOut = async () => {
+    setIsExiting(true);
     try {
+      // 1. Clear local data first to prevent jumpy UI
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 2. Sign out from Firebase
       await signOut();
-      router.push("/");
+
+      // 3. HARD RESET to Landing Page
+      // Using .replace instead of .href is more reliable for stopping 
+      // any pending Next.js router transitions.
+      window.location.replace("/");
     } catch (error) {
+      setIsExiting(false);
       toast.error("Failed to sign out");
     }
   };
@@ -72,11 +84,12 @@ export default function DashboardPage() {
   }, [user?.uid]);
 
   useEffect(() => {
+    if (isExiting) return;
     if (!loading && !user) {
       const id = setTimeout(() => router.replace("/login"), 0);
       return () => clearTimeout(id);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isExiting]);
 
   useEffect(() => {
     if (!loading && user && profile && !profile.coolId) {
@@ -90,7 +103,7 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       const universal = localStorage.getItem("picpop_legal_v1") === "true";
       const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
-      
+
       if (universal || userSpecific) {
         setShowTerms(false);
         return;
@@ -150,7 +163,7 @@ export default function DashboardPage() {
       {/* BACKGROUND DECORATIONS */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--pink)]/10 blur-[120px] rounded-full animate-pulse-glow transform translate-z-0" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--purple)]/10 blur-[120px] rounded-full animate-pulse-glow animation-delay-500 transform translate-z-0" />
-      
+
       <style>{`
         :root { --pink: #FF3D7F; --purple: #7C3AFF; --blue: #00C8FF; --green: #00FF94; }
         .glass-card {
@@ -346,7 +359,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-      
+
       {/* MOBILE TAB BAR HINT */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:hidden z-50">
         <div className="bg-[var(--bg-secondary)]/80 backdrop-blur-xl border border-[var(--border)] px-6 py-3 rounded-full flex gap-8 shadow-2xl">

@@ -193,6 +193,7 @@ export default function InboxPage() {
       return;
     }
 
+
     const firestore = db;
     const uid = user.uid;
     let unsubN: (() => void) | undefined;
@@ -225,7 +226,7 @@ export default function InboxPage() {
                     createdAt: toIsoString(data.createdAt),
                     type: data.type === "visit" ? "visit" : "anonymous_feedback",
                     imageId: data.imageId,
-                    coolId: data.coolId || "post",
+                    coolId: data.coolId || (data.type === "visit" ? "post" : "anonymous"),
                     feedbackImageUrl: data.feedbackImageUrl,
                     feedbackMessage: data.feedbackMessage,
                     feedbackId: data.feedbackId,
@@ -761,6 +762,7 @@ export default function InboxPage() {
         items.find((i) => i.feedbackId)?.feedbackId ||
         items[0].id;
 
+
       const submitOwnerReply = httpsCallable<
         {
           message: string;
@@ -892,13 +894,13 @@ export default function InboxPage() {
     const ids = new Set<string>();
     allItems.forEach((item) => {
       const pid =
-        item.submitterId && item.submitterId !== uid
-          ? item.submitterId
-          : item.recipientId && item.recipientId !== uid
-            ? item.recipientId
-            : item.targetUid && item.targetUid !== uid
-              ? item.targetUid
-              : null;
+        // Case 1: We are the sender (visitor) - resolve the recipient (owner)
+        (item.submitterId === uid && !item.isOwnerReply && item.recipientId && item.recipientId !== uid)
+          ? item.recipientId
+          : // Case 2: We are the recipient (visitor) - resolve the sender (owner reply)
+          (item.recipientId === uid && item.isOwnerReply && item.submitterId && item.submitterId !== uid)
+            ? item.submitterId
+            : null;
       if (pid && !profileCache[pid] && !resolvingIds.has(pid)) ids.add(pid);
     });
 
@@ -945,7 +947,12 @@ export default function InboxPage() {
         id: groupId,
         itemType: item.itemType,
         threadType: item.recipientId === uid ? "inbox" : "sent",
-        threadPartnerId: groupId === "all-visits" ? "unknown" : groupId,
+        threadPartnerId:
+          groupId === "all-visits"
+            ? "unknown"
+            : item.submitterId === uid
+              ? item.recipientId || groupId
+              : item.submitterId || item.anonymousId || groupId,
         items: [],
         createdAt: item.createdAt,
         latestItem: item,
@@ -1254,7 +1261,7 @@ export default function InboxPage() {
                             <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-1.5">
                               {activeGroup?.threadPartnerId !== "unknown" && profileCache[item.threadPartnerId] 
                                 ? `@${profileCache[item.threadPartnerId]}` 
-                                : item.latestItem.isOwnerReply ? "OWNER" : "GUEST"}
+                                : item.threadType === "sent" ? "OWNER" : "GUEST"}
                               <span className="w-1 h-1 rounded-full bg-white/20" />
                               {item.items.length} {item.items.length === 1 ? 'msg' : 'msgs'}
                             </span>

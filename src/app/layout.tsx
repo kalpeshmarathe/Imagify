@@ -48,13 +48,10 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
+          {`window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-
-            gtag('config', 'G-ZNH6TJ4XQZ');
-          `}
+            gtag('config', 'G-ZNH6TJ4XQZ');`}
         </Script>
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`

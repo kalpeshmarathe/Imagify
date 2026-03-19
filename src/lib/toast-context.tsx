@@ -36,8 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback(
     (message: string, type: ToastType = "info", duration = 4000) => {
-      const id = crypto.randomUUID();
-      // Only keep the latest toast
+      const id = Math.random().toString(36).substring(2, 11);      // Only keep the latest toast
       setToasts([{ id, message, type, duration }]);
       if (duration > 0) {
         setTimeout(() => removeToast(id), duration);
@@ -117,10 +116,10 @@ export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
     return {
-      toast: (m: string) => {},
-      success: (m: string) => {},
-      error: (m: string) => {},
-      info: (m: string) => {},
+      toast: (m: string) => { },
+      success: (m: string) => { },
+      error: (m: string) => { },
+      info: (m: string) => { },
     };
   }
   return ctx;

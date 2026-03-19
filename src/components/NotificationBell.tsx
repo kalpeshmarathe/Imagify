@@ -22,6 +22,8 @@ import {
 } from "@/lib/notifications";
 import { useToast } from "@/lib/toast-context";
 import { useAuth } from "@/lib/auth-context";
+import { getSessionId } from "@/lib/session-utils";
+import { listenForRealtimeMessages } from "@/lib/realtime-notifications";
 
 export interface NotificationItem {
   id: string;
@@ -29,7 +31,7 @@ export interface NotificationItem {
   message: string;
   isRead: boolean;
   createdAt: string;
-  type: "anonymous_feedback" | "visit";
+  type: "anonymous_feedback" | "visit" | "owner_reply";
   imageId?: string;
   coolId?: string;
   feedbackImageUrl?: string;
@@ -62,9 +64,10 @@ function toIsoString(val: unknown): string {
 interface NotificationBellProps {
   className?: string;
   onGuestClick?: () => void;
+  unreadCountOverride?: number;
 }
 
-export function NotificationBell({ className, onGuestClick }: NotificationBellProps) {
+export function NotificationBell({ className, onGuestClick, unreadCountOverride }: NotificationBellProps) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,8 @@ export function NotificationBell({ className, onGuestClick }: NotificationBellPr
   const toast = useToast();
   const router = useRouter();
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const firestoreUnreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = unreadCountOverride ?? firestoreUnreadCount;
   const hasUnread = unreadCount > 0;
 
   useEffect(() => {
@@ -123,9 +127,9 @@ export function NotificationBell({ className, onGuestClick }: NotificationBellPr
                 message: data.message || "",
                 isRead: data.isRead === true,
                 createdAt: toIsoString(data.createdAt),
-                type: data.type === "visit" ? "visit" : "anonymous_feedback",
+                type: data.type === "visit" ? "visit" : data.type === "owner_reply" ? "owner_reply" : "anonymous_feedback",
                 imageId: data.imageId,
-                coolId: data.coolId || "post",
+                coolId: data.coolId || (data.type === "visit" ? "post" : "anonymous"),
                 feedbackImageUrl: data.feedbackImageUrl,
                 threadId: data.threadId,
               };
@@ -147,14 +151,37 @@ export function NotificationBell({ className, onGuestClick }: NotificationBellPr
     return () => unsub?.();
   }, [user?.uid]);
 
+  // Guest-specific notifications (Tier 1)
+  useEffect(() => {
+    if (user?.uid) return;
+    const sid = getSessionId();
+    if (!sid) return;
+
+    const unsubscribe = listenForRealtimeMessages(sid, (msg) => {
+      setNotifications((prev) => {
+        if (prev.find((n) => n.id === msg.id)) return prev;
+        const mapped: NotificationItem = {
+          id: msg.id,
+          recipientId: "guest",
+          message: msg.message,
+          isRead: false,
+          createdAt: msg.createdAt,
+          type: "owner_reply",
+          threadId: msg.threadId,
+          feedbackImageUrl: msg.imageUrl,
+          coolId: "owner",
+        };
+        return [mapped, ...prev].slice(0, 50);
+      });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
   const handleToggle = () => {
-    if (!user) {
-      if (onGuestClick) {
-        onGuestClick();
-      } else {
-        toast.info("Log in to see who's visiting your profile!");
-        router.push("/login");
-      }
+    if (!user && onGuestClick) {
+      onGuestClick();
       return;
     }
     setOpen(!open);
@@ -288,7 +315,11 @@ export function NotificationBell({ className, onGuestClick }: NotificationBellPr
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className={`text-xs font-black tracking-tight leading-snug mb-0.5 ${!n.isRead ? "text-white" : "text-white/60"}`}>
-                        {n.type === "visit" ? "Someone's peeking at your profile" : "A new vibe was just dropped"}
+                        {n.type === "visit" 
+                          ? "Someone's peeking at your profile" 
+                          : n.type === "owner_reply" 
+                            ? "Received a new response" 
+                            : "A new vibe was just dropped"}
                       </p>
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">

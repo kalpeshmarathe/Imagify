@@ -1,12 +1,29 @@
-const { initializeApp } = require("firebase-admin/app");
+const { initializeApp, getApps } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
 const { getMessaging } = require("firebase-admin/messaging");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { getDatabase } = require("firebase-admin/database");
 const { defineString } = require("firebase-functions/params");
+const crypto = require("crypto");
 
-initializeApp();
+// ✅ FIX: Initialize with databaseURL so Realtime DB works
+function getAdminApp() {
+  if (getApps().length === 0) {
+    return initializeApp({
+      databaseURL: "https://imagify-5f3d5-default-rtdb.firebaseio.com/"
+    });
+  }
+}
+getAdminApp();
+
+// Initialize services
+const db = getFirestore();
+const rtdb = getDatabase();
+const storage = getStorage();
+const messaging = getMessaging();
 
 // CORS: allow localhost (dev), production, and Capacitor iOS/Android WebViews
 const CORS_ORIGINS = [
@@ -16,6 +33,8 @@ const CORS_ORIGINS = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3001",
   "http://127.0.0.1:3002",
+  "http://192.168.1.8:3000",
+  "http://192.168.1.16:3000",
   "https://picpop.me",
   "https://www.picpop.me",
   "https://imagify-5f3d5.web.app",
@@ -78,8 +97,6 @@ function getClientIp(req) {
   return req.connection?.remoteAddress || req.socket?.remoteAddress || "unknown";
 }
 
-/** Derive a stable, hashed anonymousId from an IP address */
-const crypto = require("crypto");
 function getIpHash(ip) {
   const salt = process.env.ANON_HASH_SALT || "picpop-anon-v1";
   return crypto.createHmac("sha256", salt).update(ip).digest("hex").substring(0, 16);
@@ -103,22 +120,26 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
     let title = isOwnerReply ? "New reply" : "New feedback";
     let body = "";
     let clickLink = "/inbox";
+    let notifyCoolId = null;
 
     // 1. Identify recipient and message body
     if (isOwnerReply) {
       // Owner is replying to a visitor (guest or logged-in)
       notifyUid = feedback.targetUid || null;
       notifySessionId = feedback.sessionId || null;
-      
+
       const ownerSnap = await db.doc(`users/${feedback.submitterId}`).get();
-      const ownerName = ownerSnap.exists ? `@${ownerSnap.data()?.coolId || 'someone'}` : "The owner";
+      const userData = ownerSnap.data();
+      const ownerName = ownerSnap.exists ? `@${userData?.coolId || 'someone'}` : "The owner";
+      notifyCoolId = userData?.coolId || "owner";
       body = `${ownerName} replied: "${feedback.message || 'Sent an attachment'}"`;
       const threadId = feedback.threadId || feedbackId;
-      clickLink = `/u/${ownerSnap.data()?.coolId || 'someone'}?thread=${threadId}`;
+      clickLink = `/u/${userData?.coolId || 'someone'}?thread=${threadId}`;
     } else {
       // Visitor is sending feedback to owner
       notifyUid = feedback.recipientId;
-      const submitterName = feedback.submitterId ? "Someone" : "A guest";
+      notifyCoolId = "anonymous";
+      const submitterName = "Anonymous";
       body = `${submitterName} sent you feedback.`;
       clickLink = feedback.imageId ? `/f?imageId=${feedback.imageId}` : "/inbox";
     }
@@ -138,6 +159,7 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
         feedbackMessage: feedback.message || null,
         sessionId: feedback.sessionId || null,
         threadId: feedback.threadId || feedbackId,
+        coolId: notifyCoolId,
       });
     }
 
@@ -156,8 +178,8 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
     if (fcmToken) {
       const message = {
         token: fcmToken,
-        notification: { 
-          title, 
+        notification: {
+          title,
           body,
         },
         data: {
@@ -183,6 +205,89 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
     }
   } catch (err) {
     console.error("Push notification failed:", err);
+  }
+});
+
+/**
+ * When owner replies, write to Realtime Database
+ * Client listening to this path gets instant WebSocket notification
+ */
+exports.onFeedbackCreatedNotifySession = onDocumentCreated("feedbacks/{feedbackId}", async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+  const feedback = snap.data();
+  const feedbackId = event.params.feedbackId;
+
+  // Only notify on owner replies
+  if (feedback.isOwnerReply !== true || feedback.deleted === true) return;
+
+  const rtdb = getDatabase();
+  const sessionId = feedback.sessionId;
+  const visitorId = feedback.visitorId || feedback.anonymousId;
+
+  // Find which session to notify
+  const targetSession = sessionId || visitorId;
+
+  if (!targetSession) {
+    console.warn("[onFeedbackCreatedNotifySession] No routing ID");
+    return;
+  }
+
+  try {
+    // Write to Realtime DB for instant notification
+    const messageData = {
+      id: feedbackId,
+      from: "owner",
+      message: feedback.message || "",
+      imageUrl: feedback.feedbackImageUrl || null,
+      createdAt: feedback.createdAt,
+      read: false,
+      threadId: feedback.threadId || null,
+    };
+
+    await rtdb
+      .ref(`sessions/${targetSession}/messages/${feedbackId}`)
+      .set(messageData);
+
+    console.log("[onFeedbackCreatedNotifySession] Notified:", targetSession);
+  } catch (err) {
+    console.error("[onFeedbackCreatedNotifySession] Error:", err);
+  }
+});
+
+/**
+ * Cleanup: Remove expired sessions every day
+ */
+exports.cleanupExpiredSessionsDaily = onSchedule("every day 02:00", async (event) => {
+  const rtdb = getDatabase();
+
+  try {
+    const snapshot = await rtdb.ref("sessions").get();
+    if (!snapshot.exists()) return;
+
+    const sessions = snapshot.val();
+    const now = Date.now();
+    const updates = {};
+
+    for (const [sessionId, sessionData] of Object.entries(sessions)) {
+      const sessionInfo = sessionData;
+      const expiresAt = new Date(sessionInfo.expiresAt).getTime();
+
+      if (now > expiresAt) {
+        updates[`sessions/${sessionId}`] = null;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await rtdb.ref().update(updates);
+      console.log(
+        "[cleanupExpiredSessionsDaily] Cleaned up",
+        Object.keys(updates).length,
+        "sessions"
+      );
+    }
+  } catch (err) {
+    console.error("[cleanupExpiredSessionsDaily] Error:", err);
   }
 });
 
@@ -422,7 +527,7 @@ exports.submitFeedbackFromImgflip = onCall({ cors: CORS_ORIGINS }, async (reques
     if (!imgRes.ok) throw new HttpsError("internal", "Could not fetch image. Try another meme.");
     const buffer = Buffer.from(await imgRes.arrayBuffer());
     const ext = url.includes(".png") ? "png" : "jpg";
-    const feedbackId = require("crypto").randomUUID();
+    const feedbackId = crypto.randomUUID();
     const storage = getStorage();
     const bucket = storage.bucket();
     const path = `feedback_images/${feedbackId}.${ext}`;
@@ -435,11 +540,11 @@ exports.submitFeedbackFromImgflip = onCall({ cors: CORS_ORIGINS }, async (reques
     const resolvedAnonymousId = anonymousId || getIpHash(ip);
     const visitorId = uid || resolvedAnonymousId;
 
-    const threadId = request.data.threadId || require("crypto").randomUUID();
+    const threadId = request.data.threadId || crypto.randomUUID();
     const feedbackData = {
       feedbackImageUrl,
       createdAt: new Date().toISOString(),
-      submitterId: uid, 
+      submitterId: uid,
       submitterIp: ip,
       anonymousId: resolvedAnonymousId,
       visitorId,
@@ -520,7 +625,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
 
     // Fallback to new threadId if still null
     if (!threadId) {
-      threadId = require("crypto").randomUUID();
+      threadId = crypto.randomUUID();
     }
 
     const feedbackData = {
@@ -599,7 +704,7 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
     const initialDocs = [...snapIp.docs, ...snapVisitor.docs, ...snapThread.docs]
       .filter(d => d.data().deleted !== true)
       .map(d => ({ id: d.id, ...d.data() }));
-    
+
     // De-duplicate
     const seenMap = new Map();
     initialDocs.forEach(d => seenMap.set(d.id, d));
@@ -612,11 +717,11 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
         .where("sessionId", "==", sessionId)
         .limit(100)
         .get();
-      
+
       const sessionItems = snapSession.docs
         .filter(d => d.data().deleted !== true)
         .map(d => ({ id: d.id, ...d.data() }));
-      
+
       for (const item of sessionItems) {
         if (!seenMap.has(item.id)) {
           finalItems.push(item);
@@ -695,6 +800,93 @@ exports.mapIpToUser = onCall({ cors: CORS_ORIGINS }, async (request) => {
   }
 });
 
+/**
+ * Link all anonymous feedback and replies to a user's UID after they log in.
+ */
+exports.linkAnonymousToUser = onCall({ cors: CORS_ORIGINS }, async (request) => {
+  try {
+    if (!request.auth || !request.auth.uid) {
+      throw new HttpsError("unauthenticated", "Must be logged in to link session");
+    }
+    const { anonymousId, sessionId } = request.data || {};
+    if (!anonymousId && !sessionId) {
+      throw new HttpsError("invalid-argument", "anonymousId or sessionId is required");
+    }
+
+    const uid = request.auth.uid;
+    const db = getFirestore();
+    const batch = db.batch();
+    let count = 0;
+
+    // 1. Find feedbacks sent BY this guest
+    const sentQuery = db.collection("feedbacks");
+    let snapshots = [];
+
+    if (anonymousId) {
+      snapshots.push(sentQuery.where("visitorId", "==", anonymousId).get());
+      snapshots.push(sentQuery.where("anonymousId", "==", anonymousId).get());
+    }
+    if (sessionId) {
+      snapshots.push(sentQuery.where("sessionId", "==", sessionId).get());
+    }
+
+    // 2. Find replies sent TO this guest
+    if (anonymousId) {
+      snapshots.push(sentQuery.where("targetUid", "==", anonymousId).get());
+    }
+    // and sometimes they use targetSessionId
+    if (sessionId) {
+      snapshots.push(sentQuery.where("sessionId", "==", sessionId).where("isOwnerReply", "==", true).get());
+    }
+
+    const allSnaps = await Promise.all(snapshots);
+    const seenIds = new Set();
+
+    for (const snap of allSnaps) {
+      for (const doc of snap.docs) {
+        if (seenIds.has(doc.id)) continue;
+        seenIds.add(doc.id);
+
+        const data = doc.data();
+        const updates = {};
+
+        const matchesSender = (anonymousId && (data.visitorId === anonymousId || data.anonymousId === anonymousId)) ||
+          (sessionId && data.sessionId === sessionId && !data.isOwnerReply);
+
+        const matchesTarget = (anonymousId && data.targetUid === anonymousId) ||
+          (sessionId && data.sessionId === sessionId && data.isOwnerReply);
+
+        if (matchesSender) {
+          updates.submitterId = uid;
+          updates.visitorId = uid;
+        }
+
+        if (matchesTarget) {
+          updates.targetUid = uid;
+          // In replies, recipientId is usually the one receiving the notification. 
+          // If it was anonymous, it might have been set to the owner or null.
+          updates.recipientId = uid;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          batch.update(doc.ref, updates);
+          count++;
+        }
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    return { success: true, message: `Linked ${count} items to UID ${uid}` };
+  } catch (err) {
+    if (err && err.code) throw err;
+    console.error("linkAnonymousToUser error:", err);
+    throw new HttpsError("internal", "Failed to link session.");
+  }
+});
+
 exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
   try {
     const { message, anonymousId, targetUid, sessionId, feedbackImageUrl, attachmentUrl, attachmentName, threadId } = request.data || {};
@@ -704,10 +896,11 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
     if (!attachmentUrl && !feedbackImageUrl && (!message || typeof message !== "string" || !message.trim())) {
       throw new HttpsError("invalid-argument", "Valid message, image, or attachment is required");
     }
-    if (!anonymousIdClean && !targetUidClean) {
-      throw new HttpsError("invalid-argument", "Either anonymousId or targetUid is required");
+    // ✅ NEW:
+    if (!anonymousIdClean && !targetUidClean && !sessionIdClean) {
+      throw new HttpsError("invalid-argument", "Either anonymousId, targetUid, or sessionId is required");
     }
-    const threadIdToUse = threadId || require("crypto").randomUUID();
+    const threadIdToUse = threadId || crypto.randomUUID();
     if (!request.auth || !request.auth.uid) {
       throw new HttpsError("unauthenticated", "You must be logged in to reply");
     }
@@ -723,11 +916,11 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
       submitterId: request.auth.uid,
       submitterIp: ip,
       anonymousId: anonymousIdClean || (!targetUidClean ? visitorId : null),
-      visitorId, 
-      sessionId: sessionId || null, 
+      visitorId,
+      sessionId: sessionId || null,
       targetUid: targetUidClean,
       threadId: threadIdToUse,
-      recipientId: targetUidClean || request.auth.uid, 
+      recipientId: targetUidClean || request.auth.uid,
       isOwnerReply: true,
       deleted: false,
       feedbackImageUrl: feedbackImageUrl || null,

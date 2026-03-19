@@ -26,7 +26,7 @@ export interface NotificationItem {
   message: string;
   isRead: boolean;
   createdAt: string;
-  type: "anonymous_feedback" | "visit";
+  type: "anonymous_feedback" | "visit" | "owner_reply";
   imageId?: string;
   coolId?: string;
   feedbackImageUrl?: string;
@@ -107,9 +107,9 @@ export function NotificationsSection({ userId }: NotificationsSectionProps) {
                 message: data.message || "",
                 isRead: data.isRead === true,
                 createdAt: toIsoString(data.createdAt),
-                type: data.type === "visit" ? "visit" : "anonymous_feedback",
+                type: data.type === "visit" ? "visit" : data.type === "owner_reply" ? "owner_reply" : "anonymous_feedback",
                 imageId: data.imageId,
-                coolId: data.coolId || "post",
+                coolId: data.coolId || (data.type === "visit" ? "post" : "anonymous"),
                 feedbackImageUrl: data.feedbackImageUrl,
               };
             });
@@ -258,7 +258,11 @@ export function NotificationsSection({ userId }: NotificationsSectionProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-semibold truncate ${!n.isRead ? "text-white" : "text-white/70"}`}>
-                    {n.type === "visit" ? "Someone viewed your link" : "New reaction on your post"}
+                    {n.type === "visit" 
+                      ? "Someone viewed your link" 
+                      : n.type === "owner_reply" 
+                        ? "Received a response" 
+                        : "New reaction on your post"}
                   </p>
                   <p className={`text-xs ${!n.isRead ? "text-white/50" : "text-white/40"}`}>
                     @{n.coolId} · {formatTimeAgo(n.createdAt)}

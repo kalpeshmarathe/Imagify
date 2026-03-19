@@ -17,7 +17,15 @@ import { ExploreImages } from "@/components/ExploreImages";
 import { NotificationBell } from "@/components/NotificationBell";
 import { getErrorMessage } from "@/lib/error-utils";
 import { TermsModal } from "@/components/TermsModal";
-
+import {
+  listenForRealtimeMessages,
+  getUnreadMessageCount,
+  createSession,
+  keepSessionAlive,
+  markMessageAsRead,
+} from "@/lib/realtime-notifications";
+import { getSessionId } from "@/lib/session-utils";
+import { ref, onValue, getDatabase } from "firebase/database";
 import { requestNotificationPermission, getIosPushHint, onForegroundMessage } from "@/lib/notifications";
 
 const SIGN_IN_NUDGE_INTERVAL_MS = 20_000;
@@ -35,16 +43,7 @@ interface RecentChat {
   lastActive: string;
 }
 
-// Persist session ID in localStorage to avoid losing history on IP change
-function getSessionId() {
-  if (typeof window === "undefined") return null;
-  let sid = localStorage.getItem("picpop_session_id");
-  if (!sid) {
-    sid = "ss_" + Math.random().toString(36).substring(2, 15) + "_" + Date.now().toString(36);
-    localStorage.setItem("picpop_session_id", sid);
-  }
-  return sid;
-}
+// Persist session ID in localStorage moved to @/lib/session-utils
 
 function getRecentChats(): RecentChat[] {
   if (typeof window === "undefined") return [];
@@ -86,6 +85,8 @@ function UserFeedbackContent() {
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const realtimeUnsubscribeRef = useRef<(() => void) | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -138,6 +139,136 @@ function UserFeedbackContent() {
       mounted = false;
       if (unsub) unsub();
     };
+  }, [toast]);
+
+  // TIER 1: Setup real-time listener when component mounts
+  useEffect(() => {
+    const sid = getSessionId();
+    if (!sid) return;
+
+    // Create session if it doesn't exist
+    createSession(sid);
+
+    console.log("[Chat] Real-time listener started for:", sid);
+
+    // Listen for new messages in real-time
+    const unsubscribe = listenForRealtimeMessages(
+      sid,
+      (msg) => {
+        console.log("[Chat] 🔔 Real-time notification:", msg.id);
+
+        // Show toast immediately
+        toast.success(`New reply! Check your messages 🎉`);
+
+        // Add to chat history (avoid duplicates)
+        setChatHistory((prev) => {
+          if (prev.find((m) => m.id === msg.id)) return prev;
+          return [
+            ...prev,
+            {
+              id: msg.id,
+              message: msg.message,
+              feedbackImageUrl: msg.imageUrl,
+              createdAt: msg.createdAt,
+              isOwnerReply: true,
+              submitterId: "owner",
+              threadId: msg.threadId,
+            },
+          ];
+        });
+
+        // Auto-mark as read after 2 seconds
+        setTimeout(() => {
+          markMessageAsRead(sid, msg.id);
+        }, 2000);
+      }
+    );
+
+    realtimeUnsubscribeRef.current = unsubscribe;
+
+    // Keep session alive every 5 minutes
+    const keepAliveInterval = setInterval(() => {
+      keepSessionAlive(sid);
+    }, 5 * 60 * 1000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(keepAliveInterval);
+    };
+  }, [toast]);
+
+  // Handle mobile app resume - reconnect listeners
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[Session] App became visible, syncing session...");
+
+        // Verify session is still available
+        const sid = getSessionId();
+        console.log("[Session] Current session after resume:", sid);
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }
+  }, []);
+
+  // Debug info for mobile testing
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sid = getSessionId();
+      (window as any).picpopDebug = {
+        sessionId: sid,
+        userId: authUser?.uid,
+        clearSession: () => {
+          const { clearSessionId } = require("@/lib/session-utils");
+          clearSessionId();
+          console.log("[Debug] Session cleared");
+          window.location.reload();
+        },
+      };
+      console.log("[Debug] Available at: window.picpopDebug");
+    }
+  }, [authUser?.uid]);
+
+  // TIER 2: Check for offline messages when user returns
+  useEffect(() => {
+    const sid = getSessionId();
+    if (!sid) return;
+
+    const db = getDatabase();
+    const messagesRef = ref(db, `sessions/${sid}/messages`);
+
+    // Listen for real-time updates to messages
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setUnreadCount(0);
+        return;
+      }
+
+      const messages = snapshot.val();
+      // Count unread messages
+      const unreadCount = Object.values(messages).filter((msg: any) => {
+        return msg && msg.isRead !== true;
+      }).length;
+
+      setUnreadCount(unreadCount);
+
+      if (unreadCount > 0) {
+        const lastCount = parseInt(localStorage.getItem("picpop_last_unread") || "0");
+        if (unreadCount > lastCount) {
+          const message = unreadCount === 1
+            ? "1 new message! 📬"
+            : `${unreadCount} new messages! 📬`;
+          toast.success(message);
+          localStorage.setItem("picpop_last_unread", unreadCount.toString());
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, [toast]);
 
   const handleDismissNudge = () => {
@@ -205,10 +336,17 @@ function UserFeedbackContent() {
       try {
         await ensureFirestoreNetwork();
         const snap = await getDoc(doc(firestore, "usernames", coolId));
-        if (mounted && snap.exists()) setUserId((snap.data() as { uid: string }).uid);
-        else setUserId(null);
-      } catch { if (mounted) setUserId(null); }
-      finally { if (mounted) setLoading(false); }
+        if (mounted && snap.exists()) {
+          const uid = (snap.data() as { uid: string }).uid;
+          setUserId(uid);
+        } else {
+          setUserId(null);
+        }
+      } catch (err) {
+        if (mounted) setUserId(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
     run();
     return () => { mounted = false; };
@@ -228,13 +366,12 @@ function UserFeedbackContent() {
 
   // Load initial chat history from server (IP-based + Session-based), then set up real-time listener
   useEffect(() => {
-    if (!userId || authLoading) return;
-    
+
     let unsubListeners: (() => void) | null = null;
     let cancelled = false;
 
     const threadParam = searchParams.get("thread");
-    
+
     // Only reset if we are switching to a DIFFERENT thread
     if (activeThreadRef.current !== threadParam) {
       setChatHistory([]);
@@ -245,22 +382,22 @@ function UserFeedbackContent() {
       try {
         const fns = getAppFunctions();
         if (!fns || !db) return;
-        const sessionId = getSessionId();
+        const sid = getSessionId();
         const getHistory = httpsCallable<{ recipientId: string; sessionId: string | null; threadId?: string | null }, { anonymousId: string; items: any[] }>(
           fns, "getAnonymousChatHistory"
         );
-        const result = await getHistory({ recipientId: userId, sessionId, threadId: threadParam });
+        const result = await getHistory({ recipientId: userId, sessionId: sid, threadId: threadParam });
         if (cancelled) return;
 
-        const anonId = result.data.anonymousId;
+        const anonId = result.data.anonymousId || sid;
         setMyChatAnonId(anonId);
 
         if (result.data.items && result.data.items.length > 0) {
           setChatHistory(result.data.items);
           if (threadParam) setChatMode(true);
           const lastWithImg = [...result.data.items].reverse().find(i => i.feedbackImageUrl || i.attachmentUrl);
-          const updated = saveRecentChat(coolId, userId, threadParam, lastWithImg?.feedbackImageUrl || lastWithImg?.attachmentUrl);
-          setRecentChats(updated);
+          const updatedArr = saveRecentChat(coolId, userId, threadParam, lastWithImg?.feedbackImageUrl || lastWithImg?.attachmentUrl);
+          setRecentChats(updatedArr);
         }
 
         const currentSessionId = getSessionId();
@@ -321,7 +458,7 @@ function UserFeedbackContent() {
             ...(threadParam ? [where("threadId", "==", threadParam)] : [])
           );
           const unsubSent = onSnapshot(qSentToOwner, processSnap);
-          
+
           const qRepliesFromOwner = query(
             collection(db, "feedbacks"),
             where("recipientId", "==", authUser.uid),
@@ -344,9 +481,9 @@ function UserFeedbackContent() {
     };
 
     init();
-    return () => { 
-      cancelled = true; 
-      if (unsubListeners) unsubListeners(); 
+    return () => {
+      cancelled = true;
+      if (unsubListeners) unsubListeners();
     };
   }, [userId, coolId, authUser?.uid, searchParams.toString()]);
 
@@ -391,6 +528,8 @@ function UserFeedbackContent() {
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
 
+      console.log("[Chat] 📤 Initiating text/file submission...", { sessionId, threadId, hasFile: !!fileToUpload });
+
       const submitFeedback = httpsCallable<{
         recipientId: string;
         message: string;
@@ -401,6 +540,8 @@ function UserFeedbackContent() {
       }, { success: boolean; anonymousId?: string }>(
         fns, "submitFeedback"
       );
+
+      console.log("[Chat] ⏳ Calling submitFeedback function...");
       const result = await submitFeedback({
         recipientId: userId!,
         message: text,
@@ -409,10 +550,12 @@ function UserFeedbackContent() {
         attachmentName,
         threadId: threadId as string | null
       }) as any;
+
+      console.log("[Chat] ✅ Submission successful!", result.data);
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
-      
+
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId || threadId, attachmentUrl || urlToUse));
-      
+
       setSubmitted(true);
       toast.success("Reaction sent! You can send another.");
       setTimeout(() => setSubmitted(false), 3000);
@@ -457,18 +600,21 @@ function UserFeedbackContent() {
       }
 
       const url = await uploadFeedbackImage(file, feedbackId);
+
       const fns = getAppFunctions();
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
       const submitFeedback = httpsCallable<{ recipientId: string; feedbackImageUrl: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(
         fns, "submitFeedback"
       );
-      const result = await submitFeedback({ 
-        recipientId: userId!, 
-        feedbackImageUrl: url, 
-        sessionId, 
+      const result = await submitFeedback({
+        recipientId: userId!,
+        feedbackImageUrl: url,
+        sessionId,
         threadId: null // Force brand-new thread server-side
       }) as any;
+
+      console.log("[Chat] ✅ Image submission successful!", result.data);
 
       if (authUser && optimisticId) {
         setTimeout(() => setChatHistory(prev => prev.filter(m => m.id !== optimisticId)), 4000);
@@ -476,7 +622,7 @@ function UserFeedbackContent() {
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
 
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, url));
-      
+
       setSubmitted(true);
       toast.success("Reaction sent! You can send another.");
       setTimeout(() => setSubmitted(false), 3000);
@@ -542,16 +688,16 @@ function UserFeedbackContent() {
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
       const submit = httpsCallable<{ recipientId: string; feedbackImageUrl: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(fns, "submitFeedback");
-      const result = await submit({ 
-        recipientId: userId!, 
-        feedbackImageUrl: item.feedbackImageUrl, 
-        sessionId, 
+      const result = await submit({
+        recipientId: userId!,
+        feedbackImageUrl: item.feedbackImageUrl,
+        sessionId,
         threadId: null // New thread for shared select
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
 
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, item.feedbackImageUrl));
-      
+
       setSubmitted(true);
       toast.success("Reaction sent! You can send another.");
       setTimeout(() => setSubmitted(false), 3000);
@@ -587,16 +733,16 @@ function UserFeedbackContent() {
       if (!fns) throw new Error("Firebase not configured");
       const sessionId = getSessionId();
       const submit = httpsCallable<{ imageUrl: string; recipientId: string; sessionId: string | null; threadId?: string | null }, { success: boolean; anonymousId?: string }>(fns, "submitFeedbackFromImgflip");
-      const result = await submit({ 
-        imageUrl: meme.url, 
-        recipientId: userId!, 
-        sessionId, 
+      const result = await submit({
+        imageUrl: meme.url,
+        recipientId: userId!,
+        sessionId,
         threadId: null // New thread for meme
       }) as any;
       if (result.data.anonymousId && !myChatAnonId) setMyChatAnonId(result.data.anonymousId);
 
       setRecentChats(saveRecentChat(coolId, userId, result.data.threadId, meme.url));
-      
+
       setSubmitted(true);
       toast.success("Reaction sent! You can send another.");
       setTimeout(() => setSubmitted(false), 3000);
@@ -730,6 +876,11 @@ function UserFeedbackContent() {
                   <Bell className="w-5 h-5" />
                 </button>
               )}
+              {unreadCount > 0 && (
+                <div className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg animate-bounce">
+                  {unreadCount} NEW
+                </div>
+              )}
               <ThemeToggle />
             </div>
           </div>
@@ -749,10 +900,12 @@ function UserFeedbackContent() {
                 .filter(item => !(item.targetUid && item.targetUid !== authUser?.uid && item.submitterId !== authUser?.uid))
                 .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
                 .map((msg, idx) => {
-                  const isMe = msg.submitterId === authUser?.uid || (authUser?.uid !== userId && !msg.isOwnerReply && !msg.submitterId);
-                  const isFirstOwnerReply = msg.isOwnerReply && !chatHistory.slice(0, idx).some(m => m.isOwnerReply);
+                  const isOwnerReply = msg.isOwnerReply === true || msg.from === 'owner';
+                  const isVisitor = authUser?.uid !== userId; 
+                  const isMe = isVisitor ? !isOwnerReply : isOwnerReply; 
+                  const isFirstOwnerReply = isOwnerReply && !chatHistory.slice(0, idx).some(m => (m.isOwnerReply || m.from === 'owner'));
 
-                  if (isGuest && msg.isOwnerReply && !isFirstOwnerReply) return null;
+                  if (isGuest && isOwnerReply && !isFirstOwnerReply) return null;
 
                   return (
                     <div key={msg.id || idx} className={`flex flex-col gap-2 msg-in ${isMe ? "items-end" : "items-start"}`}>
@@ -762,7 +915,7 @@ function UserFeedbackContent() {
                           ? "bg-gradient-to-br from-pink-500 to-purple-600 rotate-3"
                           : "bg-gradient-to-br from-blue-500 to-purple-500 -rotate-3"
                           }`}>
-                          {isMe ? "YOU" : (msg.isOwnerReply ? coolId[0].toUpperCase() : "G")}
+                          {isMe ? "YOU" : (isOwnerReply ? coolId[0].toUpperCase() : "G")}
                         </div>
 
                         {/* Bubble */}
@@ -939,7 +1092,7 @@ function UserFeedbackContent() {
 
       <main className="relative max-w-2xl mx-auto px-4 py-12 pb-32">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6" 
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6"
             style={{ background: "rgba(255,61,127,0.1)", border: "1px solid rgba(255,61,127,0.2)", color: "var(--pink)" }}>
             <Heart className="w-3.5 h-3.5 fill-[var(--pink)]" /> anonymous vibes only
           </div>
@@ -1146,7 +1299,7 @@ function UserFeedbackContent() {
             </div>
             <div className="text-center">
               <span className="font-black text-[var(--text-primary)] block text-xl sm:text-2xl">{submitting ? "Sending..." : submitted ? "Send another vibe!" : "Tap to send image"}</span>
-              <span className="text-sm text-[var(--text-muted)] font-semibold mt-2 block">{submitted ? "Nice! @"+coolId+" will get it soon." : "Pick any image — takes 2 seconds"}</span>
+              <span className="text-sm text-[var(--text-muted)] font-semibold mt-2 block">{submitted ? "Nice! @" + coolId + " will get it soon." : "Pick any image — takes 2 seconds"}</span>
             </div>
 
             <div className="flex items-center gap-2 mt-1">
@@ -1171,7 +1324,7 @@ function UserFeedbackContent() {
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-hidden">
             {/* Backdrop with extreme blur and subtle gradient pulse */}
             <div className="absolute inset-0 bg-black/80 backdrop-blur-[20px] animate-in fade-in duration-700" />
-            
+
             {/* Floating background blobs for depth */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[var(--pink)]/20 blur-[100px] animate-pulse" />
             <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[var(--purple)]/20 blur-[100px] animate-pulse delay-700" />
@@ -1181,13 +1334,13 @@ function UserFeedbackContent() {
               <Sparkles className="absolute top-8 left-8 w-4 h-4 text-[var(--pink)] animate-pulse opacity-40" />
               <Sparkles className="absolute bottom-12 right-12 w-5 h-5 text-[var(--purple)] animate-pulse delay-500 opacity-40" />
               <Zap className="absolute top-1/2 right-6 w-3 h-3 text-[var(--yellow)] animate-bounce opacity-30" />
-              
+
               {/* Main Animated Icon Container */}
               <div className="relative mb-8 pt-2">
                 <div className="absolute inset-0 bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] blur-2xl opacity-40 rounded-full animate-pulse scale-150" />
                 <div className="w-24 h-24 rounded-[32px] flex items-center justify-center relative group overflow-hidden"
-                  style={{ 
-                    background: "linear-gradient(135deg, rgba(255,61,127,0.3), rgba(124,58,255,0.3))", 
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,61,127,0.3), rgba(124,58,255,0.3))",
                     border: "2.5px solid rgba(255,61,127,0.4)",
                     boxShadow: "0 0 50px rgba(255,61,127,0.3), inset 0 0 20px rgba(255,255,255,0.1)"
                   }}>
@@ -1261,7 +1414,7 @@ function UserFeedbackContent() {
                   toast.success("Ready for another!");
                 }}
                 className="w-full py-5 rounded-[28px] font-black text-xs uppercase tracking-[0.4em] text-white relative overflow-hidden group/cta flex items-center justify-center gap-3 transition-all hover:scale-[1.03] active:scale-[0.98] shadow-2xl"
-                style={{ 
+                style={{
                   background: "linear-gradient(135deg, var(--pink), var(--purple))",
                   boxShadow: "0 15px 45px -10px rgba(255,61,127,0.5)"
                 }}
@@ -1273,10 +1426,11 @@ function UserFeedbackContent() {
           </div>
         )}
         {/* Notification Icon for Landing Page */}
-          <NotificationBell 
-            className="fixed bottom-6 right-6 z-[100]" 
-            onGuestClick={() => setShowLoginRequiredPopup(true)}
-          />
+        <NotificationBell
+          className="fixed bottom-6 right-6 z-[100]"
+          onGuestClick={() => setChatMode(true)}
+          unreadCountOverride={unreadCount}
+        />
 
       </main>
     </div>
@@ -1298,7 +1452,7 @@ export default function UserFeedbackClient() {
     if (typeof window !== "undefined") {
       const universal = localStorage.getItem("picpop_legal_v1") === "true";
       const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
-      
+
       if (universal || userSpecific) {
         setShowTerms(false);
         return;

@@ -32,13 +32,15 @@ function CreateIdContent() {
   const [coolId, setCoolId] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
+    if (isExiting) return;
     if (!loading && !user) {
       const id = setTimeout(() => router.replace("/login"), 0);
       return () => clearTimeout(id);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isExiting]);
 
   useEffect(() => {
     if (!loading && user && profile && profile.coolId) {
@@ -138,7 +140,11 @@ function CreateIdContent() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
-            onClick={() => signOut()}
+            onClick={async () => {
+              setIsExiting(true);
+              await signOut();
+              window.location.replace("/");
+            }}
             className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
             Sign out
