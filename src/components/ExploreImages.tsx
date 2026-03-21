@@ -172,18 +172,37 @@ export function ExploreImages({
   return (
     <section ref={sectionRef} className="mt-8 w-full min-w-0">
       <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <ImageIcon className="w-5 h-5 text-[var(--purple)]" />
-          <h3 className="font-black text-[var(--text-primary)]">Browse</h3>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-[var(--purple)]" />
+            <h3 className="font-black text-[var(--text-primary)]">Browse</h3>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.open('https://chatgpt.com', '_blank')}
+              className="px-3 py-1.5 rounded-lg bg-[#10a37f]/10 border border-[#10a37f]/20 hover:bg-[#10a37f]/20 transition-all text-[10px] font-black text-[#10a37f] uppercase tracking-wider"
+            >
+              ChatGPT
+            </button>
+            <button
+              onClick={() => window.open('https://gemini.google.com', '_blank')}
+              className="px-3 py-1.5 rounded-lg bg-[#4285f4]/10 border border-[#4285f4]/20 hover:bg-[#4285f4]/20 transition-all text-[10px] font-black text-[#4285f4] uppercase tracking-wider"
+            >
+              Gemini
+            </button>
+          </div>
         </div>
-        <button
+
+        {/* Global Search Commented Out */}
+        {/* <button
           type="button"
           onClick={() => setIsSearchOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border)] hover:bg-[var(--purple)]/10 hover:border-[var(--purple)]/30 transition-all text-xs font-bold text-[var(--text-primary)] group"
         >
           <Globe className="w-3.5 h-3.5 text-[var(--purple)] group-hover:scale-110 transition-transform" />
           Search Global
-        </button>
+        </button> */}
       </div>
 
       <GoogleSearchModal

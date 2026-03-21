@@ -110,13 +110,13 @@ function CreateIdContent() {
   if (!user) return null;
 
   const suggestions = [
-    "shadow_fox",
-    "neon_dream",
-    "pixel_vibes",
-    "cool_cactus",
-    "starry_nite",
-    "glitch_king",
-    "aura_flow",
+    "alex_smith",
+    "creative_user",
+    "design_pro",
+    "pixel_studio",
+    "modern_mind",
+    "alpha_dev",
+    "studio_flow",
   ];
 
   return (

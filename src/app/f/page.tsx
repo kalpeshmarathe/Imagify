@@ -501,7 +501,7 @@ function FeedbackOnImageContent() {
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <NotificationBell />
+            <NotificationBell ownerName={image?.coolId} />
             <Link href={user ? "/dashboard" : "/login"} className="text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               {user ? "dashboard" : "sign in"}
             </Link>

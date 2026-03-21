@@ -400,3 +400,12 @@ body {
   border-right: 6px solid transparent;
   border-top: 16px solid white;
 }
+
+/* Custom Scrollbar Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

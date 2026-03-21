@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useToast } from "@/lib/toast-context";
 import {
   collection,
@@ -19,6 +20,8 @@ import { db, ensureFirestoreNetwork } from "@/lib/firebase";
 import { HowToPlayModal } from "@/components/HowToPlayModal";
 import { TermsModal } from "@/components/TermsModal";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ActivityTicker } from "@/components/ActivityTicker";
+import { Navbar } from "@/components/Navbar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -36,6 +39,8 @@ export default function DashboardPage() {
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [recentFeedbacks, setRecentFeedbacks] = useState<any[]>([]);
+  const { unreadNotifications } = useUnreadNotifications(user?.uid);
 
   const handleSignOut = async () => {
     setIsExiting(true);
@@ -81,6 +86,19 @@ export default function DashboardPage() {
     };
     run();
     return () => unsub?.();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!db || !user?.uid) return;
+    const q = query(
+      collection(db, "feedbacks"),
+      where("recipientId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
+    return onSnapshot(q, (snap) => {
+      setRecentFeedbacks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
   }, [user?.uid]);
 
   useEffect(() => {
@@ -184,42 +202,12 @@ export default function DashboardPage() {
         }
       `}</style>
 
-      <header className="navbar-glass sticky top-0 z-50 border-b border-white/5">
-        <nav className="flex h-16 items-center justify-between px-6 max-w-4xl mx-auto">
-          <Link href="/" className="flex items-center hover:scale-105 transition-transform duration-300">
-            <img src="/logo.svg" alt="picpop" className="h-7 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <NotificationBell />
-            <div className="relative">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/5 border border-white/10 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-              >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--purple)] flex items-center justify-center text-[10px] text-white">
-                  {profile.coolId.slice(0, 2).toUpperCase()}
-                </div>
-                @{profile.coolId}
-                <ChevronDown className={`w-4 h-4 transition-transform ${showDropdown ? "rotate-180" : ""}`} />
-              </button>
-              {showDropdown && (
-                <div className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200"
-                  style={{ background: "var(--bg-secondary)" }}
-                >
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full px-4 py-2.5 text-left text-sm font-bold text-[var(--text-muted)] hover:text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </nav>
-      </header>
+      <Navbar />
+
+      <ActivityTicker
+        items={unreadNotifications.filter(m => !m.isOwnerReply && m.type !== 'owner_reply') as any}
+        coolId={profile?.coolId || "Me"}
+      />
 
       <main className="max-w-2xl mx-auto px-6 py-12 relative z-10">
         {/* HERO SECTION */}

@@ -9,6 +9,7 @@ interface PendingMessage {
   message: string;
   imageUrl?: string;
   createdAt: string;
+  isRead?: boolean;
   threadId?: string;
 }
 
@@ -25,7 +26,7 @@ export function listenForRealtimeMessages(
 
   return onChildAdded(messagesRef, (snapshot) => {
     const msg = snapshot.val();
-    if (msg && msg.isOwnerReply === true) {
+    if (msg) {
       onMessageCallback({
         id: snapshot.key,
         ...msg,
@@ -57,7 +58,7 @@ export async function getUnreadMessageCount(sessionId: string): Promise<number> 
           }
 
           const messages = snapshot.val();
-          const unreadCount = Object.values(messages).filter((m: any) => m.read !== true).length;
+          const unreadCount = Object.values(messages).filter((m: any) => m.isRead !== true).length;
 
           resolve(unreadCount);
         },
@@ -130,11 +131,26 @@ export async function markMessageAsRead(sessionId: string, messageId: string) {
   try {
     const db = getDatabase();
     await update(ref(db, `sessions/${sessionId}/messages/${messageId}`), {
+      isRead: true,
       read: true,
       readAt: new Date().toISOString(),
     });
   } catch (err) {
     console.error('[markMessageAsRead] Error:', err);
+  }
+}
+
+// Mark owner notification as read
+export async function markOwnerNotificationAsRead(userId: string, notificationId: string) {
+  try {
+    const db = getDatabase();
+    await update(ref(db, `users/${userId}/notifications/${notificationId}`), {
+      isRead: true,
+      read: true,
+      readAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[markOwnerNotificationAsRead] Error:', err);
   }
 }
 

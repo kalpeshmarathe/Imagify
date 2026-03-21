@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown, Share2, Inbox } from "lucide-react";
 import { AnimateOnScroll } from "@/components/AnimateOnScroll";
@@ -7,6 +10,12 @@ import { ImageResponseCards } from "@/components/ImageResponseCards";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GoogleAd } from "@/components/GoogleAd";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ActivityTicker } from "@/components/ActivityTicker";
+import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/lib/auth-context";
+import { useRealtimeActivity } from "@/hooks/useRealtimeActivity";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { db } from "@/lib/firebase";
 
 const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
   { Icon: Flame, label: "roast me" },
@@ -22,6 +31,10 @@ const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+  const { activity: personalActivity, coolId: activeUserCoolId } = useRealtimeActivity();
+  const { unreadNotifications } = useUnreadNotifications(user?.uid);
+
   return (
     <div
       className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden"
@@ -207,38 +220,14 @@ export default function Home() {
       {/* ================================================================
           NAVBAR
       ================================================================ */}
-      <header className="fixed top-0 left-0 right-0 z-50 navbar-glass">
-        <nav className="flex h-16 items-center justify-between px-6 sm:px-10 max-w-7xl mx-auto">
+      <Navbar />
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="picpop" className="h-6 sm:h-7 w-auto transition-transform duration-300 group-hover:scale-105 inline-block" />
-          </Link>
-
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
-            <Link href="#how" className="nav-pill">how it works</Link>
-            <Link href="#play" className="nav-pill">play</Link>
-          </div>
-
-          {/* CTA */}
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <Link
-              href="/dashboard"
-              className="hidden sm:inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white cta-btn"
-              style={{
-                background: "linear-gradient(135deg, var(--pink), var(--purple))",
-                boxShadow: "0 4px 20px rgba(255,61,127,0.4)",
-              }}
-            >
-              <span className="inline-flex items-center gap-2">give feedback <Sparkles className="w-4 h-4" /></span>
-            </Link>
-            <MobileNav />
-          </div>
-        </nav>
-      </header>
+      <div className="">
+        <ActivityTicker
+          items={unreadNotifications as any}
+          coolId={activeUserCoolId || "Me"}
+        />
+      </div>
 
 
       {/* ================================================================
@@ -419,16 +408,16 @@ export default function Home() {
           { src: "/images/response1.png", top: "54%", delay: "1.4s", rot: "3deg" },
         ].map((b, i) => {
           return (
-          <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
-            <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
-              <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(255,61,127,0.8),rgba(124,58,255,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
-                <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={b.src} alt="response" className="w-full h-full object-cover" />
+            <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
+              <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
+                <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(255,61,127,0.8),rgba(124,58,255,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
+                  <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={b.src} alt="response" className="w-full h-full object-cover" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           );
         })}
 
@@ -438,16 +427,16 @@ export default function Home() {
           { src: "/images/response4.jpg", top: "55%", delay: "0.5s", rot: "-4deg" },
         ].map((b, i) => {
           return (
-          <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
-            <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
-              <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(0,200,255,0.8),rgba(255,61,127,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
-                <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={b.src} alt="response" className="w-full h-full object-cover" />
+            <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
+              <div className="relative" style={{ transform: `rotate(${b.rot})` }}>
+                <div className="p-[3px] rounded-2xl" style={{ background: "linear-gradient(135deg,rgba(0,200,255,0.8),rgba(255,61,127,0.8))", boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}>
+                  <div className="w-[130px] h-[155px] rounded-xl overflow-hidden bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={b.src} alt="response" className="w-full h-full object-cover" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           );
         })}
 
@@ -481,19 +470,19 @@ export default function Home() {
                 ].map((item, i) => {
                   const SlotIcon = item.Icon;
                   return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center gap-2 font-black"
-                    style={{
-                      height: "20%",
-                      fontSize: "clamp(1.6rem, 5vw, 3.5rem)",
-                      fontFamily: "var(--font-nunito), 'Nunito'",
-                      color: item.color,
-                      lineHeight: 1,
-                    }}
-                  >
-                    <SlotIcon className="w-8 h-8 shrink-0" /> {item.label}
-                  </div>
+                    <div
+                      key={i}
+                      className="flex items-center justify-center gap-2 font-black"
+                      style={{
+                        height: "20%",
+                        fontSize: "clamp(1.6rem, 5vw, 3.5rem)",
+                        fontFamily: "var(--font-nunito), 'Nunito'",
+                        color: item.color,
+                        lineHeight: 1,
+                      }}
+                    >
+                      <SlotIcon className="w-8 h-8 shrink-0" /> {item.label}
+                    </div>
                   );
                 })}
               </div>
@@ -510,14 +499,14 @@ export default function Home() {
                 { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
               ].map((r, i) => {
                 return (
-                <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
-                  <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
-                    <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.src} alt="response" className="w-full h-full object-cover" />
+                  <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
+                    <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
+                      <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={r.src} alt="response" className="w-full h-full object-cover" />
+                      </div>
                     </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -591,14 +580,14 @@ export default function Home() {
             ].map((s, i) => {
               const StepIcon = s.Icon;
               return (
-              <AnimateOnScroll key={i} delay={i * 120}>
-                <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
-                  <div className="mb-4"><StepIcon className="w-10 h-10" style={{ color: s.color }} /></div>
-                  <div className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: s.color }}>{s.step}</div>
-                  <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
-                  <p className="text-white/40 font-semibold text-sm leading-relaxed">{s.desc}</p>
-                </div>
-              </AnimateOnScroll>
+                <AnimateOnScroll key={i} delay={i * 120}>
+                  <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
+                    <div className="mb-4"><StepIcon className="w-10 h-10" style={{ color: s.color }} /></div>
+                    <div className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: s.color }}>{s.step}</div>
+                    <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
+                    <p className="text-white/40 font-semibold text-sm leading-relaxed">{s.desc}</p>
+                  </div>
+                </AnimateOnScroll>
               );
             })}
           </div>

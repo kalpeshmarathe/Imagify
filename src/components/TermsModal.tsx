@@ -64,8 +64,9 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
     const progressEl = document.getElementById("terms-progress");
     if (progressEl) progressEl.style.width = `${scrollPercent}%`;
 
-    const isBottom = target.scrollHeight - target.scrollTop >= target.clientHeight - 80;
-    if (isBottom) setScrolledToBottom(true);
+    // Corrected Bottom Detection: scrollTop + clientHeight should be near scrollHeight
+    const isNearBottom = target.scrollHeight - (target.scrollTop + target.clientHeight) < 50;
+    if (isNearBottom) setScrolledToBottom(true);
   };
 
   return (
@@ -76,6 +77,15 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
       <div 
         className="w-full max-w-2xl max-h-[90vh] bg-[#12121c] rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 delay-150 relative transform translate-z-0"
       >
+        {/* Floating Scroll Indicator */}
+        {!scrolledToBottom && (
+          <div className="absolute bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce flex flex-col items-center gap-1.5 opacity-80">
+            <div className="bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] p-2.5 rounded-full shadow-[0_0_20px_rgba(255,61,127,0.4)]">
+              <ChevronDown className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] whitespace-nowrap bg-black/40 backdrop-blur-md px-3 py-1 rounded-full">Read to continue</span>
+          </div>
+        )}
         {/* PROGRESS BAR */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5 z-20">
           <div 

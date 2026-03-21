@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Fragment } from "react";
+import { useEffect, useState, useRef, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { Bell, Eye, Image as ImageIcon, X, MoreVertical, Trash2, Flag, MessageSquare, Send, Paperclip, FileText, CheckCircle2, Share2, AlertCircle, ChevronLeft, Heart } from "lucide-react";
 import {
@@ -30,6 +30,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Navbar } from "@/components/Navbar";
 import { FeedbackShareModal } from "@/components/FeedbackShareModal";
 import { ReportFeedbackModal } from "@/components/ReportFeedbackModal";
 import { TermsModal } from "@/components/TermsModal";
@@ -111,6 +112,18 @@ interface NotifItem {
   hasReply?: boolean;
   senderCanReply?: boolean;
   receiverCanReply?: boolean;
+  isAnonymousToRecipient?: boolean;
+}
+
+function canUserSeeProfile(item: NotifItem, currentUid: string | undefined) {
+  if (!currentUid) return false;
+  // If I sent it, I know who I am
+  if (item.submitterId === currentUid) return true;
+  // If it's one-way anonymous and I'm the recipient, I can't see the sender
+  if (item.isAnonymousToRecipient && item.recipientId === currentUid) return false;
+  // If it's an owner reply and I'm the recipient (visitor), I can see the owner
+  if (item.isOwnerReply && item.recipientId === currentUid) return true;
+  return true;
 }
 
 interface GroupedItem {
@@ -244,6 +257,7 @@ export default function InboxPage() {
                     hasReply: data.hasReply,
                     senderCanReply: data.senderCanReply,
                     receiverCanReply: data.receiverCanReply,
+                    isAnonymousToRecipient: data.isAnonymousToRecipient === true,
                   };
                 })
               );
@@ -299,6 +313,7 @@ export default function InboxPage() {
                 hasReply: data.hasReply,
                 senderCanReply: data.senderCanReply,
                 receiverCanReply: data.receiverCanReply,
+                isAnonymousToRecipient: data.isAnonymousToRecipient === true,
               };
             });
 
@@ -448,9 +463,11 @@ export default function InboxPage() {
 
     if (navigator.share) {
       navigator.share({ title: "PicPop", text: shareText, url: shareUrl }).catch(() => { });
-    } else {
+    } else if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
       toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("Sharing not supported on this browser");
     }
   };
 
@@ -561,6 +578,7 @@ export default function InboxPage() {
             hasReply: data.hasReply,
             senderCanReply: data.senderCanReply,
             receiverCanReply: data.receiverCanReply,
+            isAnonymousToRecipient: data.isAnonymousToRecipient === true,
           };
         });
 
@@ -617,6 +635,20 @@ export default function InboxPage() {
           batch.update(doc(firestore, "notifications", id), { isRead: true });
         });
         await batch.commit();
+
+        // 2. Mark in RTDB for instant update across tabs
+        if (user?.uid) {
+           const { markOwnerNotificationAsRead } = await import("@/lib/realtime-notifications");
+           for (const id of unreadIds) {
+             // notifications list usually has many items, but we only have ID
+             // The ID in Firestore 'notifications' is the same as in RTDB 'users/uid/notifications'
+             // because the functions use feedbackId or a generated ID consistently.
+             // Actually, the RTDB key is usually the feedbackId.
+             const item = notifications.find(n => n.id === id);
+             const rtdbKey = item?.feedbackId || id;
+             await markOwnerNotificationAsRead(user.uid, rtdbKey);
+           }
+        }
       } catch (err) {
         console.error("Error marking read:", err);
       }
@@ -894,11 +926,11 @@ export default function InboxPage() {
     const ids = new Set<string>();
     allItems.forEach((item) => {
       const pid =
-        // Case 1: We are the sender (visitor) - resolve the recipient (owner)
+        // Alice (Sender) sees Bob (Recipient)
         (item.submitterId === uid && !item.isOwnerReply && item.recipientId && item.recipientId !== uid)
           ? item.recipientId
-          : // Case 2: We are the recipient (visitor) - resolve the sender (owner reply)
-          (item.recipientId === uid && item.isOwnerReply && item.submitterId && item.submitterId !== uid)
+          : // If we are recipient and it's NOT anonymous, we can see the sender
+          (item.recipientId === uid && canUserSeeProfile(item, uid) && item.submitterId && item.submitterId !== uid)
             ? item.submitterId
             : null;
       if (pid && !profileCache[pid] && !resolvingIds.has(pid)) ids.add(pid);
@@ -906,95 +938,107 @@ export default function InboxPage() {
 
     if (ids.size === 0 || !db) return;
 
-    const resolve = async () => {
-      const toFetch = Array.from(ids);
-      setResolvingIds((prev) => {
-        const n = new Set(prev);
-        toFetch.forEach((id) => n.add(id));
-        return n;
-      });
+      const resolve = async () => {
+        const toFetch = Array.from(ids);
+        setResolvingIds((prev) => {
+          const n = new Set(prev);
+          toFetch.forEach((id) => n.add(id));
+          return n;
+        });
 
-      const newCache = { ...profileCache };
-      const firestore = db;
-      if (!firestore) return;
+        const newCache = { ...profileCache };
+        const firestore = db;
+        if (!firestore) return;
 
-      for (const id of toFetch) {
-        try {
-          const q = query(collection(firestore, "usernames"), where("uid", "==", id), limit(1));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            newCache[id] = snap.docs[0].id;
-          } else {
-            newCache[id] = id.slice(0, 8);
-          }
-        } catch (e) {
-          console.error("Profile Error:", e);
+        // Batch queries in chunks of 30 (Firestore limit)
+        const chunks: string[][] = [];
+        for (let i = 0; i < toFetch.length; i += 30) {
+          chunks.push(toFetch.slice(i, i + 30));
         }
-      }
-      setProfileCache(newCache);
-    };
+
+        for (const chunk of chunks) {
+          try {
+            const q = query(collection(firestore, "usernames"), where("uid", "in", chunk));
+            const snap = await getDocs(q);
+            snap.docs.forEach(doc => {
+              const data = doc.data();
+              if (data.uid) newCache[data.uid] = doc.id;
+            });
+            // Fallback for any that didn't resolve
+            chunk.forEach(id => {
+              if (!newCache[id]) newCache[id] = id.slice(0, 8);
+            });
+          } catch (e) {
+            console.error("Profile Batch Error:", e);
+          }
+        }
+        setProfileCache(newCache);
+      };
     resolve();
   }, [allItems, uid, profileCache, resolvingIds]);
 
-  const groupedMap = new Map<string, GroupedItem>();
-  for (const item of allItems) {
-    const groupId = getConversationKey(item);
-    if (!groupedMap.has(groupId)) {
-      const hasReply = item.hasReply || item.status === "active_chat" || item.isOwnerReply;
-      const isInitialSender = !item.isOwnerReply && item.submitterId === uid;
+  const groupedItems = useMemo(() => {
+    const groupedMap = new Map<string, GroupedItem>();
+    
+    for (const item of allItems) {
+      const groupId = getConversationKey(item);
+      if (!groupedMap.has(groupId)) {
+        const hasReply = item.hasReply || item.status === "active_chat" || item.isOwnerReply;
+        const isInitialSender = !item.isOwnerReply && item.submitterId === uid;
 
-      groupedMap.set(groupId, {
-        id: groupId,
-        itemType: item.itemType,
-        threadType: item.recipientId === uid ? "inbox" : "sent",
-        threadPartnerId:
-          groupId === "all-visits"
-            ? "unknown"
-            : item.submitterId === uid
-              ? item.recipientId || groupId
-              : item.submitterId || item.anonymousId || groupId,
-        items: [],
-        createdAt: item.createdAt,
-        latestItem: item,
-        status:
-          isInitialSender && !hasReply
-            ? "feedback_only"
-            : "active_chat",
-        feedbackId: item.feedbackId || item.id,
-      });
-    }
-    const group = groupedMap.get(groupId)!;
-
-    const effId = item.feedbackId || item.id;
-    if (!group.items.find((i) => (i.feedbackId || i.id) === effId)) {
-      group.items.push(item);
-    }
-
-    if (new Date(item.createdAt).getTime() > new Date(group.createdAt).getTime()) {
-      group.createdAt = item.createdAt;
-      group.latestItem = item;
-    }
-    if (item.feedbackImageUrl && !group.sharedImageUrl)
-      group.sharedImageUrl = item.feedbackImageUrl;
-  }
-
-  const groupedItems: GroupedItem[] = Array.from(groupedMap.values())
-    .filter((group) => group.itemType === "feedback")
-    .map((group): GroupedItem => {
-      const hasReply = group.items.some((i) => i.isOwnerReply);
-      const isInitialSender = group.items.some((i) => !i.isOwnerReply && i.submitterId === uid);
-
-      return {
-        ...group,
-        status: isInitialSender && !hasReply ? "feedback_only" : "active_chat",
-      };
-    })
-    .sort((a, b) => {
-      if (a.status !== b.status) {
-        return a.status === "active_chat" ? -1 : 1;
+        groupedMap.set(groupId, {
+          id: groupId,
+          itemType: item.itemType,
+          threadType: item.recipientId === uid ? "inbox" : "sent",
+          threadPartnerId:
+            groupId === "all-visits"
+              ? "unknown"
+              : item.submitterId === uid
+                ? item.recipientId || groupId
+                : item.submitterId || item.anonymousId || groupId,
+          items: [],
+          createdAt: item.createdAt,
+          latestItem: item,
+          status:
+            isInitialSender && !hasReply
+              ? "feedback_only"
+              : "active_chat",
+          feedbackId: item.feedbackId || item.id,
+        });
       }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+      const group = groupedMap.get(groupId)!;
+
+      const effId = item.feedbackId || item.id;
+      if (!group.items.find((i) => (i.feedbackId || i.id) === effId)) {
+        group.items.push(item);
+      }
+
+      if (new Date(item.createdAt).getTime() > new Date(group.createdAt).getTime()) {
+        group.createdAt = item.createdAt;
+        group.latestItem = item;
+      }
+      if (item.feedbackImageUrl && !group.sharedImageUrl)
+        group.sharedImageUrl = item.feedbackImageUrl;
+    }
+
+    return Array.from(groupedMap.values())
+      .filter((group) => group.itemType === "feedback")
+      .map((group): GroupedItem => {
+        const hasReply = group.items.some((i) => i.isOwnerReply);
+        const isInitialSender = group.items.some((i) => !i.isOwnerReply && i.submitterId === uid);
+
+        return {
+          ...group,
+          status: isInitialSender && !hasReply ? "feedback_only" : "active_chat",
+        };
+      })
+      .sort((a, b) => {
+        if (a.status !== b.status) {
+          return a.status === "active_chat" ? -1 : 1;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [allItems, uid]);
 
   const activeGroup = selectedGroup
     ? groupedItems.find((g) => g.id === selectedGroup.id) ?? selectedGroup
@@ -1045,26 +1089,7 @@ export default function InboxPage() {
       <div className="fixed -top-[10%] -left-[10%] w-[40%] h-[40%] bg-[var(--pink)]/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="fixed -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-[var(--purple)]/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <nav className="flex h-16 items-center justify-between px-6 max-w-[620px] mx-auto">
-          <Link
-            href="/dashboard"
-            className="flex items-center hover:scale-110 active:scale-95 transition-all duration-300"
-          >
-            <img src="/logo.svg" alt="picpop" className="h-7 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <NotificationBell />
-            <Link
-              href="/dashboard"
-              className="px-5 py-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-white transition-all"
-            >
-              Dashboard
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <Navbar />
       <div className="h-20" />
 
       <main className="max-w-[620px] mx-auto px-4 py-10">
@@ -1232,18 +1257,16 @@ export default function InboxPage() {
                                   </span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
                                   <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">
-                                   {item.items.some(i => i.submitterId && i.submitterId !== uid && !i.isOwnerReply) ? "VERIFIED" : "ANONYMOUS"}
+                                    {item.threadType === "sent" ? "Verified" : (item.latestItem.isAnonymousToRecipient ? "Anonymous" : "Public")}
                                   </span>
-                                </div>
                               )}
                             </div>
                             <span className="text-[9px] text-white/20 font-black uppercase tracking-widest">
                               {formatTimeAgo(item.createdAt)}
                             </span>
                           </div>
-                          
+
                           <p className={`font-black tracking-tight text-white/90 leading-tight ${item.items.some(i => !i.isRead) ? "text-lg" : "text-base opacity-70"}`}>
                             {(() => {
                               const last = item.latestItem;
@@ -1256,12 +1279,12 @@ export default function InboxPage() {
                               return "No caption provided";
                             })()}
                           </p>
-                          
+
                           <div className="flex items-center justify-between gap-3 mt-1">
                             <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-1.5">
-                              {activeGroup?.threadPartnerId !== "unknown" && profileCache[item.threadPartnerId] 
-                                ? `@${profileCache[item.threadPartnerId]}` 
-                                : item.threadType === "sent" ? "OWNER" : "GUEST"}
+                               {item.threadType === "sent" && activeGroup?.threadPartnerId !== "unknown" && profileCache[item.threadPartnerId]
+                                 ? `@${profileCache[item.threadPartnerId]}`
+                                 : (item.threadType === "sent" ? "OWNER" : (item.latestItem.isAnonymousToRecipient ? "GUEST" : "USER"))}
                               <span className="w-1 h-1 rounded-full bg-white/20" />
                               {item.items.length} {item.items.length === 1 ? 'msg' : 'msgs'}
                             </span>
@@ -1307,9 +1330,9 @@ export default function InboxPage() {
                 </button>
                 <div>
                   <p className="text-base font-black text-white leading-tight">
-                    {activeGroup.threadPartnerId !== "unknown" && profileCache[activeGroup.threadPartnerId]
+                    {(activeGroup.threadType === "sent" || !activeGroup.latestItem.isAnonymousToRecipient) && activeGroup.threadPartnerId !== "unknown" && profileCache[activeGroup.threadPartnerId]
                       ? `@${profileCache[activeGroup.threadPartnerId]}`
-                      : activeGroup.threadType === "sent" ? "Sent Reaction" : "Anonymous Fan"}
+                      : activeGroup.threadType === "sent" ? "Sent Reaction" : (activeGroup.latestItem.isAnonymousToRecipient ? "Anonymous Fan" : "Public User")}
                   </p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
@@ -1320,8 +1343,8 @@ export default function InboxPage() {
                 </div>
               </div>
               <div className="relative flex items-center gap-2" ref={optionsRef}>
-                <button 
-                  onClick={() => setOptionsOpen(!optionsOpen)} 
+                <button
+                  onClick={() => setOptionsOpen(!optionsOpen)}
                   className="p-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/50 hover:text-white transition-all shadow-xl"
                 >
                   <MoreVertical className="w-5 h-5" />
@@ -1350,7 +1373,20 @@ export default function InboxPage() {
                 .slice()
                 .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
                 .map((chatItem, idx, arr) => {
-                  const isMe = chatItem.submitterId === uid;
+                  const isMe =
+                    // Case 1: Direct submitterId match (standard logged-in users)
+                    chatItem.submitterId === uid ||
+                    // Case 2: Owner replies are always "me" if I'm the owner
+                    (chatItem.isOwnerReply && chatItem.submitterId === uid) ||
+                    // Case 3: Optimistic messages (sent by me, awaiting server confirmation)
+                    (uid && optimisticMessagesRef.current.has(chatItem.id)) ||
+                    // ✅ CRITICAL FIX: Handle null submitterId from non-logged-in users
+                    // If no submitterId, not an owner reply, but threadType is "sent",
+                    // it means we (the logged-in user) sent this as an anonymous/guest
+                    (!chatItem.submitterId && !chatItem.isOwnerReply && activeGroup?.threadType === "sent") ||
+                    // Also handle messages sent TO a specific user (they have targetUid set)
+                    (!chatItem.submitterId && chatItem.targetUid && chatItem.targetUid !== uid && !chatItem.isOwnerReply);
+
                   if (idx > 0 && arr[idx - 1].id === chatItem.id) return null;
 
                   return (
@@ -1360,7 +1396,9 @@ export default function InboxPage() {
                           ? "bg-gradient-to-br from-pink-500 to-purple-600 rotate-3"
                           : "bg-white/10 -rotate-3 border border-white/5"
                           }`}>
-                          {isMe ? "ME" : (chatItem.isOwnerReply ? "O" : "G")}
+                          {isMe ? "ME" : (canUserSeeProfile(chatItem, uid)
+                            ? (profileCache[chatItem.submitterId || ""] ? `@${profileCache[chatItem.submitterId || ""]}` : "OWNER") 
+                            : "GUEST")}
                         </div>
                         <div
                           className={`rounded-3xl p-4 shadow-2xl relative group/bubble ${isMe ? "rounded-br-sm text-white" : "rounded-bl-sm border border-white/5"
@@ -1371,14 +1409,14 @@ export default function InboxPage() {
                         >
                           {(chatItem.feedbackImageUrl || (idx === 0 && activeGroup.sharedImageUrl)) && (
                             <div className="relative group/img mb-2">
-                               <img
+                              <img
                                 src={chatItem.feedbackImageUrl || activeGroup.sharedImageUrl}
                                 className="rounded-2xl w-full max-h-[350px] object-contain shadow-lg"
                                 onClick={() => { setFeedbackDocId(chatItem.feedbackId || chatItem.id); setShareModalOpen(true); }}
                               />
-                              <button 
+                              <button
                                 onClick={(e) => { e.stopPropagation(); handleShare("Reaction on PicPop!", chatItem.feedbackImageUrl || activeGroup.sharedImageUrl); }}
-                                className="absolute top-2 right-2 p-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/img:opacity-100 transition-all hover:bg-[var(--pink)] flex items-center gap-2 shadow-xl"
+                                className="absolute top-2 right-2 p-2.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20 text-white transition-all hover:bg-[var(--pink)] flex items-center gap-2 shadow-[0_8px_20px_rgba(0,0,0,0.4)] z-10"
                               >
                                 <Share2 className="w-4 h-4" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Share</span>

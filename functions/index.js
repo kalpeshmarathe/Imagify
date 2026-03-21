@@ -33,7 +33,7 @@ const CORS_ORIGINS = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3001",
   "http://127.0.0.1:3002",
-  "http://192.168.1.8:3000",
+  "http://192.168.1.7:3000",
   "http://192.168.1.16:3000",
   "https://picpop.me",
   "https://www.picpop.me",
@@ -147,9 +147,10 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
     if (!notifyUid && !notifySessionId) return;
 
     // 2. Add to internal notifications collection (for permanent UI history)
-    if (notifyUid) {
-      await db.collection("notifications").add({
-        recipientId: notifyUid,
+    if (notifyUid || notifySessionId) {
+      const notifData = {
+        recipientId: notifyUid || null,
+        recipientSessionId: notifySessionId || null,
         message: body,
         isRead: false,
         createdAt: FieldValue.serverTimestamp(),
@@ -160,7 +161,22 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
         sessionId: feedback.sessionId || null,
         threadId: feedback.threadId || feedbackId,
         coolId: notifyCoolId,
-      });
+      };
+
+      await db.collection("notifications").add(notifData);
+
+      // ALSO write to Realtime DB for instant UI update (WebSocket)
+      if (notifyUid) {
+         try {
+           const rtdb = getDatabase();
+           await rtdb.ref(`users/${notifyUid}/notifications/${feedbackId}`).set({
+             ...notifData,
+             createdAt: new Date().toISOString()
+           });
+         } catch (rtdbErr) {
+           console.error("Owner RTDB Notify fail:", rtdbErr);
+         }
+      }
     }
 
     // 3. Find FCM Token
@@ -234,14 +250,25 @@ exports.onFeedbackCreatedNotifySession = onDocumentCreated("feedbacks/{feedbackI
   }
 
   try {
+    // Fetch owner's coolId to show in notification
+    let ownerCoolId = "owner";
+    if (feedback.submitterId) {
+      const userSnap = await db.collection("users").doc(feedback.submitterId).get();
+      if (userSnap.exists) {
+        ownerCoolId = userSnap.data().coolId || "owner";
+      }
+    }
+
     // Write to Realtime DB for instant notification
     const messageData = {
       id: feedbackId,
       from: "owner",
+      coolId: ownerCoolId,
       message: feedback.message || "",
       imageUrl: feedback.feedbackImageUrl || null,
       createdAt: feedback.createdAt,
-      read: false,
+      isRead: false,
+      isOwnerReply: true,
       threadId: feedback.threadId || null,
     };
 
@@ -552,6 +579,7 @@ exports.submitFeedbackFromImgflip = onCall({ cors: CORS_ORIGINS }, async (reques
       threadId,
       deleted: false,
       recipientId,
+      isAnonymousToRecipient: true,
     };
     await db.collection("feedbacks").add(feedbackData);
     return { success: true, threadId };
@@ -638,6 +666,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
       threadId,
       deleted: false,
       recipientId: resolvedRecipientId, // The profile owner
+      isAnonymousToRecipient: true, // Locking sender's identity from recipient
     };
     if (feedbackImageUrl) feedbackData.feedbackImageUrl = feedbackImageUrl;
     if (message) feedbackData.message = message;
@@ -764,7 +793,24 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
       return item.targetUid === request.auth?.uid;
     });
 
-    return { success: true, anonymousId, items: finalItems };
+    // 4. Privacy Filter: Only show submitterId to the person who sent it.
+    // The thread recipient (owner) should see visitor messages as anonymous.
+    const sanitizedItems = finalItems.map(item => {
+      const isMyMessage = request.auth?.uid && item.submitterId === request.auth.uid;
+      
+      const copy = { ...item };
+      // Always hide IP from client
+      delete copy.submitterIp;
+      
+      if (!isMyMessage) {
+        // Hide potential identifying fields from everyone else
+        copy.submitterId = null; 
+        copy.anonymousId = "anonymous"; // Masking the IP hash too
+      }
+      return copy;
+    });
+
+    return { success: true, anonymousId, items: sanitizedItems };
   } catch (err) {
     if (err && err.code) throw err;
     console.error("getAnonymousChatHistory error:", err);
@@ -850,10 +896,10 @@ exports.linkAnonymousToUser = onCall({ cors: CORS_ORIGINS }, async (request) => 
         const data = doc.data();
         const updates = {};
 
-        const matchesSender = (anonymousId && (data.visitorId === anonymousId || data.anonymousId === anonymousId)) ||
+        const matchesSender = (anonymousId && (data.visitorId === anonymousId || data.anonymousId === anonymousId) && !data.isOwnerReply) ||
           (sessionId && data.sessionId === sessionId && !data.isOwnerReply);
 
-        const matchesTarget = (anonymousId && data.targetUid === anonymousId) ||
+        const matchesTarget = (anonymousId && (data.targetUid === anonymousId || data.anonymousId === anonymousId) && data.isOwnerReply) ||
           (sessionId && data.sessionId === sessionId && data.isOwnerReply);
 
         if (matchesSender) {
@@ -892,6 +938,7 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
     const { message, anonymousId, targetUid, sessionId, feedbackImageUrl, attachmentUrl, attachmentName, threadId } = request.data || {};
     const targetUidClean = (targetUid && typeof targetUid === "string") ? targetUid.trim() : null;
     const anonymousIdClean = (anonymousId && typeof anonymousId === "string") ? anonymousId.trim() : null;
+    const sessionIdClean = (sessionId && typeof sessionId === "string") ? sessionId.trim() : null;
 
     if (!attachmentUrl && !feedbackImageUrl && (!message || typeof message !== "string" || !message.trim())) {
       throw new HttpsError("invalid-argument", "Valid message, image, or attachment is required");
