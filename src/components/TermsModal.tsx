@@ -77,24 +77,6 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
       <div 
         className="w-full max-w-2xl max-h-[90vh] bg-[#12121c] rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-500 delay-150 relative transform translate-z-0"
       >
-        {/* Floating Scroll Indicator */}
-        {!scrolledToBottom && (
-          <div className="absolute bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce flex flex-col items-center gap-1.5 opacity-80">
-            <div className="bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] p-2.5 rounded-full shadow-[0_0_20px_rgba(255,61,127,0.4)]">
-              <ChevronDown className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] whitespace-nowrap bg-black/40 backdrop-blur-md px-3 py-1 rounded-full">Read to continue</span>
-          </div>
-        )}
-        {/* PROGRESS BAR */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5 z-20">
-          <div 
-            id="terms-progress"
-            className="h-full bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] transition-all duration-200"
-            style={{ width: "0%" }}
-          />
-        </div>
-
         {/* HEADER */}
         <div className="p-8 pb-6 border-b border-white/5 flex flex-col items-center text-center relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-pink-500/10 blur-[60px] rounded-full -z-10" />
@@ -102,7 +84,7 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
             <ShieldCheck className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Legal Agreements</h2>
-          <p className="text-white/40 text-sm font-medium">Please review our updated Terms & Privacy Policy.</p>
+          <p className="text-white/40 text-sm font-medium">Please review our Terms & Privacy Policy.</p>
         </div>
 
         {/* CONTENT */}
@@ -204,11 +186,7 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
               </section>
             </div>
 
-            <div className="mt-12 p-6 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/30 text-center">
-              <p>By clicking "AGREE AND ENTER", you confirm you have read and consent to both the <strong>Terms of Service</strong> and the <strong>Privacy Policy</strong> for PicPop.me.</p>
-            </div>
-
-            <div className="pb-12 h-4" />
+            <div className="pb-8" />
           </div>
         </div>
 
@@ -216,52 +194,46 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
         <div className="p-8 border-t border-white/5 bg-white/[0.02] flex flex-col gap-6">
           <div className="space-y-4">
             {/* Terms Checkbox */}
-            <label className="flex items-start gap-3 cursor-pointer group">
+            <label className="flex items-start gap-4 cursor-pointer group p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all">
               <div className="relative flex items-center justify-center mt-0.5">
                 <input
                   type="checkbox"
                   checked={termsChecked}
                   onChange={(e) => setTermsChecked(e.target.checked)}
-                  className="peer appearance-none w-5 h-5 rounded-md border border-white/10 bg-white/5 checked:bg-pink-500 checked:border-pink-500 transition-all cursor-pointer"
+                  className="peer appearance-none w-6 h-6 rounded-lg border border-white/10 bg-white/5 checked:bg-pink-500 checked:border-pink-500 transition-all cursor-pointer"
                 />
-                <Check className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                <Check className="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
               </div>
-              <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors select-none">
+              <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors select-none leading-snug">
                 I have read and agree to the <strong className="text-pink-400">Terms of Service</strong>
               </span>
             </label>
 
             {/* Privacy Checkbox */}
-            <label className="flex items-start gap-3 cursor-pointer group">
+            <label className="flex items-start gap-4 cursor-pointer group p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all">
               <div className="relative flex items-center justify-center mt-0.5">
                 <input
                   type="checkbox"
                   checked={privacyChecked}
                   onChange={(e) => setPrivacyChecked(e.target.checked)}
-                  className="peer appearance-none w-5 h-5 rounded-md border border-white/10 bg-white/5 checked:bg-blue-500 checked:border-blue-500 transition-all cursor-pointer"
+                  className="peer appearance-none w-6 h-6 rounded-lg border border-white/10 bg-white/5 checked:bg-blue-500 checked:border-blue-500 transition-all cursor-pointer"
                 />
-                <Check className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                <Check className="absolute w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
               </div>
-              <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors select-none">
+              <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors select-none leading-snug">
                 I consent to the <strong className="text-blue-400">Privacy Policy</strong> for data processing
               </span>
             </label>
           </div>
 
           <div className="flex flex-col items-center gap-4">
-            {!scrolledToBottom && (
-              <div className="flex items-center gap-2 mb-1 animate-bounce">
-                <ChevronDown className="w-4 h-4 text-pink-500" />
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Scroll to bottom to enable</p>
-              </div>
-            )}
             <button
               onClick={handleAccept}
-              disabled={!scrolledToBottom || !termsChecked || !privacyChecked || accepting}
+              disabled={!termsChecked || !privacyChecked || accepting}
               className="group relative w-full overflow-hidden rounded-[1.5rem] p-5 transition-all duration-300 disabled:opacity-20 disabled:grayscale hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 background: "linear-gradient(135deg, #FF3D7F, #A033FF)",
-                boxShadow: (scrolledToBottom && termsChecked && privacyChecked) ? "0 20px 40px -10px rgba(255, 61, 127, 0.4)" : "none",
+                boxShadow: (termsChecked && privacyChecked) ? "0 20px 40px -10px rgba(255, 61, 127, 0.4)" : "none",
               }}
             >
               <div className="relative z-10 flex items-center justify-center gap-3 font-black text-white tracking-[0.1em] text-sm">

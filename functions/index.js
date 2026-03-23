@@ -37,6 +37,8 @@ const CORS_ORIGINS = [
   "http://192.168.1.16:3000",
   "https://picpop.me",
   "https://www.picpop.me",
+  "https://picpop-production.web.app",
+  "https://picpop-production.firebaseapp.com",
   "https://imagify-5f3d5.web.app",
   "https://imagify-5f3d5.firebaseapp.com",
   "capacitor://localhost",
@@ -270,6 +272,7 @@ exports.onFeedbackCreatedNotifySession = onDocumentCreated("feedbacks/{feedbackI
       isRead: false,
       isOwnerReply: true,
       threadId: feedback.threadId || null,
+      isFirstSender: feedback.isFirstSender || false,
     };
 
     await rtdb
@@ -568,6 +571,8 @@ exports.submitFeedbackFromImgflip = onCall({ cors: CORS_ORIGINS }, async (reques
     const visitorId = uid || resolvedAnonymousId;
 
     const threadId = request.data.threadId || crypto.randomUUID();
+    const isFirstSender = !request.data.threadId;
+
     const feedbackData = {
       feedbackImageUrl,
       createdAt: new Date().toISOString(),
@@ -577,6 +582,7 @@ exports.submitFeedbackFromImgflip = onCall({ cors: CORS_ORIGINS }, async (reques
       visitorId,
       sessionId: sessionId || null,
       threadId,
+      isFirstSender,
       deleted: false,
       recipientId,
       isAnonymousToRecipient: true,
@@ -642,6 +648,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
 
     const visitorId = uid || anonymousId;
     let threadId = request.data.threadId || null;
+    let isFirstSender = false;
 
     // If we have a parentId but no threadId, try to inherit threadId from parent
     if (parentId && !threadId) {
@@ -654,6 +661,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
     // Fallback to new threadId if still null
     if (!threadId) {
       threadId = crypto.randomUUID();
+      isFirstSender = true;
     }
 
     const feedbackData = {
@@ -664,6 +672,7 @@ exports.submitFeedback = onCall({ cors: CORS_ORIGINS }, async (request) => {
       visitorId, // NEW: Thread Identifier
       sessionId: request.data.sessionId || null,
       threadId,
+      isFirstSender,
       deleted: false,
       recipientId: resolvedRecipientId, // The profile owner
       isAnonymousToRecipient: true, // Locking sender's identity from recipient
@@ -967,7 +976,7 @@ exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
       sessionId: sessionId || null,
       targetUid: targetUidClean,
       threadId: threadIdToUse,
-      recipientId: targetUidClean || request.auth.uid,
+      recipientId: targetUidClean || anonymousIdClean || sessionIdClean || request.auth.uid,
       isOwnerReply: true,
       deleted: false,
       feedbackImageUrl: feedbackImageUrl || null,

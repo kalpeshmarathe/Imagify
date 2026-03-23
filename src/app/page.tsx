@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown, Share2, Inbox } from "lucide-react";
+import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown, ChevronRight, Share2, Inbox, ImageIcon } from "lucide-react";
 import { AnimateOnScroll } from "@/components/AnimateOnScroll";
 import { MobileNav } from "@/components/MobileNav";
 import { ImageShowcase } from "@/components/ImageShowcase";
@@ -18,20 +18,20 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { db } from "@/lib/firebase";
 
 const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
-  { Icon: Flame, label: "roast me" },
-  { Icon: MessageCircle, label: "spill the tea" },
-  { Icon: Star, label: "rate this" },
-  { Icon: Zap, label: "be honest" },
-  { Icon: MessageCircle, label: "no filter" },
-  { Icon: Eye, label: "screenshot review" },
-  { Icon: Skull, label: "love it or hate it" },
-  { Icon: Target, label: "3 words" },
-  { Icon: ScanLine, label: "mirror check" },
-  { Icon: Sparkles, label: "glow up or no" },
+  { Icon: Camera, label: "photo drops" },
+  { Icon: Sparkles, label: "image vibes" },
+  { Icon: Zap, label: "unfiltered snaps" },
+  { Icon: Eye, label: "visual honesty" },
+  { Icon: MessageCircle, label: "anon feedback" },
+  { Icon: ImageIcon, label: "pixel check" },
+  { Icon: Target, label: "image react" },
+  { Icon: ScanLine, label: "snapshot review" },
+  { Icon: Star, label: "rate the shot" },
+  { Icon: Flame, label: "honest exposure" },
 ];
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { activity: personalActivity, coolId: activeUserCoolId } = useRealtimeActivity();
   const { unreadNotifications } = useUnreadNotifications(user?.uid);
 
@@ -225,7 +225,7 @@ export default function Home() {
       <div className="">
         <ActivityTicker
           items={unreadNotifications as any}
-          coolId={activeUserCoolId || "Me"}
+          coolId={profile?.coolId || "Me"}
         />
       </div>
 
@@ -319,7 +319,7 @@ export default function Home() {
               style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.15)" }}
             >
               <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 8px var(--green)" }} />
-              anonymous. no limits.
+              one-way anonymity.
             </div>
           </div>
 
@@ -327,44 +327,47 @@ export default function Home() {
             className="font-black text-white leading-[0.9] tracking-tight"
             style={{ fontSize: "clamp(4rem, 11vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
           >
-            <span className="fade-up block">real</span>
-            <span className="fade-up delay-1 block text-outline">feedback.</span>
-            <span className="fade-up delay-2 block" style={{ color: "var(--pink)" }}>real vibes.</span>
+            <span className="fade-up block">photo</span>
+            <span className="fade-up delay-1 block text-outline">reactions.</span>
+            <span className="fade-up delay-2 block" style={{ color: "var(--blue)" }}>totally anon.</span>
           </h1>
 
-          <p className="fade-up delay-3 mt-6 text-white/60 max-w-xs mx-auto font-semibold text-base sm:text-lg">
-            Drop a pic. Get anonymous reactions. No cap.
+          <p className="fade-up delay-3 mt-6 text-white/60 max-w-sm mx-auto font-bold text-base sm:text-lg leading-relaxed">
+            Drop your link. Get anonymous photo reactions and chat with friends — without them ever knowing it's you.
           </p>
 
-          <div className="fade-up delay-4 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="fade-up delay-4 mt-10 mb-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/dashboard"
-              className="cta-btn rounded-full px-10 py-4 font-black text-white text-base"
+              href={user ? (profile?.coolId ? "/dashboard" : "/create-id") : "/login"}
+              className="cta-btn rounded-full px-12 py-5 font-black text-white text-base overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, var(--pink) 0%, var(--purple) 100%)",
-                boxShadow: "0 8px 40px rgba(255,61,127,0.5)",
+                background: "linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%)",
+                boxShadow: "0 8px 40px rgba(0,200,255,0.4)",
               }}
             >
-              <span className="inline-flex items-center gap-2">drop your feedback <Rocket className="w-4 h-4" /></span>
+              <span className="inline-flex items-center gap-2">
+                {user ? (profile?.coolId ? "Go to Dashboard" : "Claim your ID") : "Join the Vibe"} 
+                <Rocket className="w-4 h-4" />
+              </span>
             </Link>
             <Link
               href="#play"
-              className="rounded-full px-8 py-4 font-black text-white/70 text-base border border-white/10 hover:border-white/30 hover:text-white transition-all duration-200"
+              className="rounded-full px-10 py-5 font-black text-white/70 text-base border border-white/10 hover:border-white/30 hover:text-white transition-all duration-300 backdrop-blur-md"
             >
-              <span className="inline-flex items-center gap-1.5">see how it works <ChevronDown className="w-4 h-4" /></span>
+              <span className="inline-flex items-center gap-1.5">How it works <ChevronDown className="w-4 h-4" /></span>
             </Link>
           </div>
         </div>
       </section>
 
       {/* ── MARQUEE DIVIDER ── */}
-      <div className="overflow-hidden border-y border-white/08 py-4" style={{ background: "#0f0f0f" }}>
+      <div className="overflow-hidden border-y border-white/08 py-6" style={{ background: "#0f0f0f" }}>
         <div className="marquee-track">
           {Array(2).fill(MARQUEE_ITEMS).flat().map((item, i) => {
             const Icon = item.Icon;
             return (
-              <span key={i} className="mx-6 text-sm font-black text-white/30 uppercase tracking-widest flex-shrink-0 inline-flex items-center gap-1.5">
-                <Icon className="w-4 h-4 shrink-0" /> {item.label}
+              <span key={i} className="mx-10 text-sm font-black text-white/40 uppercase tracking-[0.2em] flex-shrink-0 inline-flex items-center gap-2 shadow-sm">
+                <Icon className="w-4 h-4 shrink-0 transition-transform hover:scale-125" /> {item.label}
               </span>
             );
           })}
@@ -443,14 +446,14 @@ export default function Home() {
         {/* ── Central content ── */}
         <div className="relative max-w-2xl mx-auto text-center" style={{ zIndex: 20 }}>
           <AnimateOnScroll>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">feedback games</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">the feedback loop</p>
             <h2
-              className="font-black leading-[0.88] tracking-tight"
+              className="font-black leading-[0.88] tracking-tight text-white mb-6"
               style={{ fontSize: "clamp(3.8rem, 12vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
             >
-              <span className="text-white block">play</span>
-              <span className="text-outline block">feedback</span>
-              <span className="block" style={{ color: "var(--blue)" }}>games</span>
+              real<br />
+              <span className="text-outline">anonymous</span><br />
+              <span style={{ color: "var(--blue)" }}>vibes.</span>
             </h2>
           </AnimateOnScroll>
 
@@ -462,11 +465,11 @@ export default function Home() {
             >
               <div className="slot" style={{ height: "500%" }}>
                 {[
-                  { label: "roast me", Icon: Flame, color: "var(--pink)" },
-                  { label: "rate this", Icon: Star, color: "var(--yellow)" },
-                  { label: "screenshot review", Icon: Camera, color: "var(--blue)" },
-                  { label: "3 words only", Icon: HandMetal, color: "var(--green)" },
-                  { label: "love it or hate it", Icon: Skull, color: "#fff" },
+                  { label: "photo drop", Icon: Camera, color: "var(--pink)" },
+                  { label: "pixel check", Icon: ImageIcon, color: "var(--blue)" },
+                  { label: "vibe check", Icon: Sparkles, color: "var(--purple)" },
+                  { label: "anon react", Icon: Target, color: "var(--green)" },
+                  { label: "honest look", Icon: Zap, color: "#fff" },
                 ].map((item, i) => {
                   const SlotIcon = item.Icon;
                   return (
@@ -491,7 +494,7 @@ export default function Home() {
 
           {/* Mobile response image cards */}
           <AnimateOnScroll delay={350}>
-            <div className="mt-10 flex flex-wrap justify-center gap-4 lg:hidden">
+            <div className="mt-12 flex flex-wrap justify-center gap-4 lg:hidden">
               {[
                 { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
                 { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
@@ -499,8 +502,8 @@ export default function Home() {
                 { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
               ].map((r, i) => {
                 return (
-                  <div key={i} className="relative" style={{ transform: `rotate(${r.rot})` }}>
-                    <div className="p-[3px] rounded-xl shadow-xl" style={{ background: r.bg }}>
+                  <div key={i} className="relative transition-transform hover:scale-110 duration-300" style={{ transform: `rotate(${r.rot})` }}>
+                    <div className="p-[3px] rounded-xl shadow-2xl" style={{ background: r.bg }}>
                       <div className="w-20 h-24 rounded-lg overflow-hidden bg-black">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={r.src} alt="response" className="w-full h-full object-cover" />
@@ -527,17 +530,17 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <AnimateOnScroll>
             <div className="text-center mb-16">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">in action</p>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">the timeline</p>
               <h2 className="font-black text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}>
-                see it{" "}
+                how they{" "}
                 <span
                   className="bg-clip-text text-transparent"
                   style={{ backgroundImage: "linear-gradient(90deg, var(--pink), var(--purple), var(--blue))" }}
                 >
-                  live
+                  react
                 </span>
               </h2>
-              <p className="mt-3 text-white/40 text-base sm:text-lg font-semibold">Drop any image. Get real, anonymous reactions instantly.</p>
+              <p className="mt-4 text-white/40 text-base sm:text-lg font-bold">They drop an image. You get a notification. The chat begins.</p>
             </div>
           </AnimateOnScroll>
           <ImageShowcase />
@@ -557,36 +560,42 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <AnimateOnScroll>
             <div className="text-center mb-16">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">get to know</p>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">getting started</p>
               <h2
                 className="font-black text-[var(--text-primary)] leading-[0.9]"
                 style={{ fontSize: "clamp(3rem, 9vw, 7rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
               >
-                your{" "}
-                <span className="text-outline">audience</span>
+                your<br />
+                <span className="text-outline">feedback</span><br />
+                portal.
               </h2>
-              <p className="mt-5 text-white/50 text-base sm:text-lg font-semibold max-w-md mx-auto">
-                Share your link. Friends visit it and send you images — anonymously. No sign-up for them. Real feedback in your inbox.
+              <p className="mt-8 text-white/50 text-base sm:text-lg font-bold max-w-md mx-auto">
+                No sign-up for your friends. They just click your link, drop an image, and you get notified instantly.
               </p>
             </div>
           </AnimateOnScroll>
 
           {/* Step cards */}
-          <div className="grid sm:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { step: "01", Icon: Link2, title: "Get your link", desc: "Sign up, create your ID, get your unique feedback link from the dashboard.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)" },
-              { step: "02", Icon: Share2, title: "Share your link", desc: "Send it to friends, group chat, story, or anywhere. One tap to copy or share.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)" },
-              { step: "03", Icon: Inbox, title: "Get real reactions", desc: "They send you images anonymously. You see everything in your inbox. No sugarcoating.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)" },
+              { step: "01", Icon: Link2, title: "Get Your ID", desc: "Claim your unique Cool ID and get a personalized feedback link in seconds.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)", href: user ? "/dashboard" : "/login" },
+              { step: "02", Icon: Share2, title: "Spread the Link", desc: "Share your portal on Instagram, Twitter, or WhatsApp. Let the drops begin.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)", href: user ? "/dashboard" : "/login" },
+              { step: "03", Icon: Inbox, title: "Anonymous Chat", desc: "Receive anonymous images and text. Reply instantly to start a secret thread.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)", href: user ? "/inbox" : "/login" },
             ].map((s, i) => {
               const StepIcon = s.Icon;
               return (
                 <AnimateOnScroll key={i} delay={i * 120}>
-                  <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
-                    <div className="mb-4"><StepIcon className="w-10 h-10" style={{ color: s.color }} /></div>
-                    <div className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: s.color }}>{s.step}</div>
-                    <h3 className="text-xl font-black text-white mb-2">{s.title}</h3>
-                    <p className="text-white/40 font-semibold text-sm leading-relaxed">{s.desc}</p>
-                  </div>
+                  <Link href={s.href} className="flex flex-col h-full group">
+                    <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
+                      <div className="mb-5"><StepIcon className="w-12 h-12 transition-transform group-hover:scale-110" style={{ color: s.color }} /></div>
+                      <div className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: s.color }}>{s.step}</div>
+                      <h3 className="text-2xl font-black text-white mb-3">{s.title}</h3>
+                      <p className="text-white/40 font-bold text-sm leading-relaxed mb-6">{s.desc}</p>
+                      <div className="mt-auto text-[10px] font-black uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2" style={{ color: s.color }}>
+                        Start now <ChevronRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </Link>
                 </AnimateOnScroll>
               );
             })}
@@ -608,7 +617,7 @@ export default function Home() {
       {/* ================================================================
           SECTION 4: JOIN THE VIBE (CTA)
       ================================================================ */}
-      <section className="relative overflow-hidden py-28 sm:py-36 px-4 sm:px-6">
+      <section className="relative overflow-hidden py-32 sm:py-48 px-4 sm:px-6">
         {/* Full bleed gradient */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #FF3D7F 0%, #7C3AFF 50%, #00C8FF 100%)" }} />
         {/* Grid overlay */}
@@ -627,32 +636,33 @@ export default function Home() {
 
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <AnimateOnScroll>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60 mb-4">ready?</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60 mb-6">experience it now</p>
             <h2
-              className="font-black text-white leading-[0.9]"
+              className="font-black text-white leading-[0.9] mb-10"
               style={{ fontSize: "clamp(3.5rem, 11vw, 8rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
             >
-              join the
-              <br />
-              <span style={{ WebkitTextStroke: "3px rgba(255,255,255,0.9)", color: "transparent" }}>vibe</span>
+              ready to<br />
+              <span style={{ WebkitTextStroke: "2px rgba(255,255,255,0.9)", color: "transparent" }}>get real?</span>
             </h2>
-            <p className="mt-5 text-white/80 text-lg font-bold">No sign up. No stress. Just vibes.</p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link
-                href="/dashboard"
-                className="cta-btn rounded-full px-12 py-5 font-black text-lg"
+                href={user ? "/dashboard" : "/login"}
+                className="cta-btn rounded-full px-16 py-6 font-black text-xl transition-all shadow-2xl"
                 style={{
                   background: "#fff",
                   color: "#7C3AFF",
-                  boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
                 }}
               >
-                <span className="inline-flex items-center gap-2">start now <Sparkles className="w-5 h-5" /></span>
+                <span className="inline-flex items-center gap-2">
+                  {user ? "Go to Dashboard" : "Join the Portal"} 
+                  <Sparkles className="w-5 h-5" />
+                </span>
               </Link>
             </div>
           </AnimateOnScroll>
         </div>
       </section>
+
 
 
       {/* ================================================================
@@ -670,7 +680,7 @@ export default function Home() {
             <Link href="/about" className="footer-link">about</Link>
             <Link href="#how" className="footer-link">how it works</Link>
             <Link href="#play" className="footer-link">play</Link>
-            <Link href="/dashboard" className="footer-link">give feedback</Link>
+            <Link href={user ? "/dashboard" : "/login"} className="footer-link">get feedback</Link>
             <Link href="/privacy" className="footer-link">privacy</Link>
             <Link href="/terms" className="footer-link">terms</Link>
           </div>

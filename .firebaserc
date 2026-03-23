@@ -1,5 +1,17 @@
 {
   "projects": {
-    "default": "imagify-5f3d5"
-  }
+    "default": "imagify-5f3d5",
+    "production": "picpop-production",
+    "staging": "imagify-5f3d5"
+  },
+  "targets": {
+    "picpop-production": {
+      "hosting": {
+        "app": [
+          "picpop-production"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

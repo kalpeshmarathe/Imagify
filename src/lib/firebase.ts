@@ -1,13 +1,15 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
-import { initializeAuth, getAuth, browserLocalPersistence, browserPopupRedirectResolver } from "firebase/auth";
+import { initializeAuth, getAuth, browserLocalPersistence, browserPopupRedirectResolver, connectAuthEmulator } from "firebase/auth";
 import {
   initializeFirestore,
   getFirestore,
   memoryLocalCache,
   enableNetwork,
+  connectFirestoreEmulator,
 } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { getDatabase } from "firebase/database";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getDatabase, connectDatabaseEmulator } from "firebase/database";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -17,7 +19,7 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: "https://imagify-5f3d5-default-rtdb.firebaseio.com",
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "https://picpop-production-default-rtdb.firebaseio.com/",
 };
 
 // Initialize Firebase (client-side only)
@@ -34,19 +36,19 @@ if (typeof window !== "undefined") {
 // (happens with Next.js/webpack bundling; initializeAuth explicitly registers the component)
 export const auth = app
   ? (() => {
-      try {
-        return initializeAuth(app, {
+    try {
+      return initializeAuth(app, {
         persistence: browserLocalPersistence,
         popupRedirectResolver: browserPopupRedirectResolver,
       });
-      } catch (e) {
-        if ((e as { code?: string })?.code === "auth/already-initialized") {
-          return getAuth(app);
-        }
-        console.error("[Firebase] Auth init failed:", e);
-        return null;
+    } catch (e) {
+      if ((e as { code?: string })?.code === "auth/already-initialized") {
+        return getAuth(app);
       }
-    })()
+      console.error("[Firebase] Auth init failed:", e);
+      return null;
+    }
+  })()
   : null;
 
 // Use memoryLocalCache + force long polling to avoid "client is offline" errors.
@@ -54,15 +56,15 @@ export const auth = app
 // - experimentalForceLongPolling: uses HTTP long-poll instead of WebSockets (helps with proxies/VPNs)
 export const db = app
   ? (() => {
-      try {
-        return initializeFirestore(app, {
-          localCache: memoryLocalCache(),
-          experimentalForceLongPolling: true,
-        });
-      } catch {
-        return getFirestore(app);
-      }
-    })()
+    try {
+      return initializeFirestore(app, {
+        localCache: memoryLocalCache(),
+        experimentalForceLongPolling: true,
+      });
+    } catch {
+      return getFirestore(app);
+    }
+  })()
   : null;
 
 // One-time network enable — avoids repeated enableNetwork() calls that can trigger
@@ -85,6 +87,26 @@ export async function getMessagingSafe(): Promise<Messaging | null> {
   if (!supported) return null;
   if (!_messaging) _messaging = getMessaging(app);
   return _messaging;
+}
+
+// Emulator Setup
+if (typeof window !== "undefined" && window.location.hostname === "localhost" && app) {
+  console.log("[Firebase] 🛠 Connecting to local emulators...");
+
+  if (auth) connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+  if (db) connectFirestoreEmulator(db, "localhost", 8080);
+
+  try {
+    const functions = getFunctions(app);
+    connectFunctionsEmulator(functions, "localhost", 5001);
+  } catch (e) { /* ignore */ }
+
+  if (storage) connectStorageEmulator(storage, "localhost", 9199);
+
+  if (rtdb) {
+    // Current RTDB emulator default is 9000
+    connectDatabaseEmulator(rtdb, "localhost", 9000);
+  }
 }
 
 export { app };

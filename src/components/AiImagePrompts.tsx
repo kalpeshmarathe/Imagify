@@ -12,9 +12,26 @@ const PROVIDERS: {
   prefill: boolean;
   accent: string;
   androidPackage?: string;
+  iosScheme?: string;
 }[] = [
-  { id: "chatgpt", label: "ChatGPT", url: (p) => `https://chatgpt.com/?q=${encodeURIComponent(p)}`, prefill: true, accent: "#10a37f", androidPackage: "com.openai.chatgpt" },
-  { id: "gemini", label: "Gemini", url: () => "https://gemini.google.com/", prefill: false, accent: "#4285f4", androidPackage: "com.google.android.apps.bard" },
+  { 
+    id: "chatgpt", 
+    label: "ChatGPT", 
+    url: (p) => `https://chatgpt.com/?q=${encodeURIComponent(p)}`, 
+    prefill: true, 
+    accent: "#10a37f", 
+    androidPackage: "com.openai.chatgpt",
+    iosScheme: "chatgpt://"
+  },
+  { 
+    id: "gemini", 
+    label: "Gemini", 
+    url: (p) => `https://gemini.google.com/app?q=${encodeURIComponent(p)}`, 
+    prefill: true, 
+    accent: "#4285f4", 
+    androidPackage: "com.google.android.apps.bard",
+    iosScheme: "googleapp://gemini" 
+  },
 ];
 
 export function getProviderUrl(prompt: string, provider: AiImageProvider): string {
@@ -22,16 +39,41 @@ export function getProviderUrl(prompt: string, provider: AiImageProvider): strin
   return p ? p.url(prompt) : PROVIDERS[0].url(prompt);
 }
 
-/** Open provider: try app on Android if installed, else open website */
+/** Open provider: try app on mobile if installed, else open website */
 export function openProvider(prompt: string, provider: AiImageProvider, isMobile: boolean): void {
   const p = PROVIDERS.find((x) => x.id === provider);
-  const webUrl = p ? p.url(prompt) : PROVIDERS[0].url(prompt);
+  if (!p) return;
 
+  const webUrl = p.url(prompt);
   const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-  if (isAndroid && p?.androidPackage) {
-    const fallback = encodeURIComponent(webUrl);
-    const intentUrl = `intent://#Intent;package=${p.androidPackage};action=android.intent.action.MAIN;S.browser_fallback_url=${fallback};end`;
+  const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isAndroid && p.androidPackage) {
+    // Attempt specific search/prompt intents if supported
+    let intentUrl = `intent://#Intent;package=${p.androidPackage};action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    
+    if (provider === "chatgpt") {
+      intentUrl = `intent://chat?q=${encodeURIComponent(prompt)}#Intent;scheme=chatgpt;package=com.openai.chatgpt;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    } else if (provider === "gemini") {
+      intentUrl = `intent://gemini?q=${encodeURIComponent(prompt)}#Intent;scheme=googleapp;package=com.google.android.apps.bard;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    }
+    
     window.location.href = intentUrl;
+  } else if (isIOS && p.iosScheme) {
+    // Attempt iOS custom schemes
+    const schemeUrl = provider === "chatgpt" 
+      ? `chatgpt://chat?q=${encodeURIComponent(prompt)}`
+      : `googleapp://`; // Gemini is usually part of Google app
+    
+    const start = Date.now();
+    window.location.href = schemeUrl;
+    
+    // Fallback if app doesn't open within 2s
+    setTimeout(() => {
+      if (Date.now() - start < 2500) {
+        window.location.href = webUrl;
+      }
+    }, 2000);
   } else if (isMobile) {
     window.location.href = webUrl;
   } else {

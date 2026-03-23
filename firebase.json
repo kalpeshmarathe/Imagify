@@ -1,23 +1,85 @@
 {
-  "storage": { "rules": "storage.rules" },
-  "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
-  "functions": { "source": "functions" },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
-    "site": "imagify-5f3d5",
+    "target": "app",
     "public": "out",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
-      { "source": "/", "destination": "/index.html" },
-      { "source": "/admin", "destination": "/admin.html" },
-      { "source": "/dashboard", "destination": "/dashboard.html" },
-      { "source": "/login", "destination": "/login.html" },
-      { "source": "/create-id", "destination": "/create-id.html" },
-      { "source": "/inbox", "destination": "/inbox.html" },
-      { "source": "/f", "destination": "/f.html" },
-      { "source": "/feedback", "destination": "/feedback.html" },
-      { "source": "/u", "destination": "/u.html" },
-      { "source": "/u/**", "destination": "/u.html" },
-      { "source": "**", "destination": "/404.html" }
+      {
+        "source": "/",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin.html"
+      },
+      {
+        "source": "/dashboard",
+        "destination": "/dashboard.html"
+      },
+      {
+        "source": "/login",
+        "destination": "/login.html"
+      },
+      {
+        "source": "/create-id",
+        "destination": "/create-id.html"
+      },
+      {
+        "source": "/inbox",
+        "destination": "/inbox.html"
+      },
+      {
+        "source": "/f",
+        "destination": "/f.html"
+      },
+      {
+        "source": "/feedback",
+        "destination": "/feedback.html"
+      },
+      {
+        "source": "/u",
+        "destination": "/u.html"
+      },
+      {
+        "source": "/u/**",
+        "destination": "/u.html"
+      },
+      {
+        "source": "**",
+        "destination": "/404.html"
+      }
     ]
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
   }
 }

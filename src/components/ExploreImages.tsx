@@ -5,6 +5,7 @@ import { ImageIcon, Loader2, Globe } from "lucide-react";
 import { getFirestore, collection, getDocs, orderBy, query } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { GoogleSearchModal } from "./GoogleSearchModal";
+import { openProvider } from "./AiImagePrompts";
 
 export interface SharedFeedback {
   id: string;
@@ -180,13 +181,13 @@ export function ExploreImages({
           
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.open('https://chatgpt.com', '_blank')}
+              onClick={() => openProvider("Funny anonymous feedback reaction image, meme style", "chatgpt", typeof window !== "undefined" && window.innerWidth < 768)}
               className="px-3 py-1.5 rounded-lg bg-[#10a37f]/10 border border-[#10a37f]/20 hover:bg-[#10a37f]/20 transition-all text-[10px] font-black text-[#10a37f] uppercase tracking-wider"
             >
               ChatGPT
             </button>
             <button
-              onClick={() => window.open('https://gemini.google.com', '_blank')}
+              onClick={() => openProvider("Funny anonymous feedback reaction image, meme style", "gemini", typeof window !== "undefined" && window.innerWidth < 768)}
               className="px-3 py-1.5 rounded-lg bg-[#4285f4]/10 border border-[#4285f4]/20 hover:bg-[#4285f4]/20 transition-all text-[10px] font-black text-[#4285f4] uppercase tracking-wider"
             >
               Gemini

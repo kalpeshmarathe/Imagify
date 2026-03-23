@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
-import { Bell, Eye, Image as ImageIcon, X, Trash2, CheckCircle2, ChevronRight } from "lucide-react";
+import { Bell, Eye, Image as ImageIcon, X, Trash2, CheckCircle2, ChevronRight, CircleUser } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -79,10 +79,10 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
   const { user, profile } = useAuth();
   const toast = useToast();
   const router = useRouter();
-  
+
   // Use our unified unread hook
   const { unreadNotifications, loading: rtdbLoading } = useUnreadNotifications(user?.uid);
-  
+
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -97,7 +97,7 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
     // We only show unreads in this bell list anyway
     const combined = [...notifications, ...unreadNotifications] as any[];
     const map = new Map<string, any>();
-    
+
     combined.forEach(n => {
       const existing = map.get(n.id);
       // Keep the most recent or the unread one
@@ -309,13 +309,13 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
     // marking as read
     if (!n.isRead) {
       if (user && db) {
-        try { 
+        try {
           // 1. Mark in Firestore
-          await writeBatch(db).update(doc(db, "notifications", n.id), { isRead: true }).commit(); 
+          await writeBatch(db).update(doc(db, "notifications", n.id), { isRead: true }).commit();
           // 2. Mark in RTDB for instant update
           const { markOwnerNotificationAsRead } = await import("@/lib/realtime-notifications");
           await markOwnerNotificationAsRead(user.uid, n.id);
-        } catch (e) { 
+        } catch (e) {
           console.warn("Mark read error:", e);
         }
       } else {
@@ -368,8 +368,8 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
         type="button"
         onClick={handleToggle}
         className={`relative p-3 rounded-2xl transition-all group active:scale-90 ${open
-            ? "bg-white/10 text-white"
-            : "bg-white/5 text-white/50 hover:text-white"
+          ? "bg-white/10 text-white"
+          : "bg-white/5 text-white/50 hover:text-white"
           }`}
       >
         <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-600/20 blur-2xl transition-all duration-500 ${hasUnread ? "opacity-100 animate-pulse" : "opacity-0 invisible group-hover:visible group-hover:opacity-100"}`} />
@@ -425,11 +425,10 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
                     <button
                       key={n.id}
                       onClick={() => handleNotificationClick(n)}
-                      className={`w-full flex items-center gap-4 px-4 py-4 rounded-[24px] transition-all text-left relative overflow-hidden group/item ${
-                        !n.isRead 
-                          ? "bg-white/[0.06] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] ring-1 ring-white/10" 
+                      className={`w-full flex items-center gap-4 px-4 py-4 rounded-[24px] transition-all text-left relative overflow-hidden group/item ${!n.isRead
+                          ? "bg-white/[0.06] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] ring-1 ring-white/10"
                           : "opacity-40 hover:opacity-100 hover:bg-white/[0.02]"
-                      }`}
+                        }`}
                       style={{ transitionDelay: `${idx * 40}ms` }}
                     >
                       {/* Unread Accent Glow */}
@@ -438,20 +437,19 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
                       )}
 
                       <div className="relative shrink-0 w-12 h-12">
-                        <div className={`w-full h-full rounded-2xl flex items-center justify-center transition-all duration-500 overflow-hidden ${
-                          !n.isRead 
-                            ? "bg-gradient-to-br from-[#ff3d7f30] to-[#7c3aff30] border border-pink-500/30 scale-105" 
+                        <div className={`w-full h-full rounded-2xl flex items-center justify-center transition-all duration-500 overflow-hidden ${!n.isRead
+                            ? "bg-gradient-to-br from-[#ff3d7f30] to-[#7c3aff30] border border-pink-500/30 scale-105"
                             : "bg-white/10 grayscale"
-                        }`}>
+                          }`}>
                           {n.feedbackImageUrl ? (
-                             <img src={n.feedbackImageUrl} className="w-full h-full object-cover" alt="" />
+                            <img src={n.feedbackImageUrl} className="w-full h-full object-cover" alt="" />
                           ) : (
-                             <div className="w-full h-full flex items-center justify-center bg-white/5 uppercase text-xs font-black">
-                                {n.coolId.slice(0, 2)}
-                             </div>
+                            <div className="w-full h-full flex items-center justify-center bg-white/5">
+                              <CircleUser className="w-6 h-6 text-white/20" />
+                            </div>
                           )}
                         </div>
-                        
+
                         {!n.isRead && (
                           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-pink-500 rounded-full border-2 border-[#121217] animate-pulse shadow-[0_0_10px_rgba(255,61,127,1)] z-20" />
                         )}
@@ -460,7 +458,7 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
                       <div className="flex-1 min-w-0 pr-1">
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className={`text-[10px] font-black uppercase tracking-widest truncate ${!n.isRead ? "text-pink-400" : "text-white/60"}`}>
-                             @{n.coolId}
+                            @{n.coolId}
                           </span>
                           {!n.isRead && (
                             <span className="px-1.5 py-0.5 rounded-full bg-pink-500 text-[8px] font-black text-white shrink-0 shadow-lg shadow-pink-500/20">NEW</span>

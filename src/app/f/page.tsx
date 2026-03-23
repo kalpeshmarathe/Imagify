@@ -39,6 +39,7 @@ interface Feedback {
   hasReply?: boolean;
   senderCanReply?: boolean;
   receiverCanReply?: boolean;
+  isFirstSender?: boolean;
 }
 
 const isMountedRef = { current: true };
@@ -315,6 +316,7 @@ function FeedbackOnImageContent() {
                     hasReply: data.hasReply,
                     senderCanReply: data.senderCanReply,
                     receiverCanReply: data.receiverCanReply,
+                    isFirstSender: data.isFirstSender,
                   } as Feedback;
                 });
 

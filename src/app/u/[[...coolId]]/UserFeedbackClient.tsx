@@ -247,8 +247,9 @@ function UserFeedbackContent() {
     const fromPath = (pathname || "").replace(/^\/u\/?/, "").split("/")[0] || "";
     const fromQuery = searchParams.get("user") || "";
     const id = (fromPath || fromQuery).trim().toLowerCase();
-    setCoolId(id);
-  }, [pathname, searchParams]);
+    if (id) setCoolId(id);
+    else if (!authLoading && !authUser) setLoading(false); 
+  }, [pathname, searchParams, authLoading, authUser]);
 
   useEffect(() => {
     if (coolId && userId) document.title = `Chat with @${coolId} â€” PicPop`;
@@ -256,23 +257,30 @@ function UserFeedbackContent() {
   }, [coolId, userId]);
 
   useEffect(() => {
-    if (!db || !coolId) { setLoading(false); return; }
+    if (!db || !coolId) return;
+    
     const firestore = db;
     let mounted = true;
+    setLoading(true);
+
     const run = async () => {
       try {
         await ensureFirestoreNetwork();
         const snap = await getDoc(doc(firestore, "usernames", coolId));
-        if (mounted && snap.exists()) {
-          const uid = (snap.data() as { uid: string }).uid;
-          setUserId(uid);
-        } else {
-          setUserId(null);
+        if (mounted) {
+          if (snap.exists()) {
+            const uid = (snap.data() as { uid: string }).uid;
+            setUserId(uid);
+          } else {
+            setUserId(null);
+          }
+          setLoading(false);
         }
       } catch (err) {
-        if (mounted) setUserId(null);
-      } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setUserId(null);
+          setLoading(false);
+        }
       }
     };
     run();
@@ -455,6 +463,7 @@ function UserFeedbackContent() {
       attachmentUrl: urlToUse || undefined,
       attachmentName: fileToUpload?.name || undefined,
       threadId: threadId || undefined,
+      isFirstSender: !threadId,
     };
     setChatHistory(prev => [...prev, optimisticMsg]);
     checkChatModeOrSuccess();
@@ -803,8 +812,10 @@ function UserFeedbackContent() {
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <div>
-              <p className="text-base font-black text-white leading-tight">@{coolId}</p>
+              <div>
+                <p className="text-base font-black text-white leading-tight">
+                  {authUser?.uid === userId ? "Guest" : `@${coolId}`}
+                </p>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
                 <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
@@ -861,7 +872,11 @@ function UserFeedbackContent() {
                         ? "bg-gradient-to-br from-pink-500 to-purple-600 rotate-3"
                         : "bg-gradient-to-br from-blue-500 to-purple-500 -rotate-3"
                         }`}>
-                        {isMe ? "ME" : (isOwnerReply ? `@${coolId}` : "GUEST")}
+                        {(() => {
+                          const label = isMe ? "ME" : (isOwnerReply ? `@${coolId}` : "GUEST");
+                          if (!isMe) console.log(`[ChatDebug] Msg: FirstSender=${msg.isFirstSender}, IsOwnerReply=${isOwnerReply}, Label=${label}`);
+                          return label;
+                        })()}
                       </div>
 
                       {/* Bubble */}

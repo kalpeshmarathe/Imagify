@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo, Fragment } from "react";
 import Link from "next/link";
-import { Bell, Eye, Image as ImageIcon, X, MoreVertical, Trash2, Flag, MessageSquare, Send, Paperclip, FileText, CheckCircle2, Share2, AlertCircle, ChevronLeft, Heart } from "lucide-react";
+import { Bell, Eye, Image as ImageIcon, X, MoreVertical, Trash2, Flag, MessageSquare, Send, Paperclip, FileText, CheckCircle2, Share2, AlertCircle, ChevronLeft, Heart, CircleUser } from "lucide-react";
 import {
   collection,
   query,
@@ -113,6 +113,7 @@ interface NotifItem {
   senderCanReply?: boolean;
   receiverCanReply?: boolean;
   isAnonymousToRecipient?: boolean;
+  isFirstSender?: boolean;
 }
 
 function canUserSeeProfile(item: NotifItem, currentUid: string | undefined) {
@@ -258,6 +259,7 @@ export default function InboxPage() {
                     senderCanReply: data.senderCanReply,
                     receiverCanReply: data.receiverCanReply,
                     isAnonymousToRecipient: data.isAnonymousToRecipient === true,
+                    isFirstSender: data.isFirstSender,
                   };
                 })
               );
@@ -314,6 +316,7 @@ export default function InboxPage() {
                 senderCanReply: data.senderCanReply,
                 receiverCanReply: data.receiverCanReply,
                 isAnonymousToRecipient: data.isAnonymousToRecipient === true,
+                isFirstSender: data.isFirstSender,
               };
             });
 
@@ -579,6 +582,7 @@ export default function InboxPage() {
             senderCanReply: data.senderCanReply,
             receiverCanReply: data.receiverCanReply,
             isAnonymousToRecipient: data.isAnonymousToRecipient === true,
+            isFirstSender: data.isFirstSender,
           };
         });
 
@@ -638,16 +642,16 @@ export default function InboxPage() {
 
         // 2. Mark in RTDB for instant update across tabs
         if (user?.uid) {
-           const { markOwnerNotificationAsRead } = await import("@/lib/realtime-notifications");
-           for (const id of unreadIds) {
-             // notifications list usually has many items, but we only have ID
-             // The ID in Firestore 'notifications' is the same as in RTDB 'users/uid/notifications'
-             // because the functions use feedbackId or a generated ID consistently.
-             // Actually, the RTDB key is usually the feedbackId.
-             const item = notifications.find(n => n.id === id);
-             const rtdbKey = item?.feedbackId || id;
-             await markOwnerNotificationAsRead(user.uid, rtdbKey);
-           }
+          const { markOwnerNotificationAsRead } = await import("@/lib/realtime-notifications");
+          for (const id of unreadIds) {
+            // notifications list usually has many items, but we only have ID
+            // The ID in Firestore 'notifications' is the same as in RTDB 'users/uid/notifications'
+            // because the functions use feedbackId or a generated ID consistently.
+            // Actually, the RTDB key is usually the feedbackId.
+            const item = notifications.find(n => n.id === id);
+            const rtdbKey = item?.feedbackId || id;
+            await markOwnerNotificationAsRead(user.uid, rtdbKey);
+          }
         }
       } catch (err) {
         console.error("Error marking read:", err);
@@ -774,9 +778,9 @@ export default function InboxPage() {
       sessionId: sessionId ?? undefined,
       coolId: "",
       threadId:
-        items.find((i) => i.threadId)?.threadId ||
         items.find((i) => i.id || i.feedbackId)?.id ||
         items[0].id,
+      isFirstSender: false,
     };
 
     // ✅ FIX: Track optimistic message
@@ -938,104 +942,89 @@ export default function InboxPage() {
 
     if (ids.size === 0 || !db) return;
 
-      const resolve = async () => {
-        const toFetch = Array.from(ids);
-        setResolvingIds((prev) => {
-          const n = new Set(prev);
-          toFetch.forEach((id) => n.add(id));
-          return n;
-        });
+    const resolve = async () => {
+      const toFetch = Array.from(ids);
+      setResolvingIds((prev) => {
+        const n = new Set(prev);
+        toFetch.forEach((id) => n.add(id));
+        return n;
+      });
 
-        const newCache = { ...profileCache };
-        const firestore = db;
-        if (!firestore) return;
+      const newCache = { ...profileCache };
+      const firestore = db;
+      if (!firestore) return;
 
-        // Batch queries in chunks of 30 (Firestore limit)
-        const chunks: string[][] = [];
-        for (let i = 0; i < toFetch.length; i += 30) {
-          chunks.push(toFetch.slice(i, i + 30));
+      // Batch queries in chunks of 30 (Firestore limit)
+      const chunks: string[][] = [];
+      for (let i = 0; i < toFetch.length; i += 30) {
+        chunks.push(toFetch.slice(i, i + 30));
+      }
+
+      for (const chunk of chunks) {
+        try {
+          const q = query(collection(firestore, "usernames"), where("uid", "in", chunk));
+          const snap = await getDocs(q);
+          snap.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.uid) newCache[data.uid] = doc.id;
+          });
+          // Fallback for any that didn't resolve
+          chunk.forEach(id => {
+            if (!newCache[id]) newCache[id] = id.slice(0, 8);
+          });
+        } catch (e) {
+          console.error("Profile Batch Error:", e);
         }
-
-        for (const chunk of chunks) {
-          try {
-            const q = query(collection(firestore, "usernames"), where("uid", "in", chunk));
-            const snap = await getDocs(q);
-            snap.docs.forEach(doc => {
-              const data = doc.data();
-              if (data.uid) newCache[data.uid] = doc.id;
-            });
-            // Fallback for any that didn't resolve
-            chunk.forEach(id => {
-              if (!newCache[id]) newCache[id] = id.slice(0, 8);
-            });
-          } catch (e) {
-            console.error("Profile Batch Error:", e);
-          }
-        }
-        setProfileCache(newCache);
-      };
+      }
+      setProfileCache(newCache);
+    };
     resolve();
   }, [allItems, uid, profileCache, resolvingIds]);
 
   const groupedItems = useMemo(() => {
-    const groupedMap = new Map<string, GroupedItem>();
-    
+    const groupedMap = new Map<string, NotifItem[]>();
     for (const item of allItems) {
-      const groupId = getConversationKey(item);
-      if (!groupedMap.has(groupId)) {
-        const hasReply = item.hasReply || item.status === "active_chat" || item.isOwnerReply;
-        const isInitialSender = !item.isOwnerReply && item.submitterId === uid;
-
-        groupedMap.set(groupId, {
-          id: groupId,
-          itemType: item.itemType,
-          threadType: item.recipientId === uid ? "inbox" : "sent",
-          threadPartnerId:
-            groupId === "all-visits"
-              ? "unknown"
-              : item.submitterId === uid
-                ? item.recipientId || groupId
-                : item.submitterId || item.anonymousId || groupId,
-          items: [],
-          createdAt: item.createdAt,
-          latestItem: item,
-          status:
-            isInitialSender && !hasReply
-              ? "feedback_only"
-              : "active_chat",
-          feedbackId: item.feedbackId || item.id,
-        });
-      }
-      const group = groupedMap.get(groupId)!;
-
-      const effId = item.feedbackId || item.id;
-      if (!group.items.find((i) => (i.feedbackId || i.id) === effId)) {
-        group.items.push(item);
-      }
-
-      if (new Date(item.createdAt).getTime() > new Date(group.createdAt).getTime()) {
-        group.createdAt = item.createdAt;
-        group.latestItem = item;
-      }
-      if (item.feedbackImageUrl && !group.sharedImageUrl)
-        group.sharedImageUrl = item.feedbackImageUrl;
+      const gKey = getConversationKey(item);
+      if (!groupedMap.has(gKey)) groupedMap.set(gKey, []);
+      groupedMap.get(gKey)!.push(item);
     }
 
-    return Array.from(groupedMap.values())
-      .filter((group) => group.itemType === "feedback")
-      .map((group): GroupedItem => {
-        const hasReply = group.items.some((i) => i.isOwnerReply);
-        const isInitialSender = group.items.some((i) => !i.isOwnerReply && i.submitterId === uid);
+    return Array.from(groupedMap.entries())
+      .map(([groupId, items]): GroupedItem => {
+        // Sort items in this thread by time ASC to find the original message
+        const sorted = [...items].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const first = sorted[0];
+        const latest = sorted[sorted.length - 1];
+
+        const isOwnerOfThread = first.recipientId === uid;
+        const threadType = isOwnerOfThread ? "inbox" : "sent";
+
+        // Partner is the one who ISN'T me in the first message
+        const threadPartnerId = isOwnerOfThread 
+          ? (first.submitterId || first.anonymousId || groupId) 
+          : (first.recipientId || groupId);
+
+        const hasReply = sorted.some(i => i.isOwnerReply);
+        const isInitialSender = !first.isOwnerReply && first.submitterId === uid;
+
+        console.log(`[InboxDebug] Thread: ${groupId}, Partner: ${threadPartnerId}, Type: ${threadType}, FirstMsgSender: ${first.isFirstSender}`);
 
         return {
-          ...group,
+          id: groupId,
+          itemType: first.itemType,
+          threadType,
+          threadPartnerId,
+          items: sorted,
+          createdAt: latest.createdAt,
+          latestItem: latest,
           status: isInitialSender && !hasReply ? "feedback_only" : "active_chat",
+          feedbackId: first.feedbackId || first.id,
+          sharedImageUrl: sorted.find(i => i.feedbackImageUrl)?.feedbackImageUrl
         };
       })
+      .filter((group) => group.itemType === "feedback")
       .sort((a, b) => {
-        if (a.status !== b.status) {
-          return a.status === "active_chat" ? -1 : 1;
-        }
+        if (a.status !== b.status) return a.status === "active_chat" ? -1 : 1;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [allItems, uid]);
@@ -1257,9 +1246,9 @@ export default function InboxPage() {
                                   </span>
                                 </div>
                               ) : (
-                                  <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">
-                                    {item.threadType === "sent" ? "Verified" : (item.latestItem.isAnonymousToRecipient ? "Anonymous" : "Public")}
-                                  </span>
+                                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">
+                                  {item.threadType === "sent" ? "Verified" : (item.latestItem.isAnonymousToRecipient ? "Anonymous" : "Public")}
+                                </span>
                               )}
                             </div>
                             <span className="text-[9px] text-white/20 font-black uppercase tracking-widest">
@@ -1282,9 +1271,9 @@ export default function InboxPage() {
 
                           <div className="flex items-center justify-between gap-3 mt-1">
                             <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-1.5">
-                               {item.threadType === "sent" && activeGroup?.threadPartnerId !== "unknown" && profileCache[item.threadPartnerId]
-                                 ? `@${profileCache[item.threadPartnerId]}`
-                                 : (item.threadType === "sent" ? "OWNER" : (item.latestItem.isAnonymousToRecipient ? "GUEST" : "USER"))}
+                              {item.threadType === "sent" && item.threadPartnerId !== "unknown" && profileCache[item.threadPartnerId]
+                                ? `@${profileCache[item.threadPartnerId]}`
+                                : (item.threadType === "sent" ? "OWNER" : (item.latestItem.isAnonymousToRecipient ? "GUEST" : "USER"))}
                               <span className="w-1 h-1 rounded-full bg-white/20" />
                               {item.items.length} {item.items.length === 1 ? 'msg' : 'msgs'}
                             </span>
@@ -1330,14 +1319,17 @@ export default function InboxPage() {
                 </button>
                 <div>
                   <p className="text-base font-black text-white leading-tight">
-                    {(activeGroup.threadType === "sent" || !activeGroup.latestItem.isAnonymousToRecipient) && activeGroup.threadPartnerId !== "unknown" && profileCache[activeGroup.threadPartnerId]
-                      ? `@${profileCache[activeGroup.threadPartnerId]}`
-                      : activeGroup.threadType === "sent" ? "Sent Reaction" : (activeGroup.latestItem.isAnonymousToRecipient ? "Anonymous Fan" : "Public User")}
+                    {/* If I am the recipient and it IS anonymous, show Anonymous Fan immediately */}
+                    {activeGroup.threadType === "sent"
+                      ? (profileCache[activeGroup.threadPartnerId]
+                        ? `@${profileCache[activeGroup.threadPartnerId]}`
+                        : "Owner")
+                      : (activeGroup.latestItem.isAnonymousToRecipient ? "Guest" : "Public User")}
                   </p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
                     <p className="text-[10px] font-black text-white/30 uppercase tracking-widest leading-none">
-                      {activeGroup.threadType === "inbox" ? "Receiving" : "Sending"} Vibe
+                      {activeGroup.threadType === "sent" ? "Sending" : "Receiving"} Vibe
                     </p>
                   </div>
                 </div>
@@ -1396,9 +1388,10 @@ export default function InboxPage() {
                           ? "bg-gradient-to-br from-pink-500 to-purple-600 rotate-3"
                           : "bg-white/10 -rotate-3 border border-white/5"
                           }`}>
-                          {isMe ? "ME" : (canUserSeeProfile(chatItem, uid)
-                            ? (profileCache[chatItem.submitterId || ""] ? `@${profileCache[chatItem.submitterId || ""]}` : "OWNER") 
-                            : "GUEST")}
+                          {(() => {
+                            if (isMe) return "ME";
+                            return <CircleUser className="w-5 h-5" />;
+                          })()}
                         </div>
                         <div
                           className={`rounded-3xl p-4 shadow-2xl relative group/bubble ${isMe ? "rounded-br-sm text-white" : "rounded-bl-sm border border-white/5"

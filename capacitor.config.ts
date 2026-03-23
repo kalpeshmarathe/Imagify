@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.imagify.app",
-  appName: "Imagify",
+  appId: "com.picpop.app",
+  appName: "PicPop",
   webDir: "out",
   server: {
     // For local dev: uncomment to load from Next.js dev server
