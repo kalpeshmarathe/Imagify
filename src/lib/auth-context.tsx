@@ -60,10 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchOrCreateProfile = async (firebaseUser: User): Promise<UserProfile | null> => {
     if (!db) {
-      console.log("[Auth] fetchOrCreateProfile: db not configured, skipping");
+
       return null;
     }
-    console.log("[Auth] fetchOrCreateProfile: fetching for", firebaseUser.uid, firebaseUser.email);
+
     const database = db;
     const userRef = doc(database, "users", firebaseUser.uid);
 
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const snap = await getDoc(userRef);
         if (snap.exists()) {
           const data = snap.data() as UserProfile;
-          console.log("[Auth] fetchOrCreateProfile: found existing profile", { coolId: data.coolId });
+
 
           if (!data.coolId && !firebaseUser.isAnonymous) {
             try {
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const recoveredId = unameSnap.docs[0].id;
                 await setDoc(userRef, { coolId: recoveredId }, { merge: true });
                 data.coolId = recoveredId;
-                console.log("[Auth] fetchOrCreateProfile: recovered missing coolId", recoveredId);
+
               }
             } catch (e) {
               console.warn("[Auth] fetchOrCreateProfile: could not recover coolId", e);
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           return data;
         }
-        console.log("[Auth] fetchOrCreateProfile: no existing profile, creating new");
+
         const newProfile: Partial<UserProfile> = {
           uid: firebaseUser.uid,
           email: firebaseUser.email ?? null,
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAnonymous: firebaseUser.isAnonymous,
         };
         await setDoc(userRef, newProfile, { merge: true });
-        console.log("[Auth] fetchOrCreateProfile: created new profile / merged defaults");
+
         // Re-fetch to get complete object
         const finalSnap = await getDoc(userRef);
         return (finalSnap.exists() ? finalSnap.data() : { ...newProfile, coolId: null }) as UserProfile;
@@ -138,20 +138,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    console.log("[Auth] AuthProvider mount: auth=", !!auth, "db=", !!db);
+
     if (!auth) {
-      console.log("[Auth] No auth, setting loading=false");
+
       setLoading(false);
       return;
     }
 
     let mounted = true;
-    console.log("[Auth] Checking getRedirectResult (returning from OAuth?)...");
+
     getRedirectResult(auth)
       .then(async (result) => {
         if (!mounted) return;
         if (result?.user) {
-          console.log("[Auth] Redirect result: signed in as", result.user.email);
+
           setUser(result.user);
           try {
             const p = await fetchOrCreateProfile(result.user);
@@ -160,13 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error("[Auth] Redirect profile fetch failed:", err);
             if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
-              console.error("[Auth] Firestore permission denied — check firestore.rules allow read/write for users/{userId}");
+
             }
           } finally {
             if (mounted) setLoading(false);
           }
         } else {
-          console.log("[Auth] getRedirectResult: no pending redirect (normal page load)");
+
         }
       })
       .catch((err) => {
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("[Auth] onAuthStateChanged:", firebaseUser ? `${firebaseUser.email || "anonymous"} (${firebaseUser.uid})` : "signed out");
+
 
       setUser(firebaseUser);
       try {
@@ -226,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[Auth] Auth profile fetch failed:", err);
         if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
-          console.error("[Auth] Firestore blocked — ensure firestore.rules allow users/{userId} when request.auth.uid == userId");
+
         }
         setProfile(null);
         // Don't set a fake profile with coolId: null, as it triggers a redirect to /create-id
@@ -250,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (isSigningIn) {
-      console.log("[Auth] Sign-in already in progress, ignoring");
+
       return;
     }
 
@@ -274,15 +274,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Use popup for Google (shows account picker) - fall back to redirect if blocked
       if (providerType === "google") {
         try {
-          console.log("[Auth] signInWithProvider(google): opening popup...");
+
           const cred = await signInWithPopup(auth, provider);
-          console.log("[Auth] signInWithProvider(google): popup succeeded", cred.user.email);
+
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           const isUserCancelled =
             msg.includes("auth/cancelled-popup-request") || msg.includes("auth/popup-closed-by-user");
           if (msg.includes("auth/popup-blocked") || (msg.includes("popup") && msg.includes("blocked"))) {
-            console.log("[Auth] signInWithProvider(google): popup blocked, falling back to redirect");
+
             await signInWithRedirect(auth, provider);
           } else if (isUserCancelled) {
             throw err; // UI will show friendly "Sign-in cancelled" message
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else {
-        console.log("[Auth] signInWithProvider(" + providerType + "): redirecting...");
+
         await signInWithRedirect(auth, provider);
       }
     } finally {
@@ -301,7 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    console.log("[Auth] signOut called");
+
     if (auth) await firebaseSignOut(auth);
     if (typeof window !== "undefined") {
       localStorage.clear();

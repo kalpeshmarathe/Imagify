@@ -29,7 +29,7 @@ const app: FirebaseApp | null =
     : null;
 
 if (typeof window !== "undefined") {
-  console.log("[Firebase] init:", app ? "configured" : "not configured", app ? `(project: ${firebaseConfig.projectId || "?"})` : "(missing apiKey or env)");
+
 }
 
 // Use initializeAuth instead of getAuth to avoid "Component auth has not been registered yet"
@@ -91,7 +91,7 @@ export async function getMessagingSafe(): Promise<Messaging | null> {
 
 // Emulator Setup
 if (typeof window !== "undefined" && window.location.hostname === "localhost" && app) {
-  console.log("[Firebase] 🛠 Connecting to local emulators...");
+
 
   if (auth) connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
   if (db) connectFirestoreEmulator(db, "localhost", 8080);

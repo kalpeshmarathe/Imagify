@@ -206,8 +206,6 @@ export default function InboxPage() {
       setLoadingData(false);
       return;
     }
-
-
     const firestore = db;
     const uid = user.uid;
     let unsubN: (() => void) | undefined;
@@ -1000,14 +998,14 @@ export default function InboxPage() {
         const threadType = isOwnerOfThread ? "inbox" : "sent";
 
         // Partner is the one who ISN'T me in the first message
-        const threadPartnerId = isOwnerOfThread 
-          ? (first.submitterId || first.anonymousId || groupId) 
+        const threadPartnerId = isOwnerOfThread
+          ? (first.submitterId || first.anonymousId || groupId)
           : (first.recipientId || groupId);
 
         const hasReply = sorted.some(i => i.isOwnerReply);
         const isInitialSender = !first.isOwnerReply && first.submitterId === uid;
 
-        console.log(`[InboxDebug] Thread: ${groupId}, Partner: ${threadPartnerId}, Type: ${threadType}, FirstMsgSender: ${first.isFirstSender}`);
+
 
         return {
           id: groupId,

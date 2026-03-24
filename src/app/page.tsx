@@ -12,6 +12,7 @@ import { GoogleAd } from "@/components/GoogleAd";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ActivityTicker } from "@/components/ActivityTicker";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { useAuth } from "@/lib/auth-context";
 import { useRealtimeActivity } from "@/hooks/useRealtimeActivity";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
@@ -665,38 +666,7 @@ export default function Home() {
 
 
 
-      {/* ================================================================
-          FOOTER
-      ================================================================ */}
-      <footer className="border-t border-white/06 bg-[#080808] py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center sm:items-start gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="picpop" className="h-5 sm:h-6 w-auto opacity-90" />
-            <p className="text-xs text-white/20 font-semibold">anonymous image feedback</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link href="/about" className="footer-link">about</Link>
-            <Link href="#how" className="footer-link">how it works</Link>
-            <Link href="#play" className="footer-link">play</Link>
-            <Link href={user ? "/dashboard" : "/login"} className="footer-link">get feedback</Link>
-            <Link href="/privacy" className="footer-link">privacy</Link>
-            <Link href="/terms" className="footer-link">terms</Link>
-          </div>
-
-          {/* Social-style pill */}
-          <div
-            className="sticker text-xs"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 6px var(--green)" }} />
-            live & free
-          </div>
-        </div>
-        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-white/15"><Sparkles className="w-3.5 h-3.5 shrink-0" />  © {new Date().getFullYear()} picpop — made with chaos</p>
-      </footer>
-
+      <Footer />
     </div>
   );
 }

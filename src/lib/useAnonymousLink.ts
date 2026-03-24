@@ -23,7 +23,7 @@ export function useAnonymousLink() {
                 : null;
 
             if (!sessionId && !anonymousId) {
-                console.log('No session to link');
+
                 return;
             }
 
@@ -37,7 +37,7 @@ export function useAnonymousLink() {
                 sessionId: sessionId || undefined,
             });
 
-            console.log('✓ Session linked:', result.data.message);
+
 
             // Clear the old session ID so we use UID-based queries now
             if (typeof window !== 'undefined') {

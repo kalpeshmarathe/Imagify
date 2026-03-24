@@ -9,7 +9,6 @@ const { getDatabase } = require("firebase-admin/database");
 const { defineString } = require("firebase-functions/params");
 const crypto = require("crypto");
 
-// ✅ FIX: Initialize with databaseURL so Realtime DB works
 function getAdminApp() {
   if (getApps().length === 0) {
     return initializeApp({
@@ -26,26 +25,7 @@ const storage = getStorage();
 const messaging = getMessaging();
 
 // CORS: allow localhost (dev), production, and Capacitor iOS/Android WebViews
-const CORS_ORIGINS = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3001",
-  "http://127.0.0.1:3002",
-  "http://192.168.1.7:3000",
-  "http://192.168.1.16:3000",
-  "https://picpop.me",
-  "https://www.picpop.me",
-  "https://picpop-production.web.app",
-  "https://picpop-production.firebaseapp.com",
-  "https://imagify-5f3d5.web.app",
-  "https://imagify-5f3d5.firebaseapp.com",
-  "capacitor://localhost",
-  "ionic://localhost",
-  "http://localhost",
-  "https://localhost",
-];
+const CORS_ORIGINS = "*";
 
 const adminUidsParam = defineString("ADMIN_UIDS", { default: "" });
 const adminSecretParam = defineString("ADMIN_SECRET", { default: "" });
@@ -169,15 +149,15 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
 
       // ALSO write to Realtime DB for instant UI update (WebSocket)
       if (notifyUid) {
-         try {
-           const rtdb = getDatabase();
-           await rtdb.ref(`users/${notifyUid}/notifications/${feedbackId}`).set({
-             ...notifData,
-             createdAt: new Date().toISOString()
-           });
-         } catch (rtdbErr) {
-           console.error("Owner RTDB Notify fail:", rtdbErr);
-         }
+        try {
+          const rtdb = getDatabase();
+          await rtdb.ref(`users/${notifyUid}/notifications/${feedbackId}`).set({
+            ...notifData,
+            createdAt: new Date().toISOString()
+          });
+        } catch (rtdbErr) {
+          console.error("Owner RTDB Notify fail:", rtdbErr);
+        }
       }
     }
 
@@ -219,7 +199,7 @@ exports.onFeedbackCreatedV2 = onDocumentCreated("feedbacks/{feedbackId}", async 
         },
       };
       await getMessaging().send(message);
-      console.log(`Push sent to ${notifyUid || notifySessionId}`);
+
     }
   } catch (err) {
     console.error("Push notification failed:", err);
@@ -279,7 +259,7 @@ exports.onFeedbackCreatedNotifySession = onDocumentCreated("feedbacks/{feedbackI
       .ref(`sessions/${targetSession}/messages/${feedbackId}`)
       .set(messageData);
 
-    console.log("[onFeedbackCreatedNotifySession] Notified:", targetSession);
+
   } catch (err) {
     console.error("[onFeedbackCreatedNotifySession] Error:", err);
   }
@@ -310,11 +290,7 @@ exports.cleanupExpiredSessionsDaily = onSchedule("every day 02:00", async (event
 
     if (Object.keys(updates).length > 0) {
       await rtdb.ref().update(updates);
-      console.log(
-        "[cleanupExpiredSessionsDaily] Cleaned up",
-        Object.keys(updates).length,
-        "sessions"
-      );
+
     }
   } catch (err) {
     console.error("[cleanupExpiredSessionsDaily] Error:", err);
@@ -371,7 +347,7 @@ exports.onVisitCreatedV2 = onDocumentCreated("visits/{visitId}", async (event) =
       };
       const messaging = getMessaging();
       await messaging.send(message);
-      console.log("Visit push sent to owner", ownerUserId);
+
     }
   } catch (err) {
     console.error("Visit push failed:", err);
@@ -500,7 +476,7 @@ exports.searchGoogleImages = onCall({ cors: CORS_ORIGINS }, async (request) => {
   if (!apiKey || !cx) throw new HttpsError("failed-precondition", "GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_CX not configured");
 
   const url = `https://customsearch.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&searchType=image&start=${start || 1}&num=10`;
-  console.log(`Searching Google: query="${query}" start=${start || 1}`);
+
 
   try {
     const res = await fetch(url);
@@ -806,14 +782,14 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
     // The thread recipient (owner) should see visitor messages as anonymous.
     const sanitizedItems = finalItems.map(item => {
       const isMyMessage = request.auth?.uid && item.submitterId === request.auth.uid;
-      
+
       const copy = { ...item };
       // Always hide IP from client
       delete copy.submitterIp;
-      
+
       if (!isMyMessage) {
         // Hide potential identifying fields from everyone else
-        copy.submitterId = null; 
+        copy.submitterId = null;
         copy.anonymousId = "anonymous"; // Masking the IP hash too
       }
       return copy;
@@ -832,6 +808,7 @@ exports.getAnonymousChatHistory = onCall({ cors: CORS_ORIGINS }, async (request)
  * Called when a user logs in — maps their current IP hash to their uid.
  * This links any anonymous feedback they sent to their account.
  */
+/** Force redeploy sync v2 */
 exports.mapIpToUser = onCall({ cors: CORS_ORIGINS }, async (request) => {
   try {
     if (!request.auth || !request.auth.uid) {
@@ -942,6 +919,7 @@ exports.linkAnonymousToUser = onCall({ cors: CORS_ORIGINS }, async (request) => 
   }
 });
 
+/** Force redeploy sync v2 */
 exports.submitOwnerReply = onCall({ cors: CORS_ORIGINS }, async (request) => {
   try {
     const { message, anonymousId, targetUid, sessionId, feedbackImageUrl, attachmentUrl, attachmentName, threadId } = request.data || {};
@@ -1217,6 +1195,7 @@ exports.adminDeleteBrowseImage = onCall({ cors: CORS_ORIGINS }, async (request) 
 /**
  * Public: Log feedback interaction (view, reshare, timeSpent). (Gen 2)
  */
+/** Force redeploy sync v2 */
 exports.logFeedbackActivity = onCall({ cors: CORS_ORIGINS }, async (request) => {
   const { feedbackId, type, timeSpent } = request.data || {};
   if (!feedbackId || !type) throw new HttpsError("invalid-argument", "Missing required fields");

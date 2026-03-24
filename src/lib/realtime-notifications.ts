@@ -189,7 +189,7 @@ export async function linkSessionToUser(
   try {
     const db = getDatabase();
     const sessionPath = `sessions/${sessionId}`;
-    console.log(`[DEBUG] [Session] Updating RTDB session path: ${sessionPath}`);
+
     const sessionRef = ref(db, sessionPath);
 
     // Update session with user info
@@ -201,7 +201,7 @@ export async function linkSessionToUser(
 
     // Create reverse mapping: user -> sessions
     const mappingPath = `users/${userId}/sessions/${sessionId}`;
-    console.log(`[DEBUG] [Session] Creating RTDB user mapping path: ${mappingPath}`);
+
     const userSessionsRef = ref(db, mappingPath);
     await set(userSessionsRef, {
       createdAt: new Date().toISOString(),
@@ -220,12 +220,12 @@ export async function getUserSessions(userId: string): Promise<string[]> {
     const snapshot = await get(userSessionsRef);
 
     if (!snapshot.exists()) {
-      console.log("[Session] No sessions found for user:", userId);
+
       return [];
     }
 
     const sessions = Object.keys(snapshot.val());
-    console.log("[Session] Found sessions for user:", { userId, count: sessions.length });
+
     return sessions;
   } catch (err) {
     console.error("[Session] Error retrieving user sessions:", err);

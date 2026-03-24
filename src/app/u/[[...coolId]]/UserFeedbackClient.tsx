@@ -164,11 +164,11 @@ function UserFeedbackContent() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        console.log("[Session] App became visible, syncing session...");
+
 
         // Verify session is still available
         const sid = getSessionId();
-        console.log("[Session] Current session after resume:", sid);
+
       }
     };
 
@@ -188,11 +188,11 @@ function UserFeedbackContent() {
         clearSession: () => {
           const { clearSessionId } = require("@/lib/session-utils");
           clearSessionId();
-          console.log("[Debug] Session cleared");
+
           window.location.reload();
         },
       };
-      console.log("[Debug] Available at: window.picpopDebug");
+
     }
   }, [authUser?.uid]);
 
@@ -874,7 +874,7 @@ function UserFeedbackContent() {
                         }`}>
                         {(() => {
                           const label = isMe ? "ME" : (isOwnerReply ? `@${coolId}` : "GUEST");
-                          if (!isMe) console.log(`[ChatDebug] Msg: FirstSender=${msg.isFirstSender}, IsOwnerReply=${isOwnerReply}, Label=${label}`);
+
                           return label;
                         })()}
                       </div>

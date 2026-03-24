@@ -10,7 +10,7 @@ export function getSessionId() {
   let sid = localStorage.getItem(STORAGE_KEY);
 
   if (sid) {
-    console.log("[DEBUG] [Session] Found ID in localStorage:", sid);
+
     return sid;
   }
 
@@ -18,10 +18,10 @@ export function getSessionId() {
   sid = sessionStorage.getItem(STORAGE_KEY);
 
   if (sid) {
-    console.log("[DEBUG] [Session] Found ID in sessionStorage:", sid);
+
     try {
       localStorage.setItem(STORAGE_KEY, sid);
-      console.log("[DEBUG] [Session] Synced ID back to localStorage from sessionStorage");
+
     } catch (e) {
       console.warn("[DEBUG] [Session] Could not sync to localStorage:", e);
     }
@@ -33,11 +33,11 @@ export function getSessionId() {
 
   try {
     localStorage.setItem(STORAGE_KEY, sid);
-    console.log("[DEBUG] [Session] Generated brand new ID and saved to localStorage:", sid);
+
   } catch (e) {
     console.warn("[DEBUG] [Session] localStorage not available, using sessionStorage only");
     sessionStorage.setItem(STORAGE_KEY, sid);
-    console.log("[DEBUG] [Session] Saved new ID to sessionStorage only:", sid);
+
   }
 
   return sid;
@@ -55,7 +55,7 @@ export function clearSessionId(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);
-    console.log("[Session] Session cleared");
+
   } catch (e) {
     console.warn("[Session] Could not clear session:", e);
   }

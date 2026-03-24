@@ -32,7 +32,7 @@ function LoginContent() {
 
   useEffect(() => {
     const handleRedirect = async () => {
-      console.log("[Login] state:", { loading, hasUser: !!user, hasProfile: !!profile, coolId: profile?.coolId });
+
       if (loading || !user) return;
 
       // Link any guest data to this new identity
@@ -44,7 +44,7 @@ function LoginContent() {
 
       if (!profile) return;
 
-      console.log("[Login] User + profile ready, redirecting...", { coolId: profile.coolId, redirectPath });
+
       if (profile.coolId) {
         window.location.replace(redirectPath || "/dashboard");
       } else {
@@ -57,10 +57,10 @@ function LoginContent() {
   }, [user, profile, loading, redirectPath, linkSessionToUser]);
 
   const handleSignIn = async (fn: () => Promise<void>, provider: string) => {
-    console.log("[Login] handleSignIn clicked:", provider);
+
     try {
       await fn();
-      console.log("[Login] handleSignIn:", provider, "completed (popup/redirect should have opened)");
+
     } catch (err: unknown) {
       console.error(`[Auth] ${provider} sign-in failed:`, err);
       toast.error(getErrorMessage(err));

@@ -12,6 +12,7 @@ import { AddToHomeScreenPrompt } from "@/components/AddToHomeScreenPrompt";
 import { ThemeProvider } from "@/lib/theme-context";
 import { GlobalNotifications } from "@/components/GlobalNotifications";
 import { AdSenseScript } from "@/components/AdSenseScript";
+import { CookieConsent } from "@/components/CookieConsent";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
     icon: "/logo.svg",
     apple: "/logo.svg",
   },
+  metadataBase: new URL("https://picpop.me"),
 };
 
 export default function RootLayout({
@@ -62,6 +64,8 @@ export default function RootLayout({
             })(window, document, "clarity", "script", "vrhrengf1s");
           `}
         </Script>
+        <AdSenseScript />
+        <meta name="google-adsense-account" content="ca-pub-9913239924968431" />
       </head>
       <body
         className={`${nunito.variable} ${geistMono.variable} antialiased bg-[var(--bg-primary)] text-[var(--text-primary)]`}
@@ -78,12 +82,11 @@ export default function RootLayout({
               <GlobalLoader />
               <AddToHomeScreenPrompt />
               <GlobalNotifications />
+              <CookieConsent />
             </LoadingProvider>
           </ToastProvider>
         </AuthProvider>
         </ThemeProvider>
-        <AdSenseScript />
-
       </body>
     </html>
   );

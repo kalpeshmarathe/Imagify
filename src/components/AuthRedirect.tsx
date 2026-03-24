@@ -19,7 +19,7 @@ export function AuthRedirect() {
 
     if (pathname === "/login") {
       const target = profile.coolId ? "/dashboard" : "/create-id";
-      console.log("[AuthRedirect] redirecting to", target, "pathname=", pathname);
+      // Redirect logged-in users from /login to dashboard or create-id.
       window.location.replace(target);
     }
   }, [user, profile, loading, pathname]);
