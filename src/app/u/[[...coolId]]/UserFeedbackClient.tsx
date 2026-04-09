@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
-import { Camera, X, Heart, Send, ChevronLeft, ChevronRight, ImageIcon, Paperclip, FileText, Bell, Link as LinkIcon, ShieldCheck, Share2, CheckCircle2, Sparkles, Zap } from "lucide-react";
+import { Camera, X, Heart, Send, ChevronLeft, ChevronRight, ImageIcon, Paperclip, FileText, Bell, Link as LinkIcon, ShieldCheck, Share2, CheckCircle2, Sparkles, Zap, Flag } from "lucide-react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc, addDoc, collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -21,6 +21,7 @@ import { Navbar } from "@/components/Navbar";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { getErrorMessage } from "@/lib/error-utils";
 import { TermsModal } from "@/components/TermsModal";
+import { ReportFeedbackModal } from "@/components/ReportFeedbackModal";
 import {
   listenForRealtimeMessages,
   getUnreadMessageCount,
@@ -108,10 +109,13 @@ function UserFeedbackContent() {
   const docInputRef = useRef<HTMLInputElement>(null);
   const [notifStatus, setNotifStatus] = useState<"idle" | "loading" | "enabled" | "denied" | "unsupported">("idle");
   const unreadCount = chatHistory.filter((m) => !m.isRead && m.isOwnerReply).length;
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportingFeedbackId, setReportingFeedbackId] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
-    const sid = searchParams.get("sid");
+    const sid = searchParams?.get("sid");
+
     if (sid && typeof window !== "undefined") {
       localStorage.setItem("picpop_session_id", sid);
     }
@@ -147,7 +151,7 @@ function UserFeedbackContent() {
         });
         unsub = cleanup;
       } catch (err) {
-        console.warn("Foreground notification setup failed:", err);
+        // Silently handle foreground notification setup
       }
     };
 
@@ -178,22 +182,9 @@ function UserFeedbackContent() {
     }
   }, []);
 
-  // Debug info for mobile testing
+  // Clean up debugging logs and picpopDebug object for production
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const sid = getSessionId();
-      (window as any).picpopDebug = {
-        sessionId: sid,
-        userId: authUser?.uid,
-        clearSession: () => {
-          const { clearSessionId } = require("@/lib/session-utils");
-          clearSessionId();
-
-          window.location.reload();
-        },
-      };
-
-    }
+    // Hidden debug info removed for production AdSense compliance
   }, [authUser?.uid]);
 
   // TIER 2: Handle offline messages removed (handled by NotificationBell)
@@ -245,7 +236,8 @@ function UserFeedbackContent() {
 
   useEffect(() => {
     const fromPath = (pathname || "").replace(/^\/u\/?/, "").split("/")[0] || "";
-    const fromQuery = searchParams.get("user") || "";
+    const fromQuery = searchParams?.get("user") || "";
+
     const id = (fromPath || fromQuery).trim().toLowerCase();
     if (id) setCoolId(id);
     else if (!authLoading && !authUser) setLoading(false); 
@@ -305,7 +297,9 @@ function UserFeedbackContent() {
     let unsubListeners: (() => void) | null = null;
     let cancelled = false;
 
-    const threadParam = searchParams.get("thread");
+    const threadParam = searchParams?.get("thread") || null;
+
+
 
     // Only reset if we are switching to a DIFFERENT thread
     if (activeThreadRef.current !== threadParam) {
@@ -449,7 +443,8 @@ function UserFeedbackContent() {
     setPendingFile(null);
 
     const isAttachment = !!fileToUpload;
-    const threadId = searchParams.get("thread") || (chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null);
+    const threadId = searchParams?.get("thread") || (chatMode ? (chatHistory[chatHistory.length - 1]?.threadId || chatHistory[chatHistory.length - 1]?.id) : null);
+
 
     // OPTIMISTIC UPDATE: Add to UI immediately for speed feel
     const optimisticId = "opt_" + Math.random().toString(36).substring(2, 9);
@@ -923,6 +918,22 @@ function UserFeedbackContent() {
                         {msg.message && (
                           <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                         )}
+
+                        {!isMe && (
+                          <div className="mt-2 flex justify-end opacity-0 group-hover/bubble:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReportingFeedbackId(msg.id);
+                                setReportModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-lg bg-black/20 text-white/40 hover:text-red-400 transition-all"
+                              title="Report Abuse"
+                            >
+                              <Flag className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1131,253 +1142,179 @@ return (
         </div>
       )}
 
-      {/* Login Required Modal */}
-      {showLoginRequiredPopup && !authUser && (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300" onClick={() => setShowLoginRequiredPopup(false)}>
-          <div className="bg-[#0a0a0a] rounded-[32px] p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10"
-            style={{ boxShadow: "0 0 100px -20px rgba(255, 61, 127, 0.3)" }}
-            onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setShowLoginRequiredPopup(false)} className="absolute top-4 right-4 p-2 rounded-xl text-white/40 hover:bg-white/5 hover:text-white transition-all">
-              <X className="w-5 h-5" />
-            </button>
+        {/* Login Required Modal */}
+        {showLoginRequiredPopup && !authUser && (
+          <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300" onClick={() => setShowLoginRequiredPopup(false)}>
+            <div className="bg-[#0a0a0a] rounded-[32px] p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative border border-white/10"
+              style={{ boxShadow: "0 0 100px -20px rgba(255, 61, 127, 0.3)" }}
+              onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setShowLoginRequiredPopup(false)} className="absolute top-4 right-4 p-2 rounded-xl text-white/40 hover:bg-white/5 hover:text-white transition-all">
+                <X className="w-5 h-5" />
+              </button>
 
-            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 relative group"
-              style={{ background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))", border: "2px solid rgba(255,61,127,0.3)" }}>
-              <ShieldCheck className="w-10 h-10 text-[var(--pink)] relative z-10" />
-            </div>
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 relative group"
+                style={{ background: "rgba(255, 61, 127, 0.1)", border: "1px solid rgba(255, 61, 127, 0.2)" }}>
+                <Heart className="w-10 h-10 text-[var(--pink)] group-hover:scale-110 transition-transform" fill="var(--pink)" />
+              </div>
 
-            <h3 className="text-2xl font-black text-white mb-2">Continue Conversation</h3>
-            <p className="text-sm text-[var(--text-muted)] mb-8 font-semibold">
-              To continue chat login plz. This keeps your anonymous thread safe and accessible only to you.
-            </p>
+              <h3 className="text-2xl font-black text-white mb-2">Want to reply?</h3>
+              <p className="text-[var(--text-muted)] font-bold text-sm mb-8">Create a free account to start chatting with @{coolId} and get notified of new messages.</p>
 
-            <div className="flex flex-col w-full gap-3">
               <Link
                 href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
-                className="w-full py-4 rounded-2xl font-black text-white text-center shadow-xl hover:scale-[1.02] transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all hover:scale-105 active:scale-95 text-xs uppercase tracking-[0.2em]"
                 style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))" }}
               >
-                Continue with Google
+                Create Account
               </Link>
               <button
                 onClick={() => setShowLoginRequiredPopup(false)}
-                className="w-full py-4 rounded-2xl font-bold text-[var(--text-muted)] text-sm hover:text-white transition-colors"
+                className="mt-4 text-xs font-black uppercase tracking-widest text-white/20 hover:text-white/40 transition-colors"
               >
-                Maybe later
+                Later
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Image preview confirm */}
-      {pendingShare && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5" style={{ background: "var(--bg-card)" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={pendingShare.previewUrl} alt="preview" className="w-full rounded-xl max-h-60 object-contain" />
-            <p className="font-bold text-center">Send this to @{coolId}?</p>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => { URL.revokeObjectURL(pendingShare.previewUrl); setPendingShare(null); }}
-                className="flex-1 py-3 rounded-xl font-bold border border-[var(--border)]">Cancel</button>
-              <button type="button" onClick={pendingShare.confirm} disabled={submitting}
-                className="flex-1 py-3 rounded-xl font-bold text-white" style={{ background: "linear-gradient(135deg, var(--pink), var(--purple))", boxShadow: "0 4px 20px rgba(255,61,127,0.3)" }}>
-                {submitting ? "Sending..." : "Yes, send"}
+        {/* Success Modal (Ultra-Premium Redesign) */}
+        {(showGuestSuccessModal || (submitted && !authUser)) && (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 overflow-hidden animate-in fade-in duration-700">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-[40px]" />
+
+            <div className="bg-[#0f0f15]/80 rounded-[48px] p-8 sm:p-10 pb-12 sm:pb-14 w-full max-w-sm flex flex-col items-center text-center shadow-[0_32px_120px_-20px_rgba(255,61,127,0.4)] relative border border-white/10 max-h-[92vh] overflow-y-auto no-scrollbar backdrop-blur-3xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-700 transform-gpu">
+              
+              <button 
+                onClick={() => { setShowGuestSuccessModal(false); setChatMode(false); setSubmitted(false); }}
+                className="absolute top-6 right-6 p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-all active:scale-90 z-[30]"
+              >
+                <X className="w-6 h-6" />
               </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Upload loader */}
-      {submitting && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-14 h-14 rounded-full animate-spin" style={{ border: "4px solid transparent", borderTopColor: "var(--pink)", borderRightColor: "var(--purple)" }} />
-            <p className="font-bold text-white">Uploading...</p>
-          </div>
-        </div>
-      )}
-
-
-
-
-      <p className="mt-8 text-center text-sm text-[var(--text-muted)] font-semibold flex items-center justify-center gap-2">
-        <ImageIcon className="w-4 h-4 text-[var(--pink)]" /> Send one. @{coolId} will appreciate it.
-      </p>
-
-      {/* Success Modal (Ultra-Premium Redesign) */}
-      {(showGuestSuccessModal || (submitted && !authUser)) && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 overflow-hidden animate-in fade-in duration-700">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-[40px]" />
-
-          {/* Epic Background Elements */}
-          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[var(--pink)]/10 blur-[120px] rounded-full animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[var(--purple)]/10 blur-[120px] rounded-full animate-pulse delay-700" />
-          
-          <div className="bg-[#0f0f15]/80 rounded-[48px] p-8 sm:p-10 pb-12 sm:pb-14 w-full max-w-sm flex flex-col items-center text-center shadow-[0_32px_120px_-20px_rgba(255,61,127,0.4)] relative border border-white/10 max-h-[92vh] overflow-y-auto no-scrollbar backdrop-blur-3xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-700 transform-gpu">
-            
-            {/* Top Close Button */}
-            <button 
-              onClick={() => { setShowGuestSuccessModal(false); setChatMode(false); setSubmitted(false); }}
-              className="absolute top-6 right-6 p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-all active:scale-90 z-[30]"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Success Celebration Header */}
-            <div className="relative mb-10 pt-4">
-              <div className="absolute inset-0 bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] blur-[40px] opacity-30 rounded-full animate-pulse scale-150" />
-              <div className="w-28 h-28 rounded-[40px] flex items-center justify-center relative group overflow-hidden"
-                style={{
-                  background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))",
-                  border: "2px solid rgba(255,255,255,0.1)",
-                  boxShadow: "inset 0 0 40px rgba(255,255,255,0.05)"
-                }}>
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1500" />
-                <div className="relative z-10 w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] animate-in zoom-in duration-500 delay-300">
+              <div className="relative mb-10 pt-4">
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] blur-[40px] opacity-30 rounded-full animate-pulse scale-150" />
+                <div className="w-28 h-28 rounded-[40px] flex items-center justify-center relative group overflow-hidden"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,61,127,0.2), rgba(124,58,255,0.2))",
+                    border: "2px solid rgba(255,255,255,0.1)",
+                    boxShadow: "inset 0 0 40px rgba(255,255,255,0.05)"
+                  }}>
                   <CheckCircle2 className="w-10 h-10 text-[var(--pink)]" />
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-2 mb-12">
-              <h3 className="text-4xl font-black text-white tracking-tight leading-none italic uppercase">Sent Successfully!</h3>
-              <p className="text-[10px] font-black text-[var(--pink)] uppercase tracking-[0.5em] opacity-80 flex items-center justify-center gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--pink)] animate-ping" />
-                Delivered to @{coolId}
-              </p>
-            </div>
-
-            {/* Quick Actions Grid */}
-            <div className="flex flex-col w-full gap-4 mb-10">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] text-center mb-1">Boost Your Experience</p>
+              <div className="space-y-2 mb-12">
+                <h3 className="text-4xl font-black text-white tracking-tight leading-none italic uppercase">Sent!</h3>
+                <p className="text-[10px] font-black text-[var(--pink)] uppercase tracking-[0.5em] opacity-80">
+                  Delivered to @{coolId}
+                </p>
+              </div>
 
               <button
-                onClick={handleEnablePushNotifications}
-                disabled={notifStatus === "loading" || notifStatus === "enabled"}
-                className="w-full p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center gap-5 transition-all hover:bg-white/[0.06] hover:scale-[1.02] group active:scale-[0.98]"
+                onClick={() => {
+                  setShowGuestSuccessModal(false);
+                  setChatMode(false);
+                  setSubmitted(false);
+                }}
+                className="w-full py-5 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] text-white relative overflow-hidden group/cta flex items-center justify-center gap-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
+                style={{
+                  background: "linear-gradient(135deg, var(--pink), var(--purple))",
+                  boxShadow: "0 20px 40px -10px rgba(255,61,127,0.5)"
+                }}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${notifStatus === "enabled" ? "bg-green-500/20 text-green-400 rotate-12" : "bg-white/5 text-[var(--pink)] group-hover:scale-110"}`}>
-                  <Bell className="w-6 h-6" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-black text-white group-hover:text-[var(--pink)] transition-colors">Notify Me</p>
-                  <p className="text-[10px] text-white/40 font-bold">Alert on @{coolId}'s reply</p>
-                </div>
-              </button>
-
-              {!authUser && (
-                <Link
-                  href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "")}`}
-                  className="w-full p-4 rounded-3xl bg-gradient-to-br from-[var(--pink)]/10 via-transparent to-[var(--purple)]/10 border border-white/10 flex items-center gap-5 transition-all hover:from-[var(--pink)]/20 hover:scale-[1.02] group active:scale-[0.98] relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-[var(--pink)] to-[var(--purple)] opacity-0 group-hover:opacity-5 transition-opacity" />
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--pink)] to-[var(--purple)] text-white group-hover:rotate-6 transition-all flex items-center justify-center shadow-xl">
-                    <ShieldCheck className="w-7 h-7" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <p className="text-sm font-black text-white group-hover:text-[var(--pink)] transition-colors">Join PicPop</p>
-                    <p className="text-[9px] text-[var(--pink)] font-black uppercase tracking-widest flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3" /> Recommended
-                    </p>
-                  </div>
-                </Link>
-              )}
-
-              <button
-                onClick={() => handleShare()}
-                className="w-full p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center gap-5 transition-all hover:bg-white/[0.06] hover:scale-[1.02] group active:scale-[0.98]"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-white/5 text-blue-400 group-hover:scale-110 flex items-center justify-center transition-all">
-                  <Share2 className="w-6 h-6" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">Tell Friends</p>
-                  <p className="text-[10px] text-white/40 font-bold">Invite others to react</p>
-                </div>
+                Keep Exploring
               </button>
             </div>
-
-            {/* Bottom Primary Action */}
-            <button
-              onClick={() => {
-                setShowGuestSuccessModal(false);
-                setChatMode(false);
-                setSubmitted(false);
-              }}
-              className="w-full py-5 rounded-3xl font-black text-[11px] uppercase tracking-[0.4em] text-white relative overflow-hidden group/cta flex items-center justify-center gap-3 transition-all hover:scale-[1.03] active:scale-[0.98]"
-              style={{
-                background: "linear-gradient(135deg, var(--pink), var(--purple))",
-                boxShadow: "0 20px 40px -10px rgba(255,61,127,0.5)"
-              }}
-            >
-              <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover/cta:translate-y-0 transition-transform duration-500" />
-              <span className="relative z-10">Keep Exploring</span>
-              <ChevronRight className="w-4 h-4 relative z-10 transition-transform group-hover/cta:translate-x-1" />
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Notification Icon for Landing Page */}
-      <NotificationBell
-        className="fixed bottom-6 right-6 z-[100]"
-        onGuestClick={() => setChatMode(true)}
-        ownerName={coolId}
-      />
+        {/* Report Modal */}
+        <ReportFeedbackModal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          feedbackId={reportingFeedbackId || ""}
+          onReportSuccess={(action) => {
+            toast.success(action === "block" ? "User blocked successfully" : "Report submitted. Thank you for keeping PicPop safe!");
+            setReportModalOpen(false);
+          }}
+          onReportError={(msg) => toast.error(msg)}
+        />
 
-    </main>
+        {/* ================================================================
+            GUEST Landing / Information Content (Anti-Low-Value)
+        ================================================================ */}
+        {!authUser && (
+          <section className="mt-32 pt-24 border-t border-white/05 pb-24">
+            <div className="max-w-xl mx-auto space-y-20">
+               <div className="text-center mb-16">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+                    <ShieldCheck className="w-4 h-4 text-[var(--blue)]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Secure Identity</span>
+                  </div>
+                  <h2 className="text-3xl font-black text-white">How PicPop Works</h2>
+               </div>
+
+               <div className="grid gap-12 text-center sm:text-left">
+                  <div className="space-y-4">
+                     <h3 className="text-xl font-black text-white flex items-center justify-center sm:justify-start gap-3">
+                        <Sparkles className="w-6 h-6 text-pink-500" /> Complete Anonymity.
+                     </h3>
+                     <p className="text-white/50 font-bold leading-relaxed">
+                        PicPop uses a one-way isolation engine. When you send feedback or an image reaction to @{coolId}, your identity is never exposed. We focus on the content and the vibe, allowing for the kind of honesty that traditional social networks discourage.
+                     </p>
+                  </div>
+
+                  <div className="space-y-4">
+                     <h3 className="text-xl font-black text-white flex items-center justify-center sm:justify-start gap-3">
+                        <Zap className="w-6 h-6 text-blue-500" /> Visual First.
+                     </h3>
+                     <p className="text-white/50 font-bold leading-relaxed">
+                        Don't just say it—show it. Our platform is built specifically for image-based feedback loops. Whether it's a design mockup, a profile picture, or a fashion choice, the best feedback is visual.
+                     </p>
+                  </div>
+
+                  <div className="space-y-4">
+                     <h3 className="text-xl font-black text-white flex items-center justify-center sm:justify-start gap-3">
+                        <Camera className="w-6 h-6 text-[var(--purple)]" /> Safety & Integrity.
+                     </h3>
+                     <p className="text-white/50 font-bold leading-relaxed">
+                        Safety is our priority. We employ AI-driven content moderation to scan for explicit material and toxic behavior. Users have total control to block and report any interaction that crosses the line.
+                     </p>
+                  </div>
+               </div>
+
+               <div className="p-12 rounded-[3rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 text-center">
+                  <h3 className="text-2xl font-black text-white mb-6">Claim your own Cool ID.</h3>
+                  <p className="text-white/30 font-bold mb-8 text-sm">Join PicPop to get your own unique link and start receiving anonymous photo drops today.</p>
+                  <Link href="/login" className="px-10 py-5 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px] hover:scale-105 active:scale-95 transition-all inline-block shadow-2xl">
+                     Get Started Free
+                  </Link>
+               </div>
+            </div>
+          </section>
+        )}
+      </main>
+
     </div>
   );
 }
 
 export default function UserFeedbackClient() {
   const { user, profile, loading } = useAuth();
-  const [showTerms, setShowTerms] = useState(() => {
-    if (typeof window !== "undefined") {
-      const universal = localStorage.getItem("picpop_legal_v1") === "true";
-      if (universal) return false;
-    }
-    return false;
-  });
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
-    // 1. FAST CHECK: If this device has accepted terms, don't show the modal
     if (typeof window !== "undefined") {
       const universal = localStorage.getItem("picpop_legal_v1") === "true";
-      const userSpecific = user?.uid ? localStorage.getItem(`picpop_terms_accepted_${user.uid}`) === "true" : false;
-
-      if (universal || userSpecific) {
-        setShowTerms(false);
-        return;
-      }
-    }
-
-    // 2. BACKUP CHECK: If profile is loaded, check Firestore status
-    if (!loading && user && profile && profile.coolId) {
-      const isAcceptedInStore = profile.termsAccepted && profile.privacyAccepted;
-      if (!isAcceptedInStore) {
-        setShowTerms(true);
-      } else {
-        setShowTerms(false);
-      }
-    } else if (!loading && !user) {
-      // 3. GUEST CHECK: Prompt if on this device haven't accepted yet
-      const universal = typeof window !== "undefined" ? localStorage.getItem("picpop_legal_v1") === "true" : false;
-      if (!universal) {
+      if (!universal && !loading) {
         setShowTerms(true);
       }
     }
-  }, [user, profile, loading]);
+  }, [loading]);
 
   return (
     <div className="relative">
-      <Suspense fallback={
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full border-2 border-transparent animate-spin" style={{ borderTopColor: "var(--pink)" }} />
-        </div>
-      }>
+      <Suspense fallback={null}>
         <UserFeedbackContent />
       </Suspense>
       <TermsModal

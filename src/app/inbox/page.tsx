@@ -79,8 +79,8 @@ function toIsoString(val: unknown): string {
         }
       }
     }
-  } catch (err) {
-    console.error("toIsoString error:", err);
+  } catch {
+    /* ignore */
   }
   return new Date().toISOString();
 }
@@ -261,8 +261,7 @@ export default function InboxPage() {
                   };
                 })
               );
-            } catch (err) {
-              console.error("Error parsing notifications:", err);
+            } catch {
               setError("Failed to load notifications");
             }
           },
@@ -275,7 +274,6 @@ export default function InboxPage() {
             } else if (err?.code === "unavailable") {
               setError("Database service temporarily unavailable.");
             } else if (err?.code !== "failed-precondition") {
-              console.warn("Notifications:", err);
               setError("Failed to load notifications");
             }
           }
@@ -353,9 +351,8 @@ export default function InboxPage() {
             limit(100)
           ),
           processFeedbacksList,
-          (err) => {
+          (_err) => {
             if (!isMountedRef.current) return;
-            if (err?.code !== "failed-precondition") console.warn("Received Feedbacks:", err);
           }
         );
 
@@ -367,9 +364,8 @@ export default function InboxPage() {
             limit(100)
           ),
           processFeedbacksList,
-          (err) => {
+          (_err) => {
             if (!isMountedRef.current) return;
-            if (err?.code !== "failed-precondition") console.warn("Sent Feedbacks:", err);
           }
         );
 
@@ -378,9 +374,8 @@ export default function InboxPage() {
           originalUnsubF?.();
           unsubFSent?.();
         };
-      } catch (err) {
+      } catch {
         if (!isMountedRef.current) return;
-        console.error("Firestore setup error:", err);
         setNotifications([]);
         setFeedbacks([]);
         setError("Failed to connect to database");
@@ -450,7 +445,6 @@ export default function InboxPage() {
         }
       }
     } catch (err) {
-      console.error("Enable notifications:", err);
       if (isMountedRef.current) {
         setNotifStatus("idle");
         toast.error(getErrorMessage(err));
@@ -482,7 +476,6 @@ export default function InboxPage() {
         toast.success("Notifications disabled");
       }
     } catch (err) {
-      console.error("Disable notifications:", err);
       if (isMountedRef.current) {
         setNotifStatus("enabled");
         toast.error("Could not disable notifications");
@@ -651,8 +644,8 @@ export default function InboxPage() {
             await markOwnerNotificationAsRead(user.uid, rtdbKey);
           }
         }
-      } catch (err) {
-        console.error("Error marking read:", err);
+      } catch {
+        /* ignore */
       }
     }
   };
@@ -682,7 +675,6 @@ export default function InboxPage() {
       setSelectedGroup(null);
       toast.success("Chat deleted");
     } catch (err) {
-      console.error(err);
       toast.error(getErrorMessage(err));
     } finally {
       setDeleting(false);
@@ -912,8 +904,8 @@ export default function InboxPage() {
           toast.success(`${title}: ${body}`);
         });
         unsub = cleanup;
-      } catch (err) {
-        console.warn("Foreground notification setup failed:", err);
+      } catch {
+        /* ignore */
       }
     };
 
@@ -970,8 +962,8 @@ export default function InboxPage() {
           chunk.forEach(id => {
             if (!newCache[id]) newCache[id] = id.slice(0, 8);
           });
-        } catch (e) {
-          console.error("Profile Batch Error:", e);
+        } catch {
+          /* ignore */
         }
       }
       setProfileCache(newCache);

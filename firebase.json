@@ -71,6 +71,31 @@
         "destination": "/about.html"
       },
       {
+        "source": "/browse",
+        "destination": "/browse.html"
+      },
+      {
+        "source": "/guide",
+        "destination": "/guide.html"
+      },
+      {
+        "source": "/faq",
+        "destination": "/faq.html"
+      },
+      {
+        "source": "/blog",
+        "destination": "/blog.html"
+      },
+      {
+        "source": "/blog/**",
+        "destination": "/blog.html"
+      },
+      {
+        "source": "/contact",
+        "destination": "/contact.html"
+      },
+
+      {
         "source": "**",
         "destination": "/404.html"
       }

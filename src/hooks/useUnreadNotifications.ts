@@ -69,8 +69,7 @@ export function useUnreadNotifications(uid?: string | null) {
       const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setUnreadNotifications(sorted);
       setLoading(false);
-    }, (err) => {
-      console.warn("[useUnreadNotifications] RTDB Listener fail:", err);
+    }, () => {
       setLoading(false);
     });
 

@@ -96,8 +96,7 @@ function CreateIdContent() {
 
       await refreshProfile();
       router.replace(redirectPath || "/dashboard");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Couldn't save. Try again.");
     } finally {
       setSubmitting(false);

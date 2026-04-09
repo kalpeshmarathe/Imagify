@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 data.coolId = recoveredId;
 
               }
-            } catch (e) {
-              console.warn("[Auth] fetchOrCreateProfile: could not recover coolId", e);
+            } catch {
+              /* ignore */
             }
           }
 
@@ -108,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const finalSnap = await getDoc(userRef);
         return (finalSnap.exists() ? finalSnap.data() : { ...newProfile, coolId: null }) as UserProfile;
       } catch (err) {
-        console.warn("[Auth] fetchOrCreateProfile: error (retries left:", retries, ")", err);
         const isOffline =
           err instanceof Error &&
           (err.message.includes("offline") || err.message.includes("Failed to get document"));
@@ -158,7 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (mounted) setProfile(p);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            console.error("[Auth] Redirect profile fetch failed:", err);
             if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
 
             }
@@ -169,9 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (mounted) {
-          console.error("[Auth] Redirect sign-in failed:", err);
           setLoading(false);
         }
       });
@@ -224,7 +221,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error("[Auth] Auth profile fetch failed:", err);
         if (msg.includes("permission-denied") || msg.includes("FirebaseError")) {
 
         }
@@ -245,7 +241,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithProvider = async (providerType: AuthProviderType) => {
     if (!auth) {
-      console.error("[Auth] Firebase not configured");
       throw new Error("Firebase not configured");
     }
 
@@ -287,7 +282,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else if (isUserCancelled) {
             throw err; // UI will show friendly "Sign-in cancelled" message
           } else {
-            console.warn("[Auth] signInWithProvider(google): popup failed", err);
             throw err;
           }
         }

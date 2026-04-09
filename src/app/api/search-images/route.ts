@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (err: any) {
-    console.error("search-images route error:", err);
     return NextResponse.json({ error: err.message || "Search failed" }, { status: 500 });
   }
 }

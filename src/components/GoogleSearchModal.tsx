@@ -56,7 +56,6 @@ export function GoogleSearchModal({
       setHasMore(items.length === 10);
       setStartIndex(prev => prev + 10);
     } catch (err: any) {
-      console.error(err);
       toast.error(err.message || "Search failed. Make sure Google Search API keys are set.");
     } finally {
       setSearching(false);

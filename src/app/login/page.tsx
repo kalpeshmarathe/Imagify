@@ -28,7 +28,7 @@ function LoginContent() {
   const toast = useToast();
 
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
+  const redirectPath = searchParams?.get("redirect");
 
   useEffect(() => {
     const handleRedirect = async () => {
@@ -38,8 +38,8 @@ function LoginContent() {
       // Link any guest data to this new identity
       try {
         await linkSessionToUser(user.uid);
-      } catch (e) {
-        console.warn("[Login] linkSessionToUser failed (non-critical):", e);
+      } catch {
+        /* ignore */
       }
 
       if (!profile) return;
@@ -62,7 +62,6 @@ function LoginContent() {
       await fn();
 
     } catch (err: unknown) {
-      console.error(`[Auth] ${provider} sign-in failed:`, err);
       toast.error(getErrorMessage(err));
     }
   };
@@ -123,10 +122,12 @@ function LoginContent() {
         {/* Navbar */}
         <header className="fixed top-0 left-0 right-0 z-50 navbar-glass">
           <nav className="flex h-16 items-center justify-between px-6 sm:px-10 max-w-7xl mx-auto">
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href="/" className="flex items-center gap-2.5 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.svg" alt="picpop" className="h-6 sm:h-7 w-auto transition-transform duration-300 group-hover:scale-105 inline-block" />
+              <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
             </Link>
+
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Link
@@ -235,14 +236,37 @@ function LoginContent() {
             <p className="mt-8 text-center text-sm text-[var(--text-muted)] font-semibold">
               By continuing, you agree to our <Link href="/terms" className="text-[var(--pink)] hover:underline">Terms</Link> & <Link href="/privacy" className="text-[var(--purple)] hover:underline">Privacy Policy</Link>.
             </p>
+
+            <div className="mt-20 pt-10 border-t border-white/5">
+               <h3 className="text-center font-black text-white text-lg mb-8 uppercase tracking-widest opacity-30">Why join the portal?</h3>
+               <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/05">
+                     <h4 className="flex items-center gap-2 text-white font-black text-sm mb-2">
+                        <Lock className="w-4 h-4 text-pink-400" /> Secure Identity
+                     </h4>
+                     <p className="text-xs text-white/40 font-bold leading-relaxed">We use cryptographically secure session logic to ensure your feedback link always belongs to you, and only you.</p>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/05">
+                     <h4 className="flex items-center gap-2 text-white font-black text-sm mb-2">
+                        <Sparkles className="w-4 h-4 text-blue-400" /> Creative Control
+                     </h4>
+                     <p className="text-xs text-white/40 font-bold leading-relaxed">Manage your photo drops, delete inappropriate content, and maintain a high-quality feedback loop.</p>
+                  </div>
+               </div>
+            </div>
           </div>
+
         </section>
 
         {/* Footer */}
         <footer className="border-t border-[var(--border)] bg-[var(--bg-secondary)] py-8 px-6">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="picpop" className="h-6 w-auto inline-block" />
+            <Link href="/" className="flex items-center gap-2 group mb-4 sm:mb-0">
+               {/* eslint-disable-next-line @next/next/no-img-element */}
+               <img src="/logo.svg" alt="picpop" className="h-6 w-auto inline-block" />
+               <span className="text-lg font-black tracking-tighter text-white">picpop</span>
+            </Link>
+
             <div className="flex gap-6 text-sm">
               <Link href="/about" className="footer-link">about</Link>
               <Link href="/" className="footer-link">home</Link>

@@ -90,10 +90,39 @@ export default function TermsPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black text-white flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">04</span>
-                Intellectual Property
+                Intellectual Property & Copyright
+              </h2>
+              <div className="space-y-3 text-white/50 font-bold leading-relaxed">
+                <p>
+                  You retain ownership of the images you upload. However, by uploading content, you represent and warrant that you own all necessary rights to such content and that it does not infringe upon any third party's intellectual property rights.
+                </p>
+                <p>
+                  <strong>Copyright Enforcement (DMCA)</strong>: We respect the intellectual property of others. If you believe that your work has been copied in a way that constitutes copyright infringement, please contact our legal desk at <a href="mailto:legal@picpop.me" className="text-white underline">legal@picpop.me</a> with a formal DMCA takedown notice. We will remove infringing material in accordance with the Digital Millennium Copyright Act.
+                </p>
+                <p>
+                  The "PicPop" name, logo, and all brand assets are the property of the platform creators. You may not use our trademarks without prior written consent.
+                </p>
+              </div>
+            </section>
+
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">05</span>
+                Account Termination
               </h2>
               <p className="text-white/50 leading-relaxed font-bold">
-                You retain ownership of the images you upload, but you grant PicPop a non-exclusive license to host and display them as requested by your interactions. You must have the rights to any images you share.
+                We reserve the right to suspend or terminate your account at our sole discretion, without notice, for conduct that we believe violates these Terms or is harmful to other users of the platform, us, or third parties, or for any other reason.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">06</span>
+                Disclaimers & Warranties
+              </h2>
+              <p className="text-white/50 leading-relaxed font-bold">
+                PicPop is provided on an "as is" and "as available" basis. We make no representations or warranties of any kind, express or implied, as to the operation of the service or the information, content, materials, or products included on the service.
               </p>
             </section>
 
@@ -101,10 +130,16 @@ export default function TermsPage() {
               <h2 className="text-xl font-black text-purple-400 flex items-center gap-3">
                 <Scale className="w-6 h-6" /> Limitation of Liability
               </h2>
-              <p className="text-purple-100/60 text-sm italic font-bold">
-                PicPop is provided "as is". We are not responsible for data loss, service interruptions, or any damages arising from your use of the platform.
-              </p>
+              <div className="space-y-3 text-purple-100/60 text-sm font-bold leading-relaxed">
+                <p>
+                  To the maximum extent permitted by law, PicPop shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses.
+                </p>
+                <p>
+                  Our total liability for any claim arising out of these terms shall not exceed the amount you paid us to use the services (if any) in the past six months.
+                </p>
+              </div>
             </section>
+
           </div>
 
           <div className="mt-12 pt-8 border-t border-white/5 text-center">

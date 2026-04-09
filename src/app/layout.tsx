@@ -27,8 +27,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PicPop - Anonymous Image-Based Feedback",
-  description: "Share honest feedback anonymously with images. No sign-up, no tracking. Just upload and send.",
+  title: "PicPop | The Pro Anonymous Image Feedback & Vibe Check Platform",
+  description: "Get real, unfiltered anonymous feedback on your photos, designs, and vibe checks. PicPop offers secure one-way anonymity, real-time visual reactions, and a private feedback loop for creators, photographers, and influencers.",
   manifest: "/manifest.json",
   icons: {
     icon: "/logo.svg",
@@ -36,6 +36,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://picpop.me"),
 };
+
 
 export default function RootLayout({
   children,

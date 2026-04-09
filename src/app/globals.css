@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* PicPop — Dark-first brand colors */
 :root {
@@ -77,13 +79,6 @@ img[src="/logo.svg"] {
   background: var(--bg-card);
   border-color: var(--border);
   transform: translateZ(0); /* For mobile performance */
-}
-
-@theme inline {
-  --color-background: var(--bg-primary);
-  --color-foreground: var(--text-primary);
-  --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {

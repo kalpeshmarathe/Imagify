@@ -111,8 +111,8 @@ function FeedbackThreadItem({
             src={feedback.feedbackImageUrl}
             alt="Reaction"
             className="w-full aspect-square object-cover"
-            onError={(e) => {
-              console.error("Image load error:", feedback.feedbackImageUrl);
+            onError={() => {
+              /* ignore */
             }}
           />
           {isOwner && (
@@ -208,7 +208,7 @@ function FeedbackThreadItem({
 function FeedbackOnImageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const imageId = searchParams.get("imageId")?.trim() || "";
+  const imageId = searchParams?.get("imageId")?.trim() || "";
   const { user, loading: authLoading, isConfigured, signInWithGoogle, signInWithFacebook, signInWithYahoo } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<{ imageUrl: string; coolId: string; userId?: string } | null>(null);
@@ -329,14 +329,12 @@ function FeedbackOnImageContent() {
               } else {
                 setFeedbacks([]);
               }
-            } catch (err) {
-              console.error("Error parsing feedbacks:", err);
+            } catch {
               setError("Failed to load reactions");
             }
           },
           (err) => {
             if (!isMountedRef.current) return;
-            console.error("Firestore error:", err);
             if (err?.code === "permission-denied") {
               setError("Access denied");
             } else if (err?.code === "unavailable") {
@@ -346,8 +344,7 @@ function FeedbackOnImageContent() {
             }
           }
         );
-      } catch (err) {
-        console.error("Init error:", err);
+      } catch {
         setFetchAttempted(true);
         setImage(null);
         setFeedbacks([]);
@@ -449,7 +446,6 @@ function FeedbackOnImageContent() {
       } else if (msg.includes("Image not found") || msg.includes("expired")) {
         toast.error("This link may have expired. Try refreshing.");
       } else {
-        console.error("Submit feedback error:", err);
         toast.error(msg.length > 60 ? "Failed to send. Try again." : msg);
       }
     } finally {
@@ -470,8 +466,7 @@ function FeedbackOnImageContent() {
       const deleteFeedback = httpsCallable<{ feedbackId: string }, { success: boolean }>(functions, "deleteFeedback");
       await deleteFeedback({ feedbackId: f.id });
       toast.success("Feedback deleted.");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to delete. Try again.");
     }
   };
@@ -653,7 +648,54 @@ function FeedbackOnImageContent() {
                 )}
               </div>
             )}
+
+            {/* ================================================================
+                GUEST informativa/Landing Content (Anti-Low-Value)
+            ================================================================ */}
+            {!isOwner && (
+              <div className="pt-24 mt-24 border-t border-white/05 space-y-16">
+                 <div>
+                    <h2 className="text-2xl font-black text-white mb-6">What is PicPop?</h2>
+                    <p className="text-white/50 font-bold leading-relaxed mb-6">
+                      You've been invited to give anonymous visual feedback. PicPop is a platform designed to facilitate honest, one-way anonymous communication through images. Unlike traditional text-based apps, PicPop allows for a more nuanced, "vibe-based" interaction.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/05">
+                          <Check className="w-5 h-5 text-green-400 mb-4" />
+                          <h4 className="text-sm font-black text-white mb-2">Totally Anon.</h4>
+                          <p className="text-[10px] text-white/30 font-bold">The owner will never know who you are unless you tell them.</p>
+                       </div>
+                       <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/05">
+                          <Reply className="w-5 h-5 text-blue-400 mb-4" />
+                          <h4 className="text-sm font-black text-white mb-2">Two-Way Chat</h4>
+                          <p className="text-[10px] text-white/30 font-bold">They can reply to your reaction, starting an anonymous thread.</p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div>
+                    <h2 className="text-2xl font-black text-white mb-6">How to give great feedback</h2>
+                    <p className="text-white/50 font-bold leading-relaxed mb-6">
+                      Great feedback is specific, honest, and helpful. Use the image upload tool above to send a reaction that captures your true thoughts.
+                    </p>
+                    <ul className="space-y-3 text-xs text-white/40 font-bold">
+                       <li className="flex gap-2"><span>•</span> <span>Be honest—that's why they sent you the link!</span></li>
+                       <li className="flex gap-2"><span>•</span> <span>Focus on the "vibe" and overall impression.</span></li>
+                       <li className="flex gap-2"><span>•</span> <span>Remember: you are completely anonymous.</span></li>
+                    </ul>
+                 </div>
+
+                 <div className="p-10 rounded-[2.5rem] bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/10 text-center">
+                    <h3 className="text-xl font-black text-white mb-4">Want your own portal?</h3>
+                    <p className="text-white/30 font-bold mb-8 text-sm">Join PicPop to get your own Cool ID and start receiving anonymous photo drops.</p>
+                    <Link href="/login" className="px-8 py-4 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all inline-block">
+                       Join PicPop Free
+                    </Link>
+                 </div>
+              </div>
+            )}
           </div>
+
         )}
       </main>
 

@@ -45,7 +45,6 @@ export const auth = app
       if ((e as { code?: string })?.code === "auth/already-initialized") {
         return getAuth(app);
       }
-      console.error("[Firebase] Auth init failed:", e);
       return null;
     }
   })()

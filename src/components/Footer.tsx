@@ -18,9 +18,11 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           {/* Brand section */}
           <div className="md:col-span-2 space-y-6">
-            <Link href="/" className="inline-block transition-transform hover:scale-105 active:scale-95">
+            <Link href="/" className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group">
               <img src="/logo.svg" alt="picpop" className="h-7 w-auto opacity-95" />
+              <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
             </Link>
+
             <p className="text-white/40 font-bold text-sm leading-relaxed max-w-sm">
               The world's most honest image feedback platform. Drop a link, receive visual reactions, and chat without revealing your identity. One-way anonymity by design.
             </p>
@@ -30,21 +32,24 @@ export function Footer() {
                 System Live
               </div>
               <div className="sticker text-[10px]" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                Ad-Free Experience
+                Premium Content Community
               </div>
             </div>
           </div>
 
-          {/* Links: Platform */}
           <div className="space-y-6">
             <h4 className="text-white text-xs font-black uppercase tracking-[0.2em] opacity-30">Platform</h4>
             <ul className="space-y-4">
               <li><Link href="/about" className="footer-link-v2">About Us</Link></li>
+              <li><Link href="/blog" className="footer-link-v2">Our Insights (Blog)</Link></li>
+              <li><Link href="/guide" className="footer-link-v2">User Guide</Link></li>
+
               <li><Link href="/#how" className="footer-link-v2">How it Works</Link></li>
               <li><Link href={user ? "/dashboard" : "/login"} className="footer-link-v2">Get Feedback</Link></li>
               <li><Link href="/browse" className="footer-link-v2">Browse Ideas</Link></li>
             </ul>
           </div>
+
 
           {/* Links: Legal */}
           <div className="space-y-6">
@@ -52,7 +57,8 @@ export function Footer() {
             <ul className="space-y-4">
               <li><Link href="/privacy" className="footer-link-v2">Privacy Policy</Link></li>
               <li><Link href="/terms" className="footer-link-v2">Terms of Service</Link></li>
-              <li><Link href="/about#faq" className="footer-link-v2">Help & FAQ</Link></li>
+              <li><Link href="/faq" className="footer-link-v2">Help & FAQ</Link></li>
+
               <li>
                 <a href="mailto:hello@picpop.me" className="footer-link-v2 inline-flex items-center gap-1.5 group">
                   Contact Support <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

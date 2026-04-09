@@ -38,12 +38,16 @@ export function Navbar() {
   return (
     <header className="navbar-glass sticky top-0 z-50 border-b border-white/5 bg-[var(--bg-primary)]/80 backdrop-blur-md">
       <nav className="flex h-16 items-center justify-between px-6 max-w-4xl mx-auto">
-        <Link href="/" className="flex items-center hover:scale-105 transition-transform duration-300 shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 hover:scale-105 transition-transform duration-300 shrink-0 group">
           <img src="/logo.svg" alt="picpop" className="h-7 w-auto" />
+          <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-4">
+
+        <div className="flex items-center gap-2 sm:gap-6">
+          <Link href="/blog" className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors hidden md:block">Blog</Link>
           <ThemeToggle />
+
           <NotificationBell ownerName={profile?.coolId || ""} />
 
           {user && profile ? (

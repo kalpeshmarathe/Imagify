@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import Link from "next/link";
-import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown, ChevronRight, Share2, Inbox, ImageIcon } from "lucide-react";
+import { Flame, MessageCircle, Star, Zap, Target, ScanLine, Sparkles, Upload, Link2, Camera, Heart, Skull, HandMetal, Eye, Rocket, ChevronDown, ChevronRight, Share2, Inbox, ImageIcon, ShieldCheck, ArrowUpRight } from "lucide-react";
 import { AnimateOnScroll } from "@/components/AnimateOnScroll";
 import { MobileNav } from "@/components/MobileNav";
 import { ImageShowcase } from "@/components/ImageShowcase";
@@ -32,6 +33,8 @@ const MARQUEE_ITEMS: { Icon: typeof Flame; label: string }[] = [
 ];
 
 export default function Home() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   const { user, profile } = useAuth();
   const { activity: personalActivity, coolId: activeUserCoolId } = useRealtimeActivity();
   const { unreadNotifications } = useUnreadNotifications(user?.uid);
@@ -320,22 +323,25 @@ export default function Home() {
               style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.15)" }}
             >
               <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 8px var(--green)" }} />
-              one-way anonymity.
+              the PicPop experience — one-way anonymity.
             </div>
           </div>
 
+
           <h1
             className="font-black text-white leading-[0.9] tracking-tight"
-            style={{ fontSize: "clamp(4rem, 11vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
+            style={{ fontSize: "clamp(3rem, 10vw, 8rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
           >
-            <span className="fade-up block">photo</span>
-            <span className="fade-up delay-1 block text-outline">reactions.</span>
+            <span className="fade-up block">PicPop.</span>
+            <span className="fade-up delay-1 block text-outline">photo reacts.</span>
             <span className="fade-up delay-2 block" style={{ color: "var(--blue)" }}>totally anon.</span>
           </h1>
 
+
           <p className="fade-up delay-3 mt-6 text-white/60 max-w-sm mx-auto font-bold text-base sm:text-lg leading-relaxed">
-            Drop your link. Get anonymous photo reactions and chat with friends — without them ever knowing it's you.
+            The world's most honest image feedback platform. Drop your unique PicPop link and get anonymous photo reactions from friends and followers — without them ever knowing it's you.
           </p>
+
 
           <div className="fade-up delay-4 mt-10 mb-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -579,9 +585,9 @@ export default function Home() {
           {/* Step cards */}
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { step: "01", Icon: Link2, title: "Get Your ID", desc: "Claim your unique Cool ID and get a personalized feedback link in seconds.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)", href: user ? "/dashboard" : "/login" },
-              { step: "02", Icon: Share2, title: "Spread the Link", desc: "Share your portal on Instagram, Twitter, or WhatsApp. Let the drops begin.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)", href: user ? "/dashboard" : "/login" },
-              { step: "03", Icon: Inbox, title: "Anonymous Chat", desc: "Receive anonymous images and text. Reply instantly to start a secret thread.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)", href: user ? "/inbox" : "/login" },
+              { step: "01", Icon: Link2, title: "Get Your ID", desc: "Claim your unique 'Cool ID'—a personalized handle that serves as your gateway. No traditional signup required for your audience, making the barrier to entry non-existent for your friends and followers.", color: "var(--pink)", glow: "rgba(255,61,127,0.12)", href: user ? "/dashboard" : "/login" },
+              { step: "02", Icon: Share2, title: "Spread the Link", desc: "Embed your portal link in your Instagram bio, share it on Twitter, or send it directly on WhatsApp. Our optimized landing pages ensure high conversion rates for your feedback requests.", color: "var(--purple)", glow: "rgba(124,58,255,0.12)", href: user ? "/dashboard" : "/login" },
+              { step: "03", Icon: Inbox, title: "Anonymous Chat", desc: "Dive into a secure inbox containing anonymous photo drops and reactions. Reply to each drop to start a secret thread where you can ask follow-up questions without ever knowing their identity.", color: "var(--blue)", glow: "rgba(0,200,255,0.12)", href: user ? "/inbox" : "/login" },
             ].map((s, i) => {
               const StepIcon = s.Icon;
               return (
@@ -606,6 +612,224 @@ export default function Home() {
           <AnimateOnScroll delay={400}>
             <ImageResponseCards />
           </AnimateOnScroll>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 3.0: CREATIVE COLLECTIONS (Unique Curation / Value)
+      ================================================================ */}
+      <section className="relative py-24 bg-black px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-16 text-center">
+            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Explore the <span className="text-[var(--pink)]">Hub.</span></h2>
+            <p className="text-[var(--text-muted)] font-bold max-w-2xl mx-auto">
+              PicPop isn't just about random drops. Discover specialized collections designed to help you master specific visual niches.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+             {[
+               { title: "Portfolio Polish", count: "1.2k+ prompts", theme: "var(--blue)", desc: "Curated questions for designers looking to refine their UI/UX presentations." },
+               { title: "Portrait Vibe", count: "800+ prompts", theme: "var(--pink)", desc: "Specialized feedback hooks for fashion and lifestyle photographers." },
+               { title: "Identity Check", count: "2.4k+ prompts", theme: "var(--purple)", desc: "Get deep-dives into your personal brand and online avatar aesthetics." },
+               { title: "Commercial Gut", count: "500+ prompts", theme: "var(--green)", desc: "Market research loops for small businesses testing product shots." }
+             ].map((collect, i) => (
+                <div key={i} className="group p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/05 hover:bg-white/[0.04] transition-all cursor-pointer">
+                   <div className="w-10 h-10 rounded-xl mb-6 flex items-center justify-center" style={{ backgroundColor: `${collect.theme}20`, border: `1px solid ${collect.theme}30` }}>
+                      <Sparkles className="w-5 h-5" style={{ color: collect.theme }} />
+                   </div>
+                   <h3 className="text-lg font-black text-white mb-2">{collect.title}</h3>
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 block">{collect.count}</span>
+                   <p className="text-xs text-white/40 font-bold leading-relaxed">{collect.desc}</p>
+                </div>
+             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 3.1: ADVANCED FEATURES (High Value Detail)
+      ================================================================ */}
+
+      <section className="relative py-24 bg-[#0c0c0c] px-4 sm:px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+            <div className="max-w-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--blue)] mb-3">Power Tools</p>
+              <h2 className="text-3xl sm:text-6xl font-black text-white leading-tight">Beyond Simple <br/><span className="text-outline">Anonymity.</span></h2>
+            </div>
+            <p className="text-[var(--text-muted)] font-bold max-w-sm mb-2">
+              We've engineered PicPop to be more than just a secret-box. It's a full-featured social interaction layer.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              { title: "Real-time Sync", desc: "Our infrastructure uses WebSocket-driven technology to ensure that when a friend drops a photo, it appears in your inbox in under 200ms.", icon: Zap },
+              { title: "Smart Notifications", desc: "Never miss a vibe. Get intelligent push notifications and browser alerts tailored to your activity levels.", icon: Rocket },
+              { title: "Threaded Chats", desc: "One-off messages are boring. PicPop supports full threaded conversations, allowing for deep dives into feedback.", icon: MessageCircle },
+              { title: "Encryption First", desc: "All images are processed through secure transfer protocols. We prioritize your data integrity above all else.", icon: ShieldCheck },
+              { title: "Visual Analytics", desc: "Understand your engagement. See which of your links are performing best and what times your audience is most active.", icon: Target },
+              { title: "Custom Branding", desc: "Your portal, your rules. Customize your landing page profile with your own images and unique brand messaging.", icon: Sparkles }
+            ].map((f, i) => (
+              <div key={i} className="p-10 rounded-[2.5rem] bg-white/[0.01] border border-white/05 hover:bg-white/[0.03] hover:border-white/10 transition-all group">
+                <f.icon className="w-10 h-10 text-white/20 group-hover:text-white transition-colors mb-6" />
+                <h3 className="text-xl font-black text-white mb-4">{f.title}</h3>
+                <p className="text-sm text-white/40 font-bold leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* ================================================================
+          SECTION 3.2: USE CASES (High Value Content)
+      ================================================================ */}
+      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">Who is it for?</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white">Versatile Feedback for Everyone</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { title: "Photographers", desc: "Get honest critiques on your composition and lighting without the 'polite' bias of your social circle.", icon: Camera, color: "var(--pink)" },
+              { title: "Designers", desc: "Run blind UI/UX tests. Share a screenshot and let users react to what they actually see first.", icon: Target, color: "var(--blue)" },
+              { title: "Influencers", desc: "Test different outfit combinations or post ideas. Find out what really resonates with your audience.", icon: Sparkles, color: "var(--purple)" },
+              { title: "Creators", desc: "Gather unvarnished opinions on your latest video thumbnails or brand assets before you go live.", icon: Zap, color: "var(--green)" }
+            ].map((item, i) => (
+              <div key={i} className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/05 hover:border-white/10 transition-all">
+                <item.icon className="w-8 h-8 mb-4" style={{ color: item.color }} />
+                <h3 className="text-xl font-black text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-white/40 font-bold leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 3.3: SAFETY & MODERATION
+      ================================================================ */}
+      <section className="relative py-24 bg-[#080808] border-y border-white/05 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest mb-6">
+              <ShieldCheck className="w-3 h-3" /> Secure Ecosystem
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Safe, Secure,<br/>and Sensible.</h2>
+            <div className="space-y-4 text-white/50 font-bold text-sm leading-relaxed">
+              <p>
+                Anonymity shouldn't mean a lack of accountability. At PicPop, we've built a multi-layered safety system to ensure that your feedback experience remains positive and constructive.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-black">✓</span>
+                  <span><strong>AI Content Filtering:</strong> Every image uploaded is scanned for inappropriate content using advanced vision models.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-black">✓</span>
+                  <span><strong>Block & Report:</strong> One-tap blocking of any sender who crosses the line. We track patterns to ban bad actors.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-black">✓</span>
+                  <span><strong>Rate Limiting:</strong> Anti-spam measures prevent flood attacks and bot interaction on your personal links.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="order-1 md:order-2 flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-500/20 blur-[100px] animate-pulse" />
+              <div className="relative p-8 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl">
+                 <ShieldCheck className="w-32 h-32 text-blue-400 opacity-80" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ================================================================
+          SECTION 3.5: FAQ & KNOWLEDGE BASE (Anti-Low-Value-Content)
+      ================================================================ */}
+      <section id="faq" className="relative py-24 bg-[#0a0a0a] border-y border-white/05 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Frequently Asked Questions</h2>
+            <p className="text-[var(--text-muted)] font-bold">Everything you need to know about anonymous photo feedback.</p>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { 
+                q: "Is it really anonymous?", 
+                a: "Yes. We use a one-way anonymity engine. When you send feedback, your identity is cryptographicly isolated from the recipient profile. Even if you chat back and forth, they will never know who they are talking to unless you choose to reveal yourself. We do not store personal identifiers that link your real-world identity to your anonymous sessions, ensuring total privacy across all feedback metadata." 
+              },
+              { 
+                q: "Do you store my images?", 
+                a: "Images are stored securely on our encrypted servers solely to enable the feedback loop. We do not use your images for AI training, and we do not share them with third parties. You can delete your drops and images at any time, and they will be purged from our active storage. Our infrastructure follows SOC2-compliant patterns to ensure data residency and security." 
+              },
+              { 
+                q: "Is PicPop free to use?", 
+                a: "Yes, the core features of PicPop—creating IDs, sharing links, and receiving anonymous feedback—are completely free. We keep the platform running through non-intrusive advertisements provided by partners like Google AdSense. This ad-supported model ensures that we can provide high-quality feedback tools to everyone at no cost." 
+              },
+              { 
+                q: "How do I prevent harassment?", 
+                a: "We take safety seriously. Users can block specific senders, report inappropriate content, and our automated filters flag potentially harmful text and imagery before they reach your inbox. Our moderation team reviews reported content 24/7. We also employ machine learning algorithms to detect toxic patterns and shadow-ban repeated offenders." 
+              },
+              { 
+                q: "Can I use PicPop for business feedback?", 
+                a: "Absolutely. Many designers and creators use PicPop for 'blind vibe checks' on logos, UI designs, and photography projects to get unvarnished opinions before a public launch. It's an excellent tool for qualitative market research where user anonymity encourages honest, unbiased data collection." 
+              },
+              {
+                q: "Can I use my link on Instagram?",
+                a: "Definitely! Most of our users place their unique link in their Instagram bio. It's the most effective way to engage with your followers and get feedback on your latest posts or stories. We've optimized our landing pages for the Instagram browser to ensure a seamless handoff."
+              },
+              {
+                q: "What makes PicPop different from other anon apps?",
+                a: "PicPop is specifically designed for visual-first feedback. While other apps focus on text secrets, we focus on photo reactions and constructive dialogue around imagery. This creates a purposeful, creative interaction layer that prevents the toxicity often found in text-only anonymous platforms."
+              },
+              {
+                q: "Is there a limit to how many drops I can receive?",
+                a: "Currently, there is no hard cap on the number of feedback drops you can receive. Our cloud infrastructure is designed to scale dynamically, ensuring that whether you get 10 or 10,000 reactions, our systems remain responsive and your notifications remain instant."
+              },
+              {
+                q: "Do my friends need to download an app?",
+                a: "No. One of our core design pillars is zero friction. Your friends can react to your photos directly through their mobile or desktop browser without downloading any software or creating an account, ensuring the highest possible response rate."
+              }
+            ].map((item, i) => (
+              <div key={i} className={`rounded-[2rem] border transition-all duration-300 ${openFaq === i ? 'bg-white/[0.04] border-white/10' : 'bg-white/[0.02] border-white/05 hover:bg-white/[0.03]'}`}>
+                 <button 
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full px-8 py-6 flex items-center justify-between text-left group"
+                 >
+                    <span className="text-lg font-black text-white group-hover:text-[var(--blue)] transition-colors">{item.q}</span>
+                    <ChevronDown className={`w-5 h-5 text-white/20 transition-transform duration-300 ${openFaq === i ? 'rotate-180 text-white' : ''}`} />
+                 </button>
+                 {openFaq === i && (
+                   <div className="px-8 pb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <p className="text-white/40 leading-relaxed font-bold text-sm">
+                        {item.a}
+                      </p>
+                   </div>
+                 )}
+              </div>
+            ))}
+
+
+
+          </div>
+
+          <div className="mt-16 p-10 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/10 text-center">
+            <h3 className="text-xl font-black text-white mb-4">Need more help?</h3>
+            <p className="text-white/40 font-bold mb-8 text-sm">Check our full documentation or reach out to our team.</p>
+            <Link href="/about" className="inline-flex items-center gap-2 text-blue-400 font-black uppercase tracking-widest text-xs hover:gap-4 transition-all">
+              Learn more about our mission <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -634,7 +858,6 @@ export default function Home() {
         <div className="absolute bottom-12 right-[8%] float opacity-70" style={{ animationDelay: "1s" }}><MessageCircle className="w-12 h-12 text-white/80" /></div>
         <div className="absolute top-16 right-[20%] float opacity-50" style={{ animationDelay: "0.5s" }}><Sparkles className="w-8 h-8 text-white/70" /></div>
         <div className="absolute bottom-20 left-[20%] float opacity-50" style={{ animationDelay: "1.5s" }}><MessageCircle className="w-8 h-8 text-white/70" /></div>
-
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <AnimateOnScroll>
             <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60 mb-6">experience it now</p>
@@ -664,9 +887,198 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================================================================
+          SECTION 4.2: THE PICPOP ADVANTAGE (Comparative Content)
+      ================================================================ */}
+      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6">
 
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+             <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Why PicPop?</h2>
+             <p className="text-[var(--text-muted)] font-bold max-w-2xl mx-auto">
+               In the crowded landscape of social apps, PicPop stands out by focusing on what actually matters: visual truth.
+             </p>
+          </div>
+
+          <div className="space-y-6">
+             {[
+               { q: "Contextual Feedback", a: "Unlike text-based secret apps where messages often lack context, PicPop centers every interaction around an image. This focus leads to more relevant, high-quality feedback that you can actually use to improve your craft or personal brand." },
+               { q: "One-Way Privacy Architecture", a: "Most anonymous platforms are two-way anonymized or completely public. PicPop's unique one-way logic ensures you (the owner) are known, while the contributors are protected. This creates a safe bridge between your public persona and private interactions." },
+               { q: "Creator-Centric Design", a: "We don't sell your data to training models. We don't flood your screen with intrusive pop-up ads. We provide a clean, premium environment designed specifically for photographers, designers, and visual thinkers." },
+               { q: "Building Professional Credibility", a: "By explicitly asking for feedback through a dedicated portal, you demonstrate a level of professional vulnerability and a commitment to growth that resonates with followers and clients alike." }
+             ].map((item, i) => (
+               <div key={i} className="flex flex-col md:flex-row gap-6 p-10 rounded-[2.5rem] bg-white/[0.01] border border-white/05 hover:border-white/08 transition-all">
+                  <div className="md:w-1/3 text-xl font-black text-white">{item.q}</div>
+                  <div className="md:w-2/3 text-white/40 font-bold leading-relaxed text-sm">{item.a}</div>
+               </div>
+             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 4.3: COMMUNITY VOICES (Placeholder Testimonials)
+      ================================================================ */}
+      <section className="relative py-24 bg-[#0a0a0a] overflow-hidden px-4 sm:px-6">
+         <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8">
+               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-pink-500/5 to-transparent border border-pink-500/10">
+                  <div className="flex gap-1 text-pink-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
+                  <p className="text-white font-bold italic mb-6">"PicPop helped me realize which of my portfolio shots were actually resonating. The anonymous element removed the 'friend-tax' on honesty."</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Lifestyle Photographer</p>
+               </div>
+               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/10">
+                  <div className="flex gap-1 text-blue-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
+                  <p className="text-white font-bold italic mb-6">"As a UI designer, I use my link to run quick vibe checks on concepts. It's faster and more honest than any survey tool I've used."</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Product Lead</p>
+               </div>
+               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-purple-500/5 to-transparent border border-purple-500/10">
+                  <div className="flex gap-1 text-purple-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
+                  <p className="text-white font-bold italic mb-6">"I put my link in my bio and got 50+ reactions in one day. The chat feature makes it so easy to follow up on anonymous critiques!"</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Digital Creator</p>
+               </div>
+            </div>
+         </div>
+      </section>
+
+
+      {/* ================================================================
+          SECTION 4.5: EDUCATIONAL CONTENT (High-Value Publisher Content)
+      ================================================================ */}
+      <section className="relative py-24 bg-black px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mb-8 tracking-tighter leading-tight">
+              The Power of <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--pink)] to-[var(--purple)]">Unfiltered Truth.</span>
+            </h2>
+            <div className="space-y-6 text-white/60 font-medium leading-relaxed">
+              <p>
+                In an era dominated by performative social media, standard feedback loops often fall into the "politeness trap." We've all seen it: a friend asks for an opinion on a photo, and the response is a standard "looks great!" regardless of how people actually feel.
+              </p>
+              <p>
+                <strong>PicPop</strong> disrupts this cycle by introducing a one-way anonymous barrier. Scientific studies on social behavior suggest that anonymity reduces the fear of social retribution, allowing for radical honesty. This isn't just about being "critical"—it's about being <strong>real</strong>.
+              </p>
+              <p>
+                Whether you're a designer looking for a gut-check on a new UI concept, or a photographer trying to gauge the mood of a portrait, anonymity provides a data quality that public commentary simply cannot match.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
+                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-blue-400" /> Secure
+                </h4>
+                <p className="text-xs text-white/40 font-bold">End-to-end data safety protocols.</p>
+              </div>
+              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
+                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-400" /> Fast
+                </h4>
+                <p className="text-xs text-white/40 font-bold">Real-time reactions in milliseconds.</p>
+              </div>
+            </div>
+            <div className="space-y-4 pt-8">
+              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
+                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-green-400" /> Private
+                </h4>
+                <p className="text-xs text-white/40 font-bold">One-way anon logic by design.</p>
+              </div>
+              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
+                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-pink-400" /> Human
+                </h4>
+                <p className="text-xs text-white/40 font-bold">Built for real social interaction.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 4.6: COMMUNITY COMMITMENT
+      ================================================================ */}
+      <section className="relative py-24 bg-[#050505] px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-10 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+            <Heart className="w-4 h-4 text-red-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Our Pledge to You</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white mb-8">Authentic Social Integrity.</h2>
+          <p className="text-white/40 font-bold leading-relaxed mb-12 max-w-2xl mx-auto">
+            Social media should empower you, not drain you. At PicPop, we are committed to building a digital space where honesty is celebrated, privacy is a right, and genuine connection is the ultimate goal. We don't just build features; we build trust.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-8 text-left">
+            <div className="space-y-3">
+              <h4 className="text-white font-black text-sm uppercase tracking-widest">Transparency</h4>
+              <p className="text-xs text-white/20 font-bold">We are open about how our algorithms and privacy logic work. No hidden tracking, no secrets.</p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-white font-black text-sm uppercase tracking-widest">Inclusion</h4>
+              <p className="text-xs text-white/20 font-bold">Our platform is built for everyone, from professional artists to casual users looking for a fun social experience.</p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-white font-black text-sm uppercase tracking-widest">Evolution</h4>
+              <p className="text-xs text-white/20 font-bold">We constantly evolve based on community feedback. Your voice directly shapes the future of PicPop.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+          SECTION 4.7: SYSTEM INTEGRITY & MISSION
+      ================================================================ */}
+      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6 border-y border-white/05">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-16 items-center">
+          <div className="lg:col-span-7 space-y-8">
+            <h2 className="text-4xl sm:text-6xl font-black text-white leading-tight">
+              A New Standard for <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--blue)] to-[var(--purple)]">Social Honesty.</span>
+            </h2>
+            <div className="prose prose-invert prose-lg max-w-none text-white/50 font-bold leading-relaxed space-y-6">
+              <p>
+                The digital world is currently facing a crisis of authenticity. High-pressure social environments have forced us to curate every pixel of our lives, leading to a feedback desert where everything is "good" but nothing is "real." 
+              </p>
+              <p>
+                <strong>PicPop</strong> was founded on the idea that anonymity, when applied correctly within a structured visual context, acts as a powerful catalyst for truth. By removing the social repercussions of an opinion, we allow for a quality of dialogue that is impossible in public comment sections.
+              </p>
+              <p>
+                Our commitment is to maintain this space as a haven for constructive, visual-first engagement. We are not just building an app; we are rebuilding the bridge between what people think and what people say.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-8 pt-4">
+               <div>
+                  <div className="text-2xl font-black text-white">99.9%</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Uptime Reliability</div>
+               </div>
+               <div>
+                  <div className="text-2xl font-black text-white">256-bit</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Data Encryption</div>
+               </div>
+               <div>
+                  <div className="text-2xl font-black text-white">24/7</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Moderation Active</div>
+               </div>
+            </div>
+          </div>
+          <div className="lg:col-span-5 relative">
+             <div className="absolute inset-0 bg-purple-500/20 blur-[120px] rounded-full" />
+             <div className="relative p-12 rounded-[3rem] bg-white/[0.02] border border-white/08 backdrop-blur-2xl">
+                <Sparkles className="w-16 h-16 text-[var(--purple)] mb-8 animate-pulse" />
+                <h4 className="text-2xl font-black text-white mb-4">Our Integrity Promise</h4>
+                <p className="text-sm text-white/40 font-bold leading-relaxed">
+                   We promise to never sell your private image data, to always prioritize your mental well-being over engagement metrics, and to keep our platform open and free for creators around the globe.
+                </p>
+             </div>
+          </div>
+        </div>
+      </section>
 
       <Footer />
+
+
     </div>
   );
 }

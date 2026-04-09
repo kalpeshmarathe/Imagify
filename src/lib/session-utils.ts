@@ -22,8 +22,8 @@ export function getSessionId() {
     try {
       localStorage.setItem(STORAGE_KEY, sid);
 
-    } catch (e) {
-      console.warn("[DEBUG] [Session] Could not sync to localStorage:", e);
+    } catch {
+      /* ignore */
     }
     return sid;
   }
@@ -34,10 +34,8 @@ export function getSessionId() {
   try {
     localStorage.setItem(STORAGE_KEY, sid);
 
-  } catch (e) {
-    console.warn("[DEBUG] [Session] localStorage not available, using sessionStorage only");
+  } catch {
     sessionStorage.setItem(STORAGE_KEY, sid);
-
   }
 
   return sid;
@@ -56,7 +54,7 @@ export function clearSessionId(): void {
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);
 
-  } catch (e) {
-    console.warn("[Session] Could not clear session:", e);
+  } catch {
+    /* ignore */
   }
 }

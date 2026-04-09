@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 
-const ALLOWED_PATHS = ["/", "/terms", "/privacy", "/about"];
+const ALLOWED_PATHS = ["/", "/terms", "/privacy", "/about", "/browse", "/contact"];
 
 export function AdSenseScript() {
   const pathname = usePathname();

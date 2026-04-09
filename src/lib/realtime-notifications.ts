@@ -62,15 +62,13 @@ export async function getUnreadMessageCount(sessionId: string): Promise<number> 
 
           resolve(unreadCount);
         },
-        (err) => {
+        (_err) => {
           clearTimeout(timeout);
-          console.error('[getUnreadMessageCount] Error:', err);
           resolve(0);
         }
       );
     });
-  } catch (err) {
-    console.error('[getUnreadMessageCount] Failed:', err);
+  } catch {
     return 0;
   }
 }
@@ -120,8 +118,7 @@ export async function getAllMessages(sessionId: string): Promise<PendingMessage[
         }
       );
     });
-  } catch (err) {
-    console.error('[getAllMessages] Failed:', err);
+  } catch {
     return [];
   }
 }
@@ -135,8 +132,8 @@ export async function markMessageAsRead(sessionId: string, messageId: string) {
       read: true,
       readAt: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error('[markMessageAsRead] Error:', err);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -149,8 +146,8 @@ export async function markOwnerNotificationAsRead(userId: string, notificationId
       read: true,
       readAt: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error('[markOwnerNotificationAsRead] Error:', err);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -164,8 +161,8 @@ export async function createSession(sessionId: string) {
       lastActive: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
     });
-  } catch (err) {
-    console.error('[createSession] Error:', err);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -176,8 +173,8 @@ export async function keepSessionAlive(sessionId: string) {
     await update(ref(db, `sessions/${sessionId}`), {
       lastActive: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error('[keepSessionAlive] Error:', err);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -208,7 +205,6 @@ export async function linkSessionToUser(
       sessionId: sessionId,
     });
   } catch (err) {
-    console.error("[Session] Error linking session to user:", err);
     throw err;
   }
 }
@@ -227,8 +223,7 @@ export async function getUserSessions(userId: string): Promise<string[]> {
     const sessions = Object.keys(snapshot.val());
 
     return sessions;
-  } catch (err) {
-    console.error("[Session] Error retrieving user sessions:", err);
+  } catch {
     return [];
   }
 }

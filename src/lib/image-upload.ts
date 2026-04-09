@@ -78,8 +78,8 @@ export async function uploadAttachment(
   if (file.type.startsWith("image/")) {
     try {
       toUpload = await compressImage(file, "feedback");
-    } catch (e) {
-      console.warn("Compression failed, uploading original:", e);
+    } catch {
+      /* use original file */
     }
   }
 

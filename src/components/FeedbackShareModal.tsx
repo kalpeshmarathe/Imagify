@@ -56,8 +56,7 @@ export function FeedbackShareModal({
         // Essential: give the browser time to register the DataURL and decode (iOS needs more time)
         setTimeout(() => setIsReady(true), isIOS() ? 1200 : 800);
       })
-      .catch((err) => {
-        console.error("Preload Error:", err);
+      .catch(() => {
         setResolvedImageUrl(singleFeedback.feedbackImageUrl);
         setIsReady(true);
       });
@@ -158,8 +157,7 @@ export function FeedbackShareModal({
           }
         } catch (err) { }
       }
-    } catch (err) {
-      console.error("Capture Process Error:", err);
+    } catch {
       alert("Failed to generate image. Please try again.");
     } finally {
       setSharing(false);

@@ -1,45 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Info, HelpCircle, Shield, Globe } from "lucide-react";
+import { ArrowLeft, Users, Target, Rocket, Sparkles, Heart, Shield, Zap } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 
 export default function AboutPage() {
   return (
     <div
-      className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative"
+      className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden"
       style={{ fontFamily: "'Nunito', var(--font-nunito), sans-serif" }}
     >
-      <style>{`
-        .about-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 2rem;
-        }
-        .faq-item {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.05);
-          border-radius: 1.5rem;
-          padding: 24px;
-          transition: all 0.3s ease;
-        }
-        .faq-item:hover {
-          background: rgba(255,255,255,0.04);
-          border-color: rgba(255,255,255,0.1);
-          transform: translateY(-2px);
-        }
-      `}</style>
+      {/* Background Glows */}
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--pink)]/10 blur-[120px] rounded-full z-0 animate-pulse" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--purple)]/10 blur-[120px] rounded-full z-0 animate-pulse" style={{ animationDelay: "2s" }} />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 relative z-10">
         {/* Header */}
-        <header className="flex items-center justify-between mb-16 px-2">
+        <header className="flex items-center justify-between mb-16">
           <Link href="/" className="flex items-center gap-2 group transition-transform hover:scale-105 active:scale-95">
-             <img src="/logo.svg" alt="picpop" className="h-6 w-auto opacity-90" />
+             <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
+             <span className="text-xl font-black tracking-tighter text-white">picpop</span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
             <Link href="/" className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" /> exit
@@ -47,91 +30,116 @@ export default function AboutPage() {
           </div>
         </header>
 
-        <div className="about-card p-8 sm:p-14 mb-16">
-          <div className="flex items-center gap-5 mb-12">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-              <Info className="w-8 h-8 text-blue-400" />
+        {/* Hero Section */}
+        <div className="text-center mb-20 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 group hover:bg-white/10 transition-all cursor-default">
+            <Sparkles className="w-4 h-4 text-[var(--pink)] group-hover:rotate-12 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Our Story & Mission</span>
+          </div>
+          <h1 className="text-5xl sm:text-7xl font-black text-white mb-6 tracking-tight leading-[1.1]">
+            Honesty through <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--pink)] via-[var(--purple)] to-[var(--blue)]">Anonymity.</span>
+          </h1>
+          <p className="text-lg sm:text-xl text-[var(--text-muted)] max-w-2xl mx-auto font-bold leading-relaxed">
+            PicPop was born out of a simple observation: we're often too polite to give real feedback, and too shy to ask for it.
+          </p>
+        </div>
+
+        {/* The Problem & Solution */}
+        <div className="grid sm:grid-cols-2 gap-8 mb-24">
+          <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-md hover:bg-white/[0.05] transition-all group">
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Users className="w-7 h-7 text-red-400" />
             </div>
-            <div>
-              <h1 className="text-4xl font-black text-white tracking-tight">The PicPop Story</h1>
-              <p className="text-[var(--text-muted)] font-black text-xs uppercase tracking-[0.2em] mt-1.5 opacity-60">Visual Truth Since 2026</p>
+            <h3 className="text-2xl font-black text-white mb-4">The Filter Bubble</h3>
+            <p className="text-[var(--text-muted)] font-bold leading-relaxed">
+              Standard social media is an echo chamber of likes. It's designed for validation, not improvement. We realized that people need a safe space to share raw, honest reactions without the social pressure of their identity. Research shows that people are 70% more likely to give constructive criticism when they aren't worried about social friction.
+            </p>
+          </div>
+          <div className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-md hover:bg-white/[0.05] transition-all group">
+            <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Rocket className="w-7 h-7 text-green-400" />
+            </div>
+            <h3 className="text-2xl font-black text-white mb-4">The PicPop Way</h3>
+            <p className="text-[var(--text-muted)] font-bold leading-relaxed">
+              We've created a one-way anonymous feedback loop. You know exactly who you're asking, but they don't know who's asking. This reduces bias and unlocks the kind of "vibe checks" that just aren't possible anywhere else. Whether it's a new profile picture or a design mockup, you get the truth immediately.
+            </p>
+          </div>
+        </div>
+
+        {/* Detailed Vision Section */}
+        <div className="mb-24 space-y-12">
+          <div className="text-center">
+            <h2 className="text-3xl font-black text-white mb-4">Why Anonymity Matters</h2>
+            <p className="text-[var(--text-muted)] font-bold max-w-2xl mx-auto">
+              In a world of constant surveillance, privacy is a feature, not a bug.
+            </p>
+          </div>
+          <div className="prose prose-invert prose-lg max-w-none text-[var(--text-muted)] font-medium leading-relaxed space-y-6">
+            <p>
+              Anonymity has often been misunderstood as a tool for negativity. At PicPop, we see it differently. We see it as a catalyst for <strong>authenticity</strong>. When you remove the face from the feedback, you focus on the content itself rather than the social hierarchy.
+            </p>
+            <p>
+              Our platform is designed to facilitate "constructive anonymity." This means we provide the tools for honest dialogue while maintaining a strict zero-tolerance policy for abuse. By providing a structured environment—where users drop images and others react—we create a purposeful interaction that goes beyond simple text-based chatting.
+            </p>
+          </div>
+        </div>
+
+
+        {/* Values */}
+        <div className="mb-24">
+          <h2 className="text-3xl font-black text-white mb-12 text-center">Our Core Values</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="text-center p-6 space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-blue-400" />
+              </div>
+              <h4 className="font-black text-white uppercase tracking-widest text-xs">Privacy First</h4>
+              <p className="text-xs text-[var(--text-muted)] font-bold">Your identity is your power. We protect it with banking-grade security and anonymous session logic.</p>
+            </div>
+            <div className="text-center p-6 space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center">
+                <Heart className="w-6 h-6 text-pink-400" />
+              </div>
+              <h4 className="font-black text-white uppercase tracking-widest text-xs">Radical Honesty</h4>
+              <p className="text-xs text-[var(--text-muted)] font-bold">We believe better decisions are made when we have access to the truth, unvarnished and real.</p>
+            </div>
+            <div className="text-center p-6 space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-purple-400" />
+              </div>
+              <h4 className="font-black text-white uppercase tracking-widest text-xs">User Agency</h4>
+              <p className="text-xs text-[var(--text-muted)] font-bold">You control what you share, who you ask, and when you delete your data. It's your platform.</p>
             </div>
           </div>
+        </div>
 
-          <div className="prose prose-invert prose-sm max-w-none space-y-12">
-            <section className="space-y-5">
-              <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                <Globe className="w-6 h-6 text-blue-400" />
-                Unfiltered Interaction
-              </h2>
-              <p className="text-white/60 leading-relaxed text-lg font-bold">
-                PicPop was born out of a simple idea: visual feedback should be as raw and honest as possible. We stripped away the "Perfect Life" aesthetic of traditional social media and replaced it with a private, image-centric feedback loop.
-              </p>
-              <p className="text-white/50 leading-relaxed font-bold">
-                Our platform isn't about collecting likes or building an audience. It's about getting real reactions to your moments, outfits, experiments, and vibes from the people you share your link with.
-              </p>
-            </section>
-
-            <section id="faq" className="space-y-8 pt-12 border-t border-white/05">
-              <div className="flex items-center gap-3">
-                 <HelpCircle className="w-7 h-7 text-green-400" />
-                 <h2 className="text-2xl font-black text-white">Frequently Asked Questions</h2>
-              </div>
-              
-              <div className="grid gap-4">
-                <div className="faq-item">
-                  <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Is it really anonymous?
-                  </h3>
-                  <p className="text-white/40 font-bold text-sm leading-relaxed">
-                    Yes. When someone sends you feedback, PicPop hides their identity by default. Unless you both explicitly choose to reveal through chat, the sender remains anonymous. Even as an owner, you cannot see who sent it.
-                  </p>
-                </div>
-
-                <div className="faq-item">
-                  <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> Do I need an account to send?
-                  </h3>
-                  <p className="text-white/40 font-bold text-sm leading-relaxed">
-                    Nope. Visitors to your link can drop images and text immediately. We believe in removing barriers to communication. Only the "Owner" needs a CoolID to manage their inbox.
-                  </p>
-                </div>
-
-                <div className="faq-item">
-                  <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Can I delete feedback?
-                  </h3>
-                  <p className="text-white/40 font-bold text-sm leading-relaxed">
-                    As an owner, you have absolute control. You can delete any feedback, block specific senders (based on IP identification), or even turn off your link whenever you need a break.
-                  </p>
-                </div>
-
-                <div className="faq-item">
-                  <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Is my data secure?
-                  </h3>
-                  <p className="text-white/40 font-bold text-sm leading-relaxed">
-                    We use industry-standard encryption and Firebase's secure storage. We don't sell your data or use your private images for AI training. Your privacy is the cornerstone of PicPop.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-6 pt-12 border-t border-white/05">
-              <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                <Shield className="w-6 h-6 text-purple-400" />
-                Commitment to Safety
-              </h2>
-              <p className="text-white/50 leading-relaxed font-bold">
-                Anonymity should never be a shield for toxicity. We implement real-time moderation and give every owner the tools to block and report abusive behavior instantly. Our team actively monitors the health of the community to ensure PicPop remains a positive space for all users.
-              </p>
-              <div className="p-6 rounded-2xl bg-white/02 border border-blue-500/10">
-                <p className="text-xs text-blue-300 font-bold leading-relaxed">
-                  Have more questions or need to report a bug? Reach out at <a href="mailto:support@picpop.me" className="text-blue-400 underline decoration-blue-400/30 underline-offset-4 hover:decoration-blue-400">support@picpop.me</a>
-                </p>
-              </div>
-            </section>
+        {/* The Team / Future */}
+        <div className="p-12 rounded-[3rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 mb-24">
+          <h2 className="text-3xl font-black text-white mb-6">Built for the next generation of social.</h2>
+          <div className="space-y-6 text-lg text-[var(--text-muted)] font-bold leading-relaxed mb-8">
+            <p>
+              PicPop is a project driven by the desire to bring authenticity back to the web. We are a small, dedicated team of developers and designers based in India, working to build tools that matter. 
+            </p>
+            <p>
+              Our platform is built using modern web standards to ensure speed and security. We leverage Next.js for high-performance rendering, Firebase for real-time data synchronization, and AI-driven moderation to keep the community safe. 
+            </p>
+            <p>
+              We believe that the future of social interaction isn't just about sharing everything with everyone; it's about sharing the right things with the right level of privacy.
+            </p>
+            <p>
+              We are constantly iterating based on your feedback. Have an idea? A feature request? Or just want to say hi? We're all ears.
+            </p>
           </div>
+          <Link href="/contact" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-black font-black hover:scale-105 active:scale-95 transition-all">
+            Get in touch
+          </Link>
+        </div>
+
+
+        {/* Footer info */}
+        <div className="text-center text-[var(--text-muted)] mb-12">
+            <p className="text-xs font-black uppercase tracking-[0.3em]">PicPop © 2026 — Built with Passion</p>
         </div>
       </div>
       <Footer />

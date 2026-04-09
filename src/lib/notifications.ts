@@ -48,7 +48,6 @@ export async function requestNotificationPermission(): Promise<string | null> {
 
   // iOS Safari: push only works when app is added to home screen (standalone)
   if (isIos() && !isStandalone()) {
-    console.warn("FCM iOS: Add app to Home Screen first. Push does not work in Safari browser tab.");
     return null;
   }
 
@@ -62,19 +61,14 @@ export async function requestNotificationPermission(): Promise<string | null> {
   if (!messaging) return null;
 
   if (!VAPID_KEY) {
-    console.error(
-      "FCM requires NEXT_PUBLIC_FIREBASE_VAPID_KEY. Get it from Firebase Console → Project Settings → Cloud Messaging → Web Push certificates."
-    );
     return null;
   }
   try {
     const sw = await getServiceWorkerRegistration();
     if (!sw) {
-      console.error("FCM: Service worker registration failed. Ensure /firebase-messaging-sw.js is served at root.");
       return null;
     }
     if (!VAPID_KEY) {
-      console.error("FCM: Set NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env.local. Get it from Firebase Console → Project Settings → Cloud Messaging → Web Push certificates.");
       return null;
     }
     const token = await getToken(messaging, {
@@ -82,13 +76,7 @@ export async function requestNotificationPermission(): Promise<string | null> {
       serviceWorkerRegistration: sw,
     });
     return token || null;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    const isIdbClosing = msg.includes("database connection is closing") || msg.includes("IDBDatabase");
-    if (!isIdbClosing) {
-      console.error("FCM getToken failed:", err);
-      console.info("Push requires: 1) NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env.local 2) HTTPS or localhost 3) firebase deploy --only functions");
-    }
+  } catch {
     return null;
   }
 }

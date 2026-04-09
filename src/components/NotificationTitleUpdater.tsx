@@ -40,9 +40,8 @@ export function NotificationTitleUpdater() {
             const unread = snap.docs.filter((d) => d.data().isRead !== true).length;
             document.title = unread > 0 ? `(${unread}) ${BASE_TITLE}` : BASE_TITLE;
           },
-          (err) => {
+          (_err) => {
             document.title = BASE_TITLE;
-            if (err?.code !== "failed-precondition") console.warn("Notification title listener:", err);
           }
         );
       } catch {

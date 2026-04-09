@@ -46,8 +46,8 @@ export function useAnonymousLink() {
             }
 
             return result.data;
-        } catch (err) {
-            console.error('Error linking session:', err);
+        } catch {
+            /* ignore */
         }
     };
 

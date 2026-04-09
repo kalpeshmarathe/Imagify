@@ -110,8 +110,7 @@ export function ExploreImages({
           setCategories(catSnap.docs.map((d) => ({ id: d.id, ...d.data() } as BrowseCategory)));
           setBrowseImages(imgSnap.docs.map((d) => ({ id: d.id, ...d.data() } as BrowseImage)));
         }
-      } catch (err) {
-        console.error("ExploreImages: failed to load browse data", err);
+      } catch {
         if (mounted) {
           setCategories([]);
           setBrowseImages([]);

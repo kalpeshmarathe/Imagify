@@ -27,8 +27,8 @@ export function useRealtimeActivity() {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         // Rule: Only show visitor responses (filter out my own replies)
         setActivity(list.filter((m: any) => !m.isOwnerReply && m.from !== 'owner'));
-      }, (err) => {
-         console.warn("Activity fetch failed (profile):", err);
+      }, () => {
+        /* ignore */
       });
       return () => unsub();
     } else {

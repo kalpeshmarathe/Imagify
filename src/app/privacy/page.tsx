@@ -75,6 +75,19 @@ export default function PrivacyPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black text-white flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">02</span>
+                Cookies & Advertising
+              </h2>
+              <p className="text-white/50 leading-relaxed font-bold">
+                PicPop uses cookies to enhance your experience. We also use <strong>Google AdSense</strong> to serve advertisements. Google, as a third-party vendor, uses cookies (including the <strong>DoubleClick cookie</strong>) to serve ads based on your visit to PicPop and other sites on the Internet. 
+              </p>
+              <p className="text-white/50 leading-relaxed font-bold">
+                You can opt-out of the use of the DoubleClick cookie for interest-based advertising by visiting <a href="https://adssettings.google.com" className="text-blue-400 underline">Google Ads Settings</a>.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">03</span>
                 How We Use Data
               </h2>
               <p className="text-white/50 leading-relaxed font-bold">
@@ -82,24 +95,55 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            <section className="space-y-4 shadow-sm">
+            <section className="space-y-4">
               <h2 className="text-xl font-black text-white flex items-center gap-3">
-                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">03</span>
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">04</span>
                 Sharing & Disclosure
               </h2>
               <p className="text-white/50 leading-relaxed font-bold">
-                We do <strong>not</strong> sell your data. Information is shared with service providers (Firebase, Vercel) only as necessary to host the application. We may disclose data if required by legal mandates or to protect users from imminent harm.
+                We do <strong>not</strong> sell your data. Information is shared with service providers (Firebase and Google Cloud) only as necessary to host the application. We may disclose data if required by legal mandates or to protect users from imminent harm.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">05</span>
+                Data Retention & Security
+              </h2>
+              <p className="text-white/50 leading-relaxed font-bold">
+                We retain your personal data only as long as necessary to provide our services and fulfill the transactions you have requested. We implement industry-standard security measures, including SSL encryption and secure data storage, to protect your information from unauthorized access or disclosure.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">06</span>
+                Children's Privacy
+              </h2>
+              <p className="text-white/50 leading-relaxed font-bold">
+                PicPop is not intended for children under 13. We do not knowingly collect personal data from children. If you are a parent and believe your child has provided us with information, please contact us for immediate removal.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-xl font-black text-white flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">07</span>
+                External Links
+              </h2>
+              <p className="text-white/50 leading-relaxed font-bold">
+                Our website may contain links to external sites that are not operated by us. Please be aware that we have no control over the content and practices of these sites, and cannot accept responsibility or liability for their respective privacy policies.
               </p>
             </section>
 
             <section className="space-y-4 p-6 rounded-[2rem] bg-red-500/5 border border-red-500/10">
               <h2 className="text-xl font-black text-red-400 flex items-center gap-3">
-                <Trash2 className="w-6 h-6" /> Data Deletion
+                <Trash2 className="w-6 h-6" /> Data Deletion & Rights
               </h2>
               <p className="text-red-100/60 leading-relaxed font-bold">
-                You have full control over your data. You can request account deletion at any time. Upon deletion, your profile data and uploaded images are permanently removed from our active production database.
+                You have the right to access, correct, or delete your data. You can request account deletion at any time via the settings menu. Upon deletion, your profile data and uploaded images are permanently removed from our active production database. Under certain jurisdictions like GDPR or CCPA, you may have additional rights regarding data portability and transparency.
               </p>
             </section>
+
           </div>
 
           <div className="mt-12 pt-8 border-t border-white/5 text-center">

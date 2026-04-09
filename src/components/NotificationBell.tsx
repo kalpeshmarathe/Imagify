@@ -168,7 +168,7 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
           },
           (err) => {
             setLoading(false);
-            if (err?.code !== "failed-precondition") console.warn("Notifications listener:", err);
+            void err;
           }
         );
       } catch {
@@ -315,8 +315,8 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
           // 2. Mark in RTDB for instant update
           const { markOwnerNotificationAsRead } = await import("@/lib/realtime-notifications");
           await markOwnerNotificationAsRead(user.uid, n.id);
-        } catch (e) {
-          console.warn("Mark read error:", e);
+        } catch {
+          /* ignore */
         }
       } else {
         const sid = getSessionId();

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
@@ -128,8 +128,8 @@ function UserFeedbackContent() {
           toast.success(`${title}: ${body}`);
         });
         unsub = cleanup;
-      } catch (err) {
-        console.warn("Foreground notification setup failed:", err);
+      } catch {
+        /* ignore */
       }
     };
 
@@ -146,11 +146,7 @@ function UserFeedbackContent() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        console.log("[Session] App became visible, syncing session...");
-
-        // Verify session is still available
-        const sid = getSessionId();
-        console.log("[Session] Current session after resume:", sid);
+        void getSessionId();
       }
     };
 
@@ -170,11 +166,9 @@ function UserFeedbackContent() {
         clearSession: () => {
           const { clearSessionId } = require("@/lib/session-utils");
           clearSessionId();
-          console.log("[Debug] Session cleared");
           window.location.reload();
         },
       };
-      console.log("[Debug] Available at: window.picpopDebug");
     }
   }, [authUser?.uid]);
 

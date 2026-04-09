@@ -68,8 +68,7 @@ export function NotificationEnable({ userId }: NotificationEnableProps) {
       } else {
         setStatus(Notification.permission === "denied" ? "denied" : "idle");
       }
-    } catch (err) {
-      console.error("Notification enable failed:", err);
+    } catch {
       setStatus("idle");
     }
   };

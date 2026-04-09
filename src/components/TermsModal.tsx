@@ -31,8 +31,8 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
         if (user?.uid) {
           localStorage.setItem(`picpop_terms_accepted_${user.uid}`, "true");
         }
-      } catch (e) {
-        console.warn("Failed to save terms acceptance to localStorage:", e);
+      } catch {
+        /* ignore */
       }
 
       // 2. Sync to Firestore if user is logged in
@@ -50,8 +50,7 @@ export function TermsModal({ isOpen, onAccept }: TermsModalProps) {
       if (refreshProfile) await refreshProfile();
       onAccept();
       toast.success("Legal terms accepted. Welcome!");
-    } catch (err) {
-      console.error("Error accepting terms:", err);
+    } catch {
       toast.error("Failed to save acceptance. Please try again.");
     } finally {
       setAccepting(false);

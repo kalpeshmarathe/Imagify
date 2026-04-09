@@ -167,8 +167,7 @@ export function NotificationsSection({ userId }: NotificationsSectionProps) {
         batch.update(doc(firestore, "notifications", n.id), { isRead: true });
       }
       await batch.commit();
-    } catch (err) {
-      console.error("Mark read failed:", err);
+    } catch {
       toast.error("Could not mark as read.");
     }
   };
