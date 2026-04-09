@@ -20,7 +20,6 @@ export default function AboutPage() {
         <header className="flex items-center justify-between mb-16">
           <Link href="/" className="flex items-center gap-2 group transition-transform hover:scale-105 active:scale-95">
              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
-             <span className="text-xl font-black tracking-tighter text-white">picpop</span>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -117,18 +116,36 @@ export default function AboutPage() {
         {/* The Team / Future */}
         <div className="p-12 rounded-[3rem] bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 mb-24">
           <h2 className="text-3xl font-black text-white mb-6">Built for the next generation of social.</h2>
-          <div className="space-y-6 text-lg text-[var(--text-muted)] font-bold leading-relaxed mb-8">
+          <div className="space-y-6 text-lg text-[var(--text-muted)] font-bold leading-relaxed mb-12">
             <p>
               PicPop is a project driven by the desire to bring authenticity back to the web. We are a small, dedicated team of developers and designers based in India, working to build tools that matter. 
             </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-8 mb-12">
+             <div className="group">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-500 mb-4 group-hover:scale-110 transition-transform" />
+                <h4 className="text-white font-black text-sm">Kalpesh Marathe</h4>
+                <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest mt-1">Founder & Lead Dev</p>
+             </div>
+             <div className="group">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+                <h4 className="text-white font-black text-sm">Maya Venu</h4>
+                <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest mt-1">Head of Design</p>
+             </div>
+             <div className="group">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 mb-4 group-hover:scale-110 transition-transform" />
+                <h4 className="text-white font-black text-sm">Arpit Mehta</h4>
+                <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-widest mt-1">Security & Data</p>
+             </div>
+          </div>
+
+          <div className="space-y-6 text-lg text-[var(--text-muted)] font-bold leading-relaxed mb-12 border-t border-white/05 pt-12">
             <p>
               Our platform is built using modern web standards to ensure speed and security. We leverage Next.js for high-performance rendering, Firebase for real-time data synchronization, and AI-driven moderation to keep the community safe. 
             </p>
             <p>
               We believe that the future of social interaction isn't just about sharing everything with everyone; it's about sharing the right things with the right level of privacy.
-            </p>
-            <p>
-              We are constantly iterating based on your feedback. Have an idea? A feature request? Or just want to say hi? We're all ears.
             </p>
           </div>
           <Link href="/contact" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-black font-black hover:scale-105 active:scale-95 transition-all">

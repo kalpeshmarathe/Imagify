@@ -124,8 +124,7 @@ function LoginContent() {
           <nav className="flex h-16 items-center justify-between px-6 sm:px-10 max-w-7xl mx-auto">
             <Link href="/" className="flex items-center gap-2.5 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="picpop" className="h-6 sm:h-7 w-auto transition-transform duration-300 group-hover:scale-105 inline-block" />
-              <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
+              <img src="/logo.svg" alt="picpop" className="h-7 sm:h-8 w-auto transition-transform duration-300 group-hover:scale-105 inline-block" />
             </Link>
 
             <div className="flex items-center gap-2">
@@ -263,8 +262,7 @@ function LoginContent() {
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2 group mb-4 sm:mb-0">
                {/* eslint-disable-next-line @next/next/no-img-element */}
-               <img src="/logo.svg" alt="picpop" className="h-6 w-auto inline-block" />
-               <span className="text-lg font-black tracking-tighter text-white">picpop</span>
+               <img src="/logo.svg" alt="picpop" className="h-7 w-auto inline-block" />
             </Link>
 
             <div className="flex gap-6 text-sm">

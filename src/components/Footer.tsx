@@ -19,8 +19,7 @@ export function Footer() {
           {/* Brand section */}
           <div className="md:col-span-2 space-y-6">
             <Link href="/" className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group">
-              <img src="/logo.svg" alt="picpop" className="h-7 w-auto opacity-95" />
-              <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
+              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-95" />
             </Link>
 
             <p className="text-white/40 font-bold text-sm leading-relaxed max-w-sm">

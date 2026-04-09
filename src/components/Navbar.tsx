@@ -39,8 +39,7 @@ export function Navbar() {
     <header className="navbar-glass sticky top-0 z-50 border-b border-white/5 bg-[var(--bg-primary)]/80 backdrop-blur-md">
       <nav className="flex h-16 items-center justify-between px-6 max-w-4xl mx-auto">
         <Link href="/" className="flex items-center gap-2.5 hover:scale-105 transition-transform duration-300 shrink-0 group">
-          <img src="/logo.svg" alt="picpop" className="h-7 w-auto" />
-          <span className="text-xl font-black tracking-tighter text-white group-hover:text-[var(--blue)] transition-colors">picpop</span>
+          <img src="/logo.svg" alt="picpop" className="h-8 w-auto" />
         </Link>
 
 
@@ -55,6 +54,7 @@ export function Navbar() {
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/5 border border-white/10 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all max-w-[150px] sm:max-w-none"
+                aria-label="User profile menu"
               >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--purple)] flex items-center justify-center text-[10px] text-white shrink-0">
                   {profile.coolId?.slice(0, 2).toUpperCase() || <User className="w-3.5 h-3.5" />}

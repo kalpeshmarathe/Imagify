@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 
-Sitemap: /sitemap.xml
+Sitemap: https://picpop.me/sitemap.xml

@@ -270,7 +270,7 @@ export default function Home() {
           >
             <div className="w-[200px] h-[260px] xl:w-[230px] xl:h-[300px] rounded-[22px] overflow-hidden bg-black relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/image (1).jpg" alt="feedback preview" className="w-full h-full object-cover" loading="lazy" />
+              <img src="/images/image (1).webp" alt="feedback preview" width={230} height={300} className="w-full h-full object-cover" fetchPriority="high" />
               {/* Overlay shimmer */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
@@ -291,7 +291,7 @@ export default function Home() {
           >
             <div className="w-[200px] h-[260px] xl:w-[230px] xl:h-[300px] rounded-[22px] overflow-hidden bg-black relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/image (2).jpg" alt="feedback preview" className="w-full h-full object-cover" loading="lazy" />
+              <img src="/images/image (2).webp" alt="feedback preview" width={230} height={300} className="w-full h-full object-cover" fetchPriority="high" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           </div>
@@ -967,29 +967,29 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4">
               <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                <h3 className="text-white font-black mb-2 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-400" /> Secure
-                </h4>
+                </h3>
                 <p className="text-xs text-white/40 font-bold">End-to-end data safety protocols.</p>
               </div>
               <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                <h3 className="text-white font-black mb-2 flex items-center gap-2">
                   <Zap className="w-4 h-4 text-yellow-400" /> Fast
-                </h4>
+                </h3>
                 <p className="text-xs text-white/40 font-bold">Real-time reactions in milliseconds.</p>
               </div>
             </div>
             <div className="space-y-4 pt-8">
               <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                <h3 className="text-white font-black mb-2 flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-green-400" /> Private
-                </h4>
+                </h3>
                 <p className="text-xs text-white/40 font-bold">One-way anon logic by design.</p>
               </div>
               <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h4 className="text-white font-black mb-2 flex items-center gap-2">
+                <h3 className="text-white font-black mb-2 flex items-center gap-2">
                   <Heart className="w-4 h-4 text-pink-400" /> Human
-                </h4>
+                </h3>
                 <p className="text-xs text-white/40 font-bold">Built for real social interaction.</p>
               </div>
             </div>
@@ -1012,15 +1012,15 @@ export default function Home() {
           </p>
           <div className="grid sm:grid-cols-3 gap-8 text-left">
             <div className="space-y-3">
-              <h4 className="text-white font-black text-sm uppercase tracking-widest">Transparency</h4>
+              <h3 className="text-white font-black text-sm uppercase tracking-widest">Transparency</h3>
               <p className="text-xs text-white/20 font-bold">We are open about how our algorithms and privacy logic work. No hidden tracking, no secrets.</p>
             </div>
             <div className="space-y-3">
-              <h4 className="text-white font-black text-sm uppercase tracking-widest">Inclusion</h4>
+              <h3 className="text-white font-black text-sm uppercase tracking-widest">Inclusion</h3>
               <p className="text-xs text-white/20 font-bold">Our platform is built for everyone, from professional artists to casual users looking for a fun social experience.</p>
             </div>
             <div className="space-y-3">
-              <h4 className="text-white font-black text-sm uppercase tracking-widest">Evolution</h4>
+              <h3 className="text-white font-black text-sm uppercase tracking-widest">Evolution</h3>
               <p className="text-xs text-white/20 font-bold">We constantly evolve based on community feedback. Your voice directly shapes the future of PicPop.</p>
             </div>
           </div>
@@ -1067,10 +1067,10 @@ export default function Home() {
              <div className="absolute inset-0 bg-purple-500/20 blur-[120px] rounded-full" />
              <div className="relative p-12 rounded-[3rem] bg-white/[0.02] border border-white/08 backdrop-blur-2xl">
                 <Sparkles className="w-16 h-16 text-[var(--purple)] mb-8 animate-pulse" />
-                <h4 className="text-2xl font-black text-white mb-4">Our Integrity Promise</h4>
-                <p className="text-sm text-white/40 font-bold leading-relaxed">
-                   We promise to never sell your private image data, to always prioritize your mental well-being over engagement metrics, and to keep our platform open and free for creators around the globe.
-                </p>
+              <h3 className="text-2xl font-black text-white mb-4">Our Integrity Promise</h3>
+              <p className="text-sm text-white/40 font-bold leading-relaxed">
+                 We promise to never sell your private image data, to always prioritize your mental well-being over engagement metrics, and to keep our platform open and free for creators around the globe.
+              </p>
              </div>
           </div>
         </div>

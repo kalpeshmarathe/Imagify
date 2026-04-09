@@ -5,13 +5,13 @@ import React from "react";
 /* Image response cards for "How it works" section — hover effects require client */
 
 const CARDS = [
-  { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg" },
-  { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg" },
-  { src: "/images/response2.png", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg" },
-  { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg" },
-  { src: "/images/response4.jpg", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)", glow: "rgba(0,200,255,0.45)", rot: "3deg" },
-  { src: "/images/response5.png", bg: "linear-gradient(135deg,#00FF94,#00C8FF)", glow: "rgba(0,255,148,0.5)", rot: "-4deg" },
-  { src: "/images/response6.png", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)", glow: "rgba(124,58,255,0.45)", rot: "2deg" },
+  { src: "/images/response.webp", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", glow: "rgba(255,61,127,0.5)", rot: "-6deg" },
+  { src: "/images/response1.webp", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", glow: "rgba(124,58,255,0.55)", rot: "0deg" },
+  { src: "/images/response2.webp", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", glow: "rgba(0,200,255,0.5)", rot: "6deg" },
+  { src: "/images/response3.webp", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", glow: "rgba(255,61,127,0.45)", rot: "-3deg" },
+  { src: "/images/response4.webp", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)", glow: "rgba(0,200,255,0.45)", rot: "3deg" },
+  { src: "/images/response5.webp", bg: "linear-gradient(135deg,#00FF94,#00C8FF)", glow: "rgba(0,255,148,0.5)", rot: "-4deg" },
+  { src: "/images/response6.webp", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)", glow: "rgba(124,58,255,0.45)", rot: "2deg" },
 ];
 
 export function ImageResponseCards() {
@@ -35,7 +35,7 @@ export function ImageResponseCards() {
           <div className="p-[3px] rounded-2xl" style={{ background: r.bg, boxShadow: `0 12px 40px ${r.glow}` }}>
             <div className="w-24 h-28 sm:w-28 sm:h-34 md:w-32 md:h-40 rounded-xl overflow-hidden bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={r.src} alt="response" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+              <img src={r.src} alt="response" width={128} height={160} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
             </div>
           </div>
         </div>

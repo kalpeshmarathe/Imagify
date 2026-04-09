@@ -367,6 +367,7 @@ export function NotificationBell({ className, onGuestClick, unreadCountOverride,
       <button
         type="button"
         onClick={handleToggle}
+        aria-label="Toggle notifications"
         className={`relative p-3 rounded-2xl transition-all group active:scale-90 ${open
           ? "bg-white/10 text-white"
           : "bg-white/5 text-white/50 hover:text-white"

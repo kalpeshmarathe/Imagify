@@ -8,13 +8,13 @@ import React from "react";
 ───────────────────────────────────────────────────────────── */
 
 const RESPONSES = [
-    { src: "/images/response.png", borderBg: "linear-gradient(135deg, #FF4F8B, #8A4DFF)", glow: "rgba(255, 79, 139, 0.55)", glowSoft: "rgba(255, 79, 139, 0.22)", rotate: "-7deg", zIndex: 1 },
-    { src: "/images/response1.png", borderBg: "linear-gradient(135deg, #8A4DFF, #3DA9FF)", glow: "rgba(138, 77, 255, 0.65)", glowSoft: "rgba(138, 77, 255, 0.28)", rotate: "0deg", zIndex: 10 },
-    { src: "/images/response2.png", borderBg: "linear-gradient(135deg, #3DA9FF, #FF4F8B)", glow: "rgba(61, 169, 255, 0.55)", glowSoft: "rgba(61, 169, 255, 0.22)", rotate: "7deg", zIndex: 1 },
-    { src: "/images/response3.jpg", borderBg: "linear-gradient(135deg, #FF4F8B, #FFE500)", glow: "rgba(255, 61, 127, 0.5)", glowSoft: "rgba(255, 229, 0, 0.2)", rotate: "-4deg", zIndex: 1 },
-    { src: "/images/response4.jpg", borderBg: "linear-gradient(135deg, #3DA9FF, #8A4DFF)", glow: "rgba(61, 169, 255, 0.5)", glowSoft: "rgba(124, 58, 255, 0.2)", rotate: "4deg", zIndex: 1 },
-    { src: "/images/response5.png", borderBg: "linear-gradient(135deg, #00FF94, #3DA9FF)", glow: "rgba(0, 255, 148, 0.5)", glowSoft: "rgba(0, 200, 255, 0.2)", rotate: "-5deg", zIndex: 1 },
-    { src: "/images/response6.png", borderBg: "linear-gradient(135deg, #8A4DFF, #FFE500)", glow: "rgba(124, 58, 255, 0.5)", glowSoft: "rgba(255, 229, 0, 0.2)", rotate: "3deg", zIndex: 1 },
+    { src: "/images/response.webp", borderBg: "linear-gradient(135deg, #FF4F8B, #8A4DFF)", glow: "rgba(255, 79, 139, 0.55)", glowSoft: "rgba(255, 79, 139, 0.22)", rotate: "-7deg", zIndex: 1 },
+    { src: "/images/response1.webp", borderBg: "linear-gradient(135deg, #8A4DFF, #3DA9FF)", glow: "rgba(138, 77, 255, 0.65)", glowSoft: "rgba(138, 77, 255, 0.28)", rotate: "0deg", zIndex: 10 },
+    { src: "/images/response2.webp", borderBg: "linear-gradient(135deg, #3DA9FF, #FF4F8B)", glow: "rgba(61, 169, 255, 0.55)", glowSoft: "rgba(61, 169, 255, 0.22)", rotate: "7deg", zIndex: 1 },
+    { src: "/images/response3.webp", borderBg: "linear-gradient(135deg, #FF4F8B, #FFE500)", glow: "rgba(255, 61, 127, 0.5)", glowSoft: "rgba(255, 229, 0, 0.2)", rotate: "-4deg", zIndex: 1 },
+    { src: "/images/response4.webp", borderBg: "linear-gradient(135deg, #3DA9FF, #8A4DFF)", glow: "rgba(61, 169, 255, 0.5)", glowSoft: "rgba(124, 58, 255, 0.2)", rotate: "4deg", zIndex: 1 },
+    { src: "/images/response5.webp", borderBg: "linear-gradient(135deg, #00FF94, #3DA9FF)", glow: "rgba(0, 255, 148, 0.5)", glowSoft: "rgba(0, 200, 255, 0.2)", rotate: "-5deg", zIndex: 1 },
+    { src: "/images/response6.webp", borderBg: "linear-gradient(135deg, #8A4DFF, #FFE500)", glow: "rgba(124, 58, 255, 0.5)", glowSoft: "rgba(255, 229, 0, 0.2)", rotate: "3deg", zIndex: 1 },
 ];
 
 export function ImageShowcase() {
@@ -52,6 +52,8 @@ export function ImageShowcase() {
                             <img
                                 src={r.src}
                                 alt={`Response image ${i + 1}`}
+                                width={240}
+                                height={304}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 loading="lazy"
                             />

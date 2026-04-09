@@ -73,7 +73,6 @@ export default function FAQPage() {
         <header className="flex items-center justify-between mb-20">
           <Link href="/" className="flex items-center gap-2.5 group transition-transform hover:scale-105 active:scale-95">
              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
-             <span className="text-xl font-black tracking-tighter text-white">picpop</span>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />

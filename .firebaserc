@@ -7,7 +7,7 @@
   "targets": {
     "picpop-production": {
       "hosting": {
-        "app": [
+        "production": [
           "picpop-production"
         ]
       }
