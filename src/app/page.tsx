@@ -44,186 +44,6 @@ export default function Home() {
       className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden"
       style={{ fontFamily: "'Nunito', var(--font-nunito), sans-serif" }}
     >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-
-        :root {
-          --pink: #FF3D7F;
-          --purple: #7C3AFF;
-          --blue: #00C8FF;
-          --yellow: #FFE500;
-          --green: #00FF94;
-          --bg: var(--bg-primary);
-        }
-
-        /* ── Grain overlay ── */
-        body::before {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-          pointer-events: none;
-          z-index: 9999;
-          opacity: 0.25; /* Reduced slightly for mobile */
-          transform: translateZ(0); /* Force GPU */
-        }
-
-        /* ── Scrollbar ── */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-primary); }
-        ::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 99px; }
-
-        /* ── Marquee ── */
-        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .marquee-track { display: flex; width: max-content; animation: marquee 18s linear infinite; }
-        .marquee-track:hover { animation-play-state: paused; }
-
-        /* ── Float ── */
-        @keyframes float { 0%,100%{transform:translateY(0) rotate(var(--r,0deg))} 50%{transform:translateY(-14px) rotate(var(--r,0deg))} }
-        .float { animation: float 4s ease-in-out infinite; }
-
-        /* ── Wiggle ── */
-        @keyframes wiggle { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
-        .wiggle { animation: wiggle 2.4s ease-in-out infinite; }
-
-        /* ── Slot machine ── */
-        @keyframes slot {
-          0%   { transform: translateY(0); }
-          18%  { transform: translateY(-20%); }
-          36%  { transform: translateY(-40%); }
-          54%  { transform: translateY(-60%); }
-          72%  { transform: translateY(-80%); }
-          90%  { transform: translateY(-80%); }
-          100% { transform: translateY(0); }
-        }
-        .slot { animation: slot 7s cubic-bezier(0.25,0.46,0.45,0.94) infinite; }
-
-        /* ── Fade up ── */
-        @keyframes fadeUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
-        .fade-up { animation: fadeUp 0.7s ease forwards; }
-        .delay-1 { animation-delay: 0.15s; opacity: 0; }
-        .delay-2 { animation-delay: 0.3s; opacity: 0; }
-        .delay-3 { animation-delay: 0.45s; opacity: 0; }
-        .delay-4 { animation-delay: 0.6s; opacity: 0; }
-
-        /* ── Pop in ── */
-        @keyframes popIn { 0%{opacity:0;transform:scale(0.5) rotate(-10deg)} 70%{transform:scale(1.08) rotate(2deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
-        .pop-in { animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-
-        /* ── Sticker badge ── */
-        .sticker {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 10px 20px;
-          border-radius: 9999px;
-          font-weight: 900;
-          font-size: 0.95rem;
-          letter-spacing: -0.01em;
-          border: 2.5px solid rgba(255,255,255,0.25);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          white-space: nowrap;
-          cursor: default;
-          transition: transform 0.2s, box-shadow 0.2s;
-          transform: translateZ(0);
-        }
-        .sticker:hover { transform: scale(1.08) rotate(-2deg) !important; }
-
-        /* ── Outlined text ── */
-        .text-outline {
-          -webkit-text-stroke: 3px white;
-          color: transparent;
-        }
-
-        /* ── Neon glow ── */
-        .glow-pink  { text-shadow: 0 0 40px rgba(255,61,127,0.8), 0 0 80px rgba(255,61,127,0.4); }
-        .glow-blue  { text-shadow: 0 0 40px rgba(0,200,255,0.8), 0 0 80px rgba(0,200,255,0.4); }
-        .glow-green { text-shadow: 0 0 40px rgba(0,255,148,0.8), 0 0 80px rgba(0,255,148,0.4); }
-
-        /* ── Step card ── */
-        .step-card {
-          background: var(--bg-card);
-          border: 1.5px solid var(--border);
-          border-radius: 24px;
-          padding: 32px;
-          transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-          position: relative;
-          overflow: hidden;
-        }
-        .step-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at top left, var(--card-glow, rgba(124,58,255,0.12)) 0%, transparent 65%);
-          pointer-events: none;
-        }
-        .step-card:hover {
-          transform: translateY(-6px) rotate(-0.5deg);
-          border-color: var(--border);
-          box-shadow: 0 32px 64px rgba(0,0,0,0.5);
-        }
-
-        /* ── Navbar glass (theme from globals) ── */
-        .navbar-glass { 
-          border-bottom: 1px solid var(--border);
-          transform: translateZ(0);
-        }
-
-        /* ── CTA button ── */
-        .cta-btn {
-          position: relative;
-          overflow: hidden;
-          transition: transform 0.25s, box-shadow 0.25s;
-          will-change: transform, box-shadow;
-        }
-        .cta-btn::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-          pointer-events: none;
-        }
-        .cta-btn:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 16px 48px rgba(255,61,127,0.5); }
-        .cta-btn:active { transform: scale(0.97); }
-
-        /* ── Photo card ── */
-        .photo-card {
-          position: relative;
-          transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .photo-card:hover { transform: scale(1.04) rotate(0deg) !important; }
-
-        /* ── Pill nav link ── */
-        .nav-pill {
-          padding: 6px 16px;
-          border-radius: 9999px;
-          font-weight: 800;
-          font-size: 0.9rem;
-          color: rgba(255,255,255,0.7);
-          transition: background 0.2s, color 0.2s;
-        }
-        .nav-pill:hover {
-          background: rgba(255,255,255,0.1);
-          color: #fff;
-        }
-
-        /* ── Section divider ── */
-        .slash-divider {
-          width: 100%;
-          height: 80px;
-          background: linear-gradient(135deg, #FF3D7F, #7C3AFF, #00C8FF);
-          clip-path: polygon(0 0, 100% 0, 100% 40%, 0 100%);
-        }
-
-        /* ── Footer link ── */
-        .footer-link { color: var(--text-muted); font-weight: 700; transition: color 0.2s; }
-        .footer-link:hover { color: var(--text-primary); }
-      `}</style>
-
-      {/* ================================================================
-          NAVBAR
-      ================================================================ */}
       <Navbar />
 
       <div className="">
@@ -295,23 +115,6 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           </div>
-        </div>
-
-        {/* ── Floating 3D objects ── */}
-        <div className="absolute hidden sm:block float" style={{ top: "9%", left: "7%", zIndex: 20, "--r": "-6deg" } as React.CSSProperties}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image1.png" alt="" className="w-28 h-28 md:w-40 md:h-40 xl:w-44 xl:h-44 object-contain"
-            style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.6))" }} loading="lazy" />
-        </div>
-        <div className="absolute hidden sm:block float" style={{ top: "7%", right: "6%", zIndex: 20, animationDelay: "0.7s", "--r": "5deg" } as React.CSSProperties}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image2.png" alt="" className="w-32 h-32 md:w-44 md:h-44 xl:w-52 xl:h-52 object-contain"
-            style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))" }} loading="lazy" />
-        </div>
-        <div className="absolute hidden md:block float" style={{ bottom: "8%", left: "12%", zIndex: 20, animationDelay: "0.4s", animationDuration: "5s" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image3.png" alt="" className="w-20 h-20 md:w-28 md:h-28 xl:w-32 xl:h-32 object-contain"
-            style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.5))" }} loading="lazy" />
         </div>
 
         {/* ── Hero text ── */}
@@ -395,27 +198,10 @@ export default function Home() {
             style={{ background: "var(--pink)" }} />
         </div>
 
-        {/* ── 3D objects ── */}
-        <div className="absolute top-10 left-[5%] float hidden sm:block" style={{ zIndex: 5, animationDuration: "4s" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image1.png" alt="" className="w-28 h-28 md:w-36 md:h-36 object-contain opacity-70"
-            style={{ filter: "drop-shadow(0 16px 32px rgba(0,0,0,0.8))" }} loading="lazy" />
-        </div>
-        <div className="absolute top-8 right-[4%] float hidden sm:block" style={{ zIndex: 5, animationDuration: "5s", animationDelay: "0.6s" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image2.png" alt="" className="w-32 h-32 md:w-44 md:h-44 object-contain opacity-70"
-            style={{ filter: "drop-shadow(0 16px 32px rgba(0,0,0,0.7))" }} loading="lazy" />
-        </div>
-        <div className="absolute bottom-10 left-[3%] float hidden md:block" style={{ zIndex: 5, animationDelay: "0.3s", animationDuration: "6s" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/image3.png" alt="" className="w-24 h-24 md:w-32 md:h-32 object-contain opacity-70"
-            style={{ filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.7))" }} loading="lazy" />
-        </div>
-
         {/* ── Left response image bubbles ── */}
         {[
-          { src: "/images/response.png", top: "18%", delay: "0.8s", rot: "-5deg" },
-          { src: "/images/response1.png", top: "54%", delay: "1.4s", rot: "3deg" },
+          { src: "/images/response.webp", top: "18%", delay: "0.8s", rot: "-5deg" },
+          { src: "/images/response1.webp", top: "54%", delay: "1.4s", rot: "3deg" },
         ].map((b, i) => {
           return (
             <div key={i} className="absolute left-[2%] sm:left-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "5s" }}>
@@ -433,8 +219,8 @@ export default function Home() {
 
         {/* ── Right response image bubbles ── */}
         {[
-          { src: "/images/response3.jpg", top: "20%", delay: "1s", rot: "5deg" },
-          { src: "/images/response4.jpg", top: "55%", delay: "0.5s", rot: "-4deg" },
+          { src: "/images/response3.webp", top: "20%", delay: "1s", rot: "5deg" },
+          { src: "/images/response4.webp", top: "55%", delay: "0.5s", rot: "-4deg" },
         ].map((b, i) => {
           return (
             <div key={i} className="absolute right-[2%] sm:right-[4%] hidden lg:block float" style={{ top: b.top, zIndex: 10, animationDelay: b.delay, animationDuration: "4.8s" }}>
@@ -503,10 +289,10 @@ export default function Home() {
           <AnimateOnScroll delay={350}>
             <div className="mt-12 flex flex-wrap justify-center gap-4 lg:hidden">
               {[
-                { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
-                { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
-                { src: "/images/response2.png", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
-                { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
+                { src: "/images/response.webp", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)", rot: "-3deg" },
+                { src: "/images/response1.webp", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)", rot: "2deg" },
+                { src: "/images/response2.webp", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)", rot: "-2deg" },
+                { src: "/images/response3.webp", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)", rot: "3deg" },
               ].map((r, i) => {
                 return (
                   <div key={i} className="relative transition-transform hover:scale-110 duration-300" style={{ transform: `rotate(${r.rot})` }}>
@@ -615,100 +401,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================================================================
-          SECTION 3.0: CREATIVE COLLECTIONS (Unique Curation / Value)
-      ================================================================ */}
-      <section className="relative py-24 bg-black px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-16 text-center">
-            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Explore the <span className="text-[var(--pink)]">Hub.</span></h2>
-            <p className="text-[var(--text-muted)] font-bold max-w-2xl mx-auto">
-              PicPop isn't just about random drops. Discover specialized collections designed to help you master specific visual niches.
-            </p>
-          </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-             {[
-               { title: "Portfolio Polish", count: "1.2k+ prompts", theme: "var(--blue)", desc: "Curated questions for designers looking to refine their UI/UX presentations." },
-               { title: "Portrait Vibe", count: "800+ prompts", theme: "var(--pink)", desc: "Specialized feedback hooks for fashion and lifestyle photographers." },
-               { title: "Identity Check", count: "2.4k+ prompts", theme: "var(--purple)", desc: "Get deep-dives into your personal brand and online avatar aesthetics." },
-               { title: "Commercial Gut", count: "500+ prompts", theme: "var(--green)", desc: "Market research loops for small businesses testing product shots." }
-             ].map((collect, i) => (
-                <div key={i} className="group p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/05 hover:bg-white/[0.04] transition-all cursor-pointer">
-                   <div className="w-10 h-10 rounded-xl mb-6 flex items-center justify-center" style={{ backgroundColor: `${collect.theme}20`, border: `1px solid ${collect.theme}30` }}>
-                      <Sparkles className="w-5 h-5" style={{ color: collect.theme }} />
-                   </div>
-                   <h3 className="text-lg font-black text-white mb-2">{collect.title}</h3>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 block">{collect.count}</span>
-                   <p className="text-xs text-white/40 font-bold leading-relaxed">{collect.desc}</p>
-                </div>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================
-          SECTION 3.1: ADVANCED FEATURES (High Value Detail)
-      ================================================================ */}
-
-      <section className="relative py-24 bg-[#0c0c0c] px-4 sm:px-6 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
-            <div className="max-w-2xl">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--blue)] mb-3">Power Tools</p>
-              <h2 className="text-3xl sm:text-6xl font-black text-white leading-tight">Beyond Simple <br/><span className="text-outline">Anonymity.</span></h2>
-            </div>
-            <p className="text-[var(--text-muted)] font-bold max-w-sm mb-2">
-              We've engineered PicPop to be more than just a secret-box. It's a full-featured social interaction layer.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { title: "Real-time Sync", desc: "Our infrastructure uses WebSocket-driven technology to ensure that when a friend drops a photo, it appears in your inbox in under 200ms.", icon: Zap },
-              { title: "Smart Notifications", desc: "Never miss a vibe. Get intelligent push notifications and browser alerts tailored to your activity levels.", icon: Rocket },
-              { title: "Threaded Chats", desc: "One-off messages are boring. PicPop supports full threaded conversations, allowing for deep dives into feedback.", icon: MessageCircle },
-              { title: "Encryption First", desc: "All images are processed through secure transfer protocols. We prioritize your data integrity above all else.", icon: ShieldCheck },
-              { title: "Visual Analytics", desc: "Understand your engagement. See which of your links are performing best and what times your audience is most active.", icon: Target },
-              { title: "Custom Branding", desc: "Your portal, your rules. Customize your landing page profile with your own images and unique brand messaging.", icon: Sparkles }
-            ].map((f, i) => (
-              <div key={i} className="p-10 rounded-[2.5rem] bg-white/[0.01] border border-white/05 hover:bg-white/[0.03] hover:border-white/10 transition-all group">
-                <f.icon className="w-10 h-10 text-white/20 group-hover:text-white transition-colors mb-6" />
-                <h3 className="text-xl font-black text-white mb-4">{f.title}</h3>
-                <p className="text-sm text-white/40 font-bold leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* ================================================================
-          SECTION 3.2: USE CASES (High Value Content)
-      ================================================================ */}
-      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">Who is it for?</p>
-            <h2 className="text-3xl sm:text-5xl font-black text-white">Versatile Feedback for Everyone</h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: "Photographers", desc: "Get honest critiques on your composition and lighting without the 'polite' bias of your social circle.", icon: Camera, color: "var(--pink)" },
-              { title: "Designers", desc: "Run blind UI/UX tests. Share a screenshot and let users react to what they actually see first.", icon: Target, color: "var(--blue)" },
-              { title: "Influencers", desc: "Test different outfit combinations or post ideas. Find out what really resonates with your audience.", icon: Sparkles, color: "var(--purple)" },
-              { title: "Creators", desc: "Gather unvarnished opinions on your latest video thumbnails or brand assets before you go live.", icon: Zap, color: "var(--green)" }
-            ].map((item, i) => (
-              <div key={i} className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/05 hover:border-white/10 transition-all">
-                <item.icon className="w-8 h-8 mb-4" style={{ color: item.color }} />
-                <h3 className="text-xl font-black text-white mb-2">{item.title}</h3>
-                <p className="text-sm text-white/40 font-bold leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ================================================================
           SECTION 3.3: SAFETY & MODERATION
@@ -887,194 +580,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================================================================
-          SECTION 4.2: THE PICPOP ADVANTAGE (Comparative Content)
-      ================================================================ */}
-      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6">
 
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-             <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Why PicPop?</h2>
-             <p className="text-[var(--text-muted)] font-bold max-w-2xl mx-auto">
-               In the crowded landscape of social apps, PicPop stands out by focusing on what actually matters: visual truth.
-             </p>
-          </div>
-
-          <div className="space-y-6">
-             {[
-               { q: "Contextual Feedback", a: "Unlike text-based secret apps where messages often lack context, PicPop centers every interaction around an image. This focus leads to more relevant, high-quality feedback that you can actually use to improve your craft or personal brand." },
-               { q: "One-Way Privacy Architecture", a: "Most anonymous platforms are two-way anonymized or completely public. PicPop's unique one-way logic ensures you (the owner) are known, while the contributors are protected. This creates a safe bridge between your public persona and private interactions." },
-               { q: "Creator-Centric Design", a: "We don't sell your data to training models. We don't flood your screen with intrusive pop-up ads. We provide a clean, premium environment designed specifically for photographers, designers, and visual thinkers." },
-               { q: "Building Professional Credibility", a: "By explicitly asking for feedback through a dedicated portal, you demonstrate a level of professional vulnerability and a commitment to growth that resonates with followers and clients alike." }
-             ].map((item, i) => (
-               <div key={i} className="flex flex-col md:flex-row gap-6 p-10 rounded-[2.5rem] bg-white/[0.01] border border-white/05 hover:border-white/08 transition-all">
-                  <div className="md:w-1/3 text-xl font-black text-white">{item.q}</div>
-                  <div className="md:w-2/3 text-white/40 font-bold leading-relaxed text-sm">{item.a}</div>
-               </div>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================
-          SECTION 4.3: COMMUNITY VOICES (Placeholder Testimonials)
-      ================================================================ */}
-      <section className="relative py-24 bg-[#0a0a0a] overflow-hidden px-4 sm:px-6">
-         <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
-               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-pink-500/5 to-transparent border border-pink-500/10">
-                  <div className="flex gap-1 text-pink-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
-                  <p className="text-white font-bold italic mb-6">"PicPop helped me realize which of my portfolio shots were actually resonating. The anonymous element removed the 'friend-tax' on honesty."</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Lifestyle Photographer</p>
-               </div>
-               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/10">
-                  <div className="flex gap-1 text-blue-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
-                  <p className="text-white font-bold italic mb-6">"As a UI designer, I use my link to run quick vibe checks on concepts. It's faster and more honest than any survey tool I've used."</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Product Lead</p>
-               </div>
-               <div className="p-8 rounded-[2rem] bg-gradient-to-br from-purple-500/5 to-transparent border border-purple-500/10">
-                  <div className="flex gap-1 text-purple-500 mb-4"><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/><Star className="w-4 h-4 fill-current"/></div>
-                  <p className="text-white font-bold italic mb-6">"I put my link in my bio and got 50+ reactions in one day. The chat feature makes it so easy to follow up on anonymous critiques!"</p>
-                  <p className="text-xs font-black uppercase tracking-widest text-white/30">— Digital Creator</p>
-               </div>
-            </div>
-         </div>
-      </section>
-
-
-      {/* ================================================================
-          SECTION 4.5: EDUCATIONAL CONTENT (High-Value Publisher Content)
-      ================================================================ */}
-      <section className="relative py-24 bg-black px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          <div>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mb-8 tracking-tighter leading-tight">
-              The Power of <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--pink)] to-[var(--purple)]">Unfiltered Truth.</span>
-            </h2>
-            <div className="space-y-6 text-white/60 font-medium leading-relaxed">
-              <p>
-                In an era dominated by performative social media, standard feedback loops often fall into the "politeness trap." We've all seen it: a friend asks for an opinion on a photo, and the response is a standard "looks great!" regardless of how people actually feel.
-              </p>
-              <p>
-                <strong>PicPop</strong> disrupts this cycle by introducing a one-way anonymous barrier. Scientific studies on social behavior suggest that anonymity reduces the fear of social retribution, allowing for radical honesty. This isn't just about being "critical"—it's about being <strong>real</strong>.
-              </p>
-              <p>
-                Whether you're a designer looking for a gut-check on a new UI concept, or a photographer trying to gauge the mood of a portrait, anonymity provides a data quality that public commentary simply cannot match.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-400" /> Secure
-                </h3>
-                <p className="text-xs text-white/40 font-bold">End-to-end data safety protocols.</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-400" /> Fast
-                </h3>
-                <p className="text-xs text-white/40 font-bold">Real-time reactions in milliseconds.</p>
-              </div>
-            </div>
-            <div className="space-y-4 pt-8">
-              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-green-400" /> Private
-                </h3>
-                <p className="text-xs text-white/40 font-bold">One-way anon logic by design.</p>
-              </div>
-              <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/08">
-                <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-pink-400" /> Human
-                </h3>
-                <p className="text-xs text-white/40 font-bold">Built for real social interaction.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================
-          SECTION 4.6: COMMUNITY COMMITMENT
-      ================================================================ */}
-      <section className="relative py-24 bg-[#050505] px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-10 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
-            <Heart className="w-4 h-4 text-red-500" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Our Pledge to You</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white mb-8">Authentic Social Integrity.</h2>
-          <p className="text-white/40 font-bold leading-relaxed mb-12 max-w-2xl mx-auto">
-            Social media should empower you, not drain you. At PicPop, we are committed to building a digital space where honesty is celebrated, privacy is a right, and genuine connection is the ultimate goal. We don't just build features; we build trust.
-          </p>
-          <div className="grid sm:grid-cols-3 gap-8 text-left">
-            <div className="space-y-3">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest">Transparency</h3>
-              <p className="text-xs text-white/20 font-bold">We are open about how our algorithms and privacy logic work. No hidden tracking, no secrets.</p>
-            </div>
-            <div className="space-y-3">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest">Inclusion</h3>
-              <p className="text-xs text-white/20 font-bold">Our platform is built for everyone, from professional artists to casual users looking for a fun social experience.</p>
-            </div>
-            <div className="space-y-3">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest">Evolution</h3>
-              <p className="text-xs text-white/20 font-bold">We constantly evolve based on community feedback. Your voice directly shapes the future of PicPop.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================
-          SECTION 4.7: SYSTEM INTEGRITY & MISSION
-      ================================================================ */}
-      <section className="relative py-24 bg-[var(--bg-primary)] px-4 sm:px-6 border-y border-white/05">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-16 items-center">
-          <div className="lg:col-span-7 space-y-8">
-            <h2 className="text-4xl sm:text-6xl font-black text-white leading-tight">
-              A New Standard for <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--blue)] to-[var(--purple)]">Social Honesty.</span>
-            </h2>
-            <div className="prose prose-invert prose-lg max-w-none text-white/50 font-bold leading-relaxed space-y-6">
-              <p>
-                The digital world is currently facing a crisis of authenticity. High-pressure social environments have forced us to curate every pixel of our lives, leading to a feedback desert where everything is "good" but nothing is "real." 
-              </p>
-              <p>
-                <strong>PicPop</strong> was founded on the idea that anonymity, when applied correctly within a structured visual context, acts as a powerful catalyst for truth. By removing the social repercussions of an opinion, we allow for a quality of dialogue that is impossible in public comment sections.
-              </p>
-              <p>
-                Our commitment is to maintain this space as a haven for constructive, visual-first engagement. We are not just building an app; we are rebuilding the bridge between what people think and what people say.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-8 pt-4">
-               <div>
-                  <div className="text-2xl font-black text-white">99.9%</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Uptime Reliability</div>
-               </div>
-               <div>
-                  <div className="text-2xl font-black text-white">256-bit</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Data Encryption</div>
-               </div>
-               <div>
-                  <div className="text-2xl font-black text-white">24/7</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Moderation Active</div>
-               </div>
-            </div>
-          </div>
-          <div className="lg:col-span-5 relative">
-             <div className="absolute inset-0 bg-purple-500/20 blur-[120px] rounded-full" />
-             <div className="relative p-12 rounded-[3rem] bg-white/[0.02] border border-white/08 backdrop-blur-2xl">
-                <Sparkles className="w-16 h-16 text-[var(--purple)] mb-8 animate-pulse" />
-              <h3 className="text-2xl font-black text-white mb-4">Our Integrity Promise</h3>
-              <p className="text-sm text-white/40 font-bold leading-relaxed">
-                 We promise to never sell your private image data, to always prioritize your mental well-being over engagement metrics, and to keep our platform open and free for creators around the globe.
-              </p>
-             </div>
-          </div>
-        </div>
-      </section>
 
       <Footer />
 

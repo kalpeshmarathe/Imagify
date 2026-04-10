@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Script from "next/script";
 
 const ALLOWED_PATHS = ["/", "/terms", "/privacy", "/about", "/browse", "/contact"];
 
@@ -20,9 +19,9 @@ export function AdSenseScript() {
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-9913239924968431";
 
   return (
-    <Script
+    <script
+      async
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`}
-      strategy="afterInteractive"
       crossOrigin="anonymous"
     />
   );

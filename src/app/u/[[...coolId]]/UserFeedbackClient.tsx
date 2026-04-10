@@ -69,13 +69,13 @@ function saveRecentChat(coolId: string, userId: string, threadId: string | null,
 }
 
 const RESPONSE_PREVIEWS = [
-  { src: "/images/response.png", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)" },
-  { src: "/images/response1.png", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)" },
-  { src: "/images/response2.png", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)" },
-  { src: "/images/response3.jpg", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)" },
-  { src: "/images/response4.jpg", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)" },
-  { src: "/images/response5.png", bg: "linear-gradient(135deg,#00FF94,#00C8FF)" },
-  { src: "/images/response6.png", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)" },
+  { src: "/images/response.webp", bg: "linear-gradient(135deg,#FF3D7F,#7C3AFF)" },
+  { src: "/images/response1.webp", bg: "linear-gradient(135deg,#7C3AFF,#00C8FF)" },
+  { src: "/images/response2.webp", bg: "linear-gradient(135deg,#00C8FF,#FF3D7F)" },
+  { src: "/images/response3.webp", bg: "linear-gradient(135deg,#FF3D7F,#FFE500)" },
+  { src: "/images/response4.webp", bg: "linear-gradient(135deg,#00C8FF,#7C3AFF)" },
+  { src: "/images/response5.webp", bg: "linear-gradient(135deg,#00FF94,#00C8FF)" },
+  { src: "/images/response6.webp", bg: "linear-gradient(135deg,#7C3AFF,#FFE500)" },
 ];
 
 function UserFeedbackContent() {
