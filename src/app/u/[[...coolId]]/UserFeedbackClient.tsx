@@ -12,7 +12,6 @@ import { getAppFunctions } from "@/lib/functions";
 import { uploadFeedbackImage, uploadAttachment } from "@/lib/image-upload";
 import { useToast } from "@/lib/toast-context";
 import { useAuth } from "@/lib/auth-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AiImagePrompts, openProvider, type AiImageProvider } from "@/components/AiImagePrompts";
 import { ExploreImages } from "@/components/ExploreImages";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -836,7 +835,6 @@ function UserFeedbackContent() {
                 {unreadCount} NEW
               </div>
             )}
-            <ThemeToggle />
           </div>
         </div>
 

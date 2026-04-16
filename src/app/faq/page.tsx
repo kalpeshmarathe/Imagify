@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, HelpCircle, ChevronDown, Sparkles, ShieldCheck, Mail, MessageCircle } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { useState } from "react";
 
@@ -75,7 +74,6 @@ export default function FAQPage() {
              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
           </Link>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <Link href="/" className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" /> exit
             </Link>

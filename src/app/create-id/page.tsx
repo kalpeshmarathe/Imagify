@@ -8,7 +8,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useLoading } from "@/lib/loading-context";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, ensureFirestoreNetwork } from "@/lib/firebase";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const COOL_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
@@ -137,7 +136,6 @@ function CreateIdContent() {
             PicPop
           </Link>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button
             onClick={async () => {
               setIsExiting(true);

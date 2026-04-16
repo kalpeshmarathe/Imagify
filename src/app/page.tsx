@@ -8,7 +8,6 @@ import { AnimateOnScroll } from "@/components/AnimateOnScroll";
 import { MobileNav } from "@/components/MobileNav";
 import { ImageShowcase } from "@/components/ImageShowcase";
 import { ImageResponseCards } from "@/components/ImageResponseCards";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { GoogleAd } from "@/components/GoogleAd";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ActivityTicker } from "@/components/ActivityTicker";
@@ -59,13 +58,14 @@ export default function Home() {
       ================================================================ */}
       <section
         className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, #1a0533 0%, var(--bg-primary) 65%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% 0%, var(--hero-radial-mid) 0%, var(--bg-primary) 65%)" }}
       >
         {/* Background grid */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+            backgroundImage:
+              "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
@@ -123,7 +123,7 @@ export default function Home() {
           <div className="fade-up flex justify-center mb-6">
             <div
               className="sticker text-xs"
-              style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.15)" }}
+              style={{ background: "var(--sticker-bg)", border: "1.5px solid var(--sticker-border)" }}
             >
               <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 8px var(--green)" }} />
               the PicPop experience — one-way anonymity.
@@ -132,7 +132,7 @@ export default function Home() {
 
 
           <h1
-            className="font-black text-white leading-[0.9] tracking-tight"
+            className="font-black text-[var(--text-primary)] leading-[0.9] tracking-tight"
             style={{ fontSize: "clamp(3rem, 10vw, 8rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
           >
             <span className="fade-up block">PicPop.</span>
@@ -141,7 +141,7 @@ export default function Home() {
           </h1>
 
 
-          <p className="fade-up delay-3 mt-6 text-white/60 max-w-sm mx-auto font-bold text-base sm:text-lg leading-relaxed">
+          <p className="fade-up delay-3 mt-6 text-[var(--text-muted)] max-w-sm mx-auto font-bold text-base sm:text-lg leading-relaxed">
             The world's most honest image feedback platform. Drop your unique PicPop link and get anonymous photo reactions from friends and followers — without them ever knowing it's you.
           </p>
 
@@ -162,7 +162,7 @@ export default function Home() {
             </Link>
             <Link
               href="#play"
-              className="rounded-full px-10 py-5 font-black text-white/70 text-base border border-white/10 hover:border-white/30 hover:text-white transition-all duration-300 backdrop-blur-md"
+              className="rounded-full px-10 py-5 font-black text-[var(--text-secondary)] text-base border border-[var(--border)] hover:border-[var(--purple)]/35 hover:text-[var(--text-primary)] transition-all duration-300 backdrop-blur-md bg-[var(--bg-card)]/40"
             >
               <span className="inline-flex items-center gap-1.5">How it works <ChevronDown className="w-4 h-4" /></span>
             </Link>
@@ -171,12 +171,12 @@ export default function Home() {
       </section>
 
       {/* ── MARQUEE DIVIDER ── */}
-      <div className="overflow-hidden border-y border-white/08 py-6" style={{ background: "#0f0f0f" }}>
+      <div className="overflow-hidden border-y border-[var(--border)] py-6" style={{ background: "var(--surface-band)" }}>
         <div className="marquee-track">
           {Array(2).fill(MARQUEE_ITEMS).flat().map((item, i) => {
             const Icon = item.Icon;
             return (
-              <span key={i} className="mx-10 text-sm font-black text-white/40 uppercase tracking-[0.2em] flex-shrink-0 inline-flex items-center gap-2 shadow-sm">
+              <span key={i} className="mx-10 text-sm font-black text-[var(--text-muted)] uppercase tracking-[0.2em] flex-shrink-0 inline-flex items-center gap-2 shadow-sm">
                 <Icon className="w-4 h-4 shrink-0 transition-transform hover:scale-125" /> {item.label}
               </span>
             );
@@ -188,7 +188,7 @@ export default function Home() {
       {/* ================================================================
           SECTION 2: PLAY FEEDBACK GAMES
       ================================================================ */}
-      <section id="play" className="relative bg-[var(--bg)] min-h-screen flex items-center overflow-hidden py-24 px-4 sm:px-6">
+      <section id="play" className="relative bg-[var(--bg-primary)] min-h-screen flex items-center overflow-hidden py-24 px-4 sm:px-6">
 
         {/* Subtle background */}
         <div className="absolute inset-0 pointer-events-none">
@@ -239,9 +239,9 @@ export default function Home() {
         {/* ── Central content ── */}
         <div className="relative max-w-2xl mx-auto text-center" style={{ zIndex: 20 }}>
           <AnimateOnScroll>
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-4">the feedback loop</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">the feedback loop</p>
             <h2
-              className="font-black leading-[0.88] tracking-tight text-white mb-6"
+              className="font-black leading-[0.88] tracking-tight text-[var(--text-primary)] mb-6"
               style={{ fontSize: "clamp(3.8rem, 12vw, 9rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}
             >
               real<br />
@@ -253,8 +253,13 @@ export default function Home() {
           {/* Slot machine */}
           <AnimateOnScroll delay={200}>
             <div
-              className="mt-8 mx-auto overflow-hidden rounded-2xl border border-white/10"
-              style={{ height: "clamp(3rem, 8vw, 5.5rem)", background: "rgba(255,255,255,0.04)", maxWidth: "480px" }}
+              className="mt-8 mx-auto overflow-hidden rounded-2xl border"
+              style={{
+                height: "clamp(3rem, 8vw, 5.5rem)",
+                background: "var(--slot-machine-bg)",
+                borderColor: "var(--slot-machine-border)",
+                maxWidth: "480px",
+              }}
             >
               <div className="slot" style={{ height: "500%" }}>
                 {[
@@ -262,7 +267,7 @@ export default function Home() {
                   { label: "pixel check", Icon: ImageIcon, color: "var(--blue)" },
                   { label: "vibe check", Icon: Sparkles, color: "var(--purple)" },
                   { label: "anon react", Icon: Target, color: "var(--green)" },
-                  { label: "honest look", Icon: Zap, color: "#fff" },
+                  { label: "honest look", Icon: Zap, color: "var(--text-primary)" },
                 ].map((item, i) => {
                   const SlotIcon = item.Icon;
                   return (
@@ -314,7 +319,7 @@ export default function Home() {
       {/* ================================================================
           SECTION 2.5: IMAGE SHOWCASE
       ================================================================ */}
-      <section className="relative bg-[#0d0d0d] py-20 sm:py-28 px-4 sm:px-6 overflow-hidden">
+      <section className="relative py-20 sm:py-28 px-4 sm:px-6 overflow-hidden border-y border-[var(--border)]" style={{ background: "var(--surface-raised)" }}>
         <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
           style={{ background: "var(--pink)" }} />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
@@ -323,8 +328,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <AnimateOnScroll>
             <div className="text-center mb-16">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-white/30 mb-3">the timeline</p>
-              <h2 className="font-black text-white" style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">the timeline</p>
+              <h2 className="font-black text-[var(--text-primary)]" style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontFamily: "var(--font-nunito), 'Nunito'" }}>
                 how they{" "}
                 <span
                   className="bg-clip-text text-transparent"
@@ -333,7 +338,7 @@ export default function Home() {
                   react
                 </span>
               </h2>
-              <p className="mt-4 text-white/40 text-base sm:text-lg font-bold">They drop an image. You get a notification. The chat begins.</p>
+              <p className="mt-4 text-[var(--text-muted)] text-base sm:text-lg font-bold">They drop an image. You get a notification. The chat begins.</p>
             </div>
           </AnimateOnScroll>
           <ImageShowcase />
@@ -362,7 +367,7 @@ export default function Home() {
                 <span className="text-outline">feedback</span><br />
                 portal.
               </h2>
-              <p className="mt-8 text-white/50 text-base sm:text-lg font-bold max-w-md mx-auto">
+              <p className="mt-8 text-[var(--text-muted)] text-base sm:text-lg font-bold max-w-md mx-auto">
                 No sign-up for your friends. They just click your link, drop an image, and you get notified instantly.
               </p>
             </div>
@@ -382,8 +387,8 @@ export default function Home() {
                     <div className="step-card h-full" style={{ "--card-glow": s.glow } as React.CSSProperties}>
                       <div className="mb-5"><StepIcon className="w-12 h-12 transition-transform group-hover:scale-110" style={{ color: s.color }} /></div>
                       <div className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: s.color }}>{s.step}</div>
-                      <h3 className="text-2xl font-black text-white mb-3">{s.title}</h3>
-                      <p className="text-white/40 font-bold text-sm leading-relaxed mb-6">{s.desc}</p>
+                      <h3 className="text-2xl font-black text-[var(--text-primary)] mb-3">{s.title}</h3>
+                      <p className="text-[var(--text-muted)] font-bold text-sm leading-relaxed mb-6">{s.desc}</p>
                       <div className="mt-auto text-[10px] font-black uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2" style={{ color: s.color }}>
                         Start now <ChevronRight className="w-3 h-3" />
                       </div>
@@ -406,14 +411,14 @@ export default function Home() {
       {/* ================================================================
           SECTION 3.3: SAFETY & MODERATION
       ================================================================ */}
-      <section className="relative py-24 bg-[#080808] border-y border-white/05 px-4 sm:px-6">
+      <section className="relative py-24 border-y border-[var(--border)] px-4 sm:px-6" style={{ background: "var(--surface-panel)" }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest mb-6">
               <ShieldCheck className="w-3 h-3" /> Secure Ecosystem
             </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Safe, Secure,<br/>and Sensible.</h2>
-            <div className="space-y-4 text-white/50 font-bold text-sm leading-relaxed">
+            <h2 className="text-3xl sm:text-5xl font-black text-[var(--text-primary)] mb-6">Safe, Secure,<br/>and Sensible.</h2>
+            <div className="space-y-4 text-[var(--text-muted)] font-bold text-sm leading-relaxed">
               <p>
                 Anonymity shouldn't mean a lack of accountability. At PicPop, we've built a multi-layered safety system to ensure that your feedback experience remains positive and constructive.
               </p>
@@ -436,7 +441,7 @@ export default function Home() {
           <div className="order-1 md:order-2 flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-blue-500/20 blur-[100px] animate-pulse" />
-              <div className="relative p-8 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl">
+              <div className="relative p-8 rounded-[3rem] bg-[var(--bg-card)]/80 border border-[var(--border)] backdrop-blur-xl shadow-lg">
                  <ShieldCheck className="w-32 h-32 text-blue-400 opacity-80" />
               </div>
             </div>
@@ -448,10 +453,10 @@ export default function Home() {
       {/* ================================================================
           SECTION 3.5: FAQ & KNOWLEDGE BASE (Anti-Low-Value-Content)
       ================================================================ */}
-      <section id="faq" className="relative py-24 bg-[#0a0a0a] border-y border-white/05 px-4 sm:px-6">
+      <section id="faq" className="relative py-24 border-y border-[var(--border)] px-4 sm:px-6" style={{ background: "var(--surface-faq)" }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">Frequently Asked Questions</h2>
+            <h2 className="text-3xl sm:text-5xl font-black text-[var(--text-primary)] mb-6">Frequently Asked Questions</h2>
             <p className="text-[var(--text-muted)] font-bold">Everything you need to know about anonymous photo feedback.</p>
           </div>
 
@@ -494,17 +499,17 @@ export default function Home() {
                 a: "No. One of our core design pillars is zero friction. Your friends can react to your photos directly through their mobile or desktop browser without downloading any software or creating an account, ensuring the highest possible response rate."
               }
             ].map((item, i) => (
-              <div key={i} className={`rounded-[2rem] border transition-all duration-300 ${openFaq === i ? 'bg-white/[0.04] border-white/10' : 'bg-white/[0.02] border-white/05 hover:bg-white/[0.03]'}`}>
+              <div key={i} className={`rounded-[2rem] border border-[var(--border)] transition-all duration-300 ${openFaq === i ? "bg-[var(--bg-card)] shadow-md" : "bg-[var(--bg-secondary)]/60 hover:bg-[var(--bg-card)]/90"}`}>
                  <button 
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full px-8 py-6 flex items-center justify-between text-left group"
                  >
-                    <span className="text-lg font-black text-white group-hover:text-[var(--blue)] transition-colors">{item.q}</span>
-                    <ChevronDown className={`w-5 h-5 text-white/20 transition-transform duration-300 ${openFaq === i ? 'rotate-180 text-white' : ''}`} />
+                    <span className="text-lg font-black text-[var(--text-primary)] group-hover:text-[var(--blue)] transition-colors">{item.q}</span>
+                    <ChevronDown className={`w-5 h-5 text-[var(--text-dim)] transition-transform duration-300 ${openFaq === i ? "rotate-180 text-[var(--text-primary)]" : ""}`} />
                  </button>
                  {openFaq === i && (
                    <div className="px-8 pb-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <p className="text-white/40 leading-relaxed font-bold text-sm">
+                      <p className="text-[var(--text-muted)] leading-relaxed font-bold text-sm">
                         {item.a}
                       </p>
                    </div>
@@ -516,9 +521,9 @@ export default function Home() {
 
           </div>
 
-          <div className="mt-16 p-10 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/10 text-center">
-            <h3 className="text-xl font-black text-white mb-4">Need more help?</h3>
-            <p className="text-white/40 font-bold mb-8 text-sm">Check our full documentation or reach out to our team.</p>
+          <div className="mt-16 p-10 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-transparent border border-[var(--border)] text-center">
+            <h3 className="text-xl font-black text-[var(--text-primary)] mb-4">Need more help?</h3>
+            <p className="text-[var(--text-muted)] font-bold mb-8 text-sm">Check our full documentation or reach out to our team.</p>
             <Link href="/about" className="inline-flex items-center gap-2 text-blue-400 font-black uppercase tracking-widest text-xs hover:gap-4 transition-all">
               Learn more about our mission <ArrowUpRight className="w-4 h-4" />
             </Link>

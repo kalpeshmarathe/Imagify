@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { X, ChevronRight, Menu } from "lucide-react";
 
 export function MobileNav() {
@@ -59,35 +58,35 @@ export function MobileNav() {
         />
         
         <div 
-          className={`absolute right-0 top-0 h-full w-[300px] bg-[#1a1a1a] shadow-2xl transform transition-transform duration-300 ease-out ${
+          className={`absolute right-0 top-0 h-full w-[300px] bg-[var(--bg-card)] shadow-2xl transform transition-transform duration-300 ease-out ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <span className="text-xl font-black tracking-tight text-white">
+          <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+            <span className="text-xl font-black tracking-tight text-[var(--text-primary)]">
               Menu
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors"
               aria-label="Close menu"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5 text-[var(--text-primary)]" />
             </button>
           </div>
 
-          <nav className="p-4 bg-[#1a1a1a]">
+          <nav className="p-4 bg-[var(--bg-card)]">
             <div className="space-y-2 ">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-between p-4 rounded-xl text-white hover:bg-white/10 transition-colors group"
+                  className="flex items-center justify-between p-4 rounded-xl text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors group"
                 >
                   <span className="font-semibold">{link.label}</span>
-                  <ChevronRight className="w-5 h-5 text-white/50 group-hover:text-[var(--pink)] transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--pink)] transition-colors" />
                 </Link>
               ))}
             </div>
@@ -103,12 +102,6 @@ export function MobileNav() {
               Give feedback
             </Link>
 
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-white/70">Theme</span>
-                <ThemeToggle />
-              </div>
-            </div>
           </nav>
         </div>
       </div>

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Lock, Sparkles, MessageCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { getErrorMessage } from "@/lib/error-utils";
 import { useAnonymousLink } from "@/lib/useAnonymousLink";
 
@@ -128,7 +127,6 @@ function LoginContent() {
             </Link>
 
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <Link
                 href="/"
                 className="flex items-center gap-1.5 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"

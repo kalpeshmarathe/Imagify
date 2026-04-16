@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, Clock, Share2, Bookmark, Lightbulb, Shield, Brain } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 
 export default function PsychologyPostPage() {
@@ -18,7 +17,6 @@ export default function PsychologyPostPage() {
              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
           </Link>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <Link href="/blog" className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> back to blog
             </Link>

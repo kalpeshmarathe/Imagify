@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": "now < 1775685800000",
+    ".write": "now < 1775685800000",
+    "users": {
+      "$uid": {
+        "notifications": {
+          ".indexOn": ["isRead", "createdAt"]
+        }
+      }
+    }
+  }
+}

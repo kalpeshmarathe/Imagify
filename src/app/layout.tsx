@@ -9,7 +9,6 @@ import { ToastProvider } from "@/lib/toast-context";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { NotificationTitleUpdater } from "@/components/NotificationTitleUpdater";
 import { AddToHomeScreenPrompt } from "@/components/AddToHomeScreenPrompt";
-import { ThemeProvider } from "@/lib/theme-context";
 import { GlobalNotifications } from "@/components/GlobalNotifications";
 import { AdSenseScript } from "@/components/AdSenseScript";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -18,7 +17,7 @@ import "./globals.css";
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+  weight: ["400", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -44,19 +43,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=G-ZNH6TJ4XQZ`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-ZNH6TJ4XQZ');`}
         </Script>
-        <Script id="microsoft-clarity" strategy="afterInteractive">
+        <Script id="microsoft-clarity" strategy="lazyOnload">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -72,7 +71,6 @@ export default function RootLayout({
         className={`${nunito.variable} ${geistMono.variable} antialiased bg-[var(--bg-primary)] text-[var(--text-primary)]`}
         suppressHydrationWarning
       >
-        <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
             <LoadingProvider>
@@ -87,7 +85,6 @@ export default function RootLayout({
             </LoadingProvider>
           </ToastProvider>
         </AuthProvider>
-        </ThemeProvider>
       </body>
     </html>
   );

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Clock, ChevronRight, Sparkles, TrendingUp } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 
 const BLOG_POSTS = [
@@ -59,7 +58,6 @@ export default function BlogPage() {
              <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
           </Link>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <Link href="/" className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> back
             </Link>

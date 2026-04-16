@@ -21,7 +21,6 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/lib/toast-context";
 
 type Tab = "users" | "reports" | "blocked" | "feedbacks" | "categories" | "browseImages";
@@ -363,7 +362,6 @@ export default function AdminPage() {
             <span className="font-black text-lg">Admin Panel</span>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button
               type="button"
               onClick={fetchData}

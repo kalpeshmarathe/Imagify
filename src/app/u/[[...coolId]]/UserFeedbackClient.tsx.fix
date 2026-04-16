@@ -11,7 +11,6 @@ import { getAppFunctions } from "@/lib/functions";
 import { uploadFeedbackImage, uploadAttachment } from "@/lib/image-upload";
 import { useToast } from "@/lib/toast-context";
 import { useAuth } from "@/lib/auth-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AiImagePrompts, openProvider, type AiImageProvider } from "@/components/AiImagePrompts";
 import { ExploreImages } from "@/components/ExploreImages";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -777,7 +776,6 @@ function UserFeedbackContent() {
                   {unreadCount} NEW
                 </div>
               )}
-              <ThemeToggle />
             </div>
           </div>
 
@@ -982,7 +980,6 @@ le))" }}
           </Link>
           <div className="flex items-center gap-2">
             <NotificationBell ownerName={coolId} />
-            <ThemeToggle />
             {authUser ? (
               <Link href="/dashboard" className="text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Dashboard</Link>
             ) : (

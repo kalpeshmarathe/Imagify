@@ -17,7 +17,6 @@ import { db, ensureFirestoreNetwork } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { uploadFeedbackImage } from "@/lib/image-upload";
 import { ShareButtons } from "@/components/ShareButtons";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackShareModal } from "@/components/FeedbackShareModal";
 import { ReportFeedbackModal } from "@/components/ReportFeedbackModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -497,7 +496,6 @@ function FeedbackOnImageContent() {
             <img src="/logo.svg" alt="picpop" className="h-6 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <NotificationBell ownerName={image?.coolId} />
             <Link href={user ? "/dashboard" : "/login"} className="text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               {user ? "dashboard" : "sign in"}

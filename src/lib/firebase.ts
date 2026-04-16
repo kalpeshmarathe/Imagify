@@ -56,9 +56,13 @@ export const auth = app
 export const db = app
   ? (() => {
     try {
+      // Default transport (WebSocket) is faster than experimentalForceLongPolling.
+      // Set NEXT_PUBLIC_FIRESTORE_LONG_POLLING=true if you need long-polling behind strict proxies.
       return initializeFirestore(app, {
         localCache: memoryLocalCache(),
-        experimentalForceLongPolling: true,
+        ...(process.env.NEXT_PUBLIC_FIRESTORE_LONG_POLLING === "true"
+          ? { experimentalForceLongPolling: true as const }
+          : {}),
       });
     } catch {
       return getFirestore(app);

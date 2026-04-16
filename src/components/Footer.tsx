@@ -9,7 +9,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/05 bg-[#080808] py-20 px-6 relative overflow-hidden">
+    <footer className="border-t border-[var(--border)] py-20 px-6 relative overflow-hidden" style={{ background: "var(--surface-panel)" }}>
       {/* Background accents */}
       <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full blur-[100px] opacity-10 bg-purple-500 pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full blur-[100px] opacity-10 bg-pink-500 pointer-events-none" />
@@ -22,22 +22,22 @@ export function Footer() {
               <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-95" />
             </Link>
 
-            <p className="text-white/40 font-bold text-sm leading-relaxed max-w-sm">
+            <p className="text-[var(--text-muted)] font-bold text-sm leading-relaxed max-w-sm">
               The world's most honest image feedback platform. Drop a link, receive visual reactions, and chat without revealing your identity. One-way anonymity by design.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="sticker text-[10px]" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="sticker text-[10px]" style={{ background: "var(--sticker-bg)", border: "1px solid var(--sticker-border)" }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] inline-block" style={{ boxShadow: "0 0 6px var(--green)" }} />
                 System Live
               </div>
-              <div className="sticker text-[10px]" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="sticker text-[10px]" style={{ background: "var(--sticker-bg)", border: "1px solid var(--sticker-border)" }}>
                 Premium Content Community
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            <h4 className="text-white text-xs font-black uppercase tracking-[0.2em] opacity-30">Platform</h4>
+            <h4 className="text-[var(--text-muted)] text-xs font-black uppercase tracking-[0.2em]">Platform</h4>
             <ul className="space-y-4">
               <li><Link href="/about" className="footer-link-v2">About Us</Link></li>
               <li><Link href="/blog" className="footer-link-v2">Our Insights (Blog)</Link></li>
@@ -52,7 +52,7 @@ export function Footer() {
 
           {/* Links: Legal */}
           <div className="space-y-6">
-            <h4 className="text-white text-xs font-black uppercase tracking-[0.2em] opacity-30">Regulation</h4>
+            <h4 className="text-[var(--text-muted)] text-xs font-black uppercase tracking-[0.2em]">Regulation</h4>
             <ul className="space-y-4">
               <li><Link href="/privacy" className="footer-link-v2">Privacy Policy</Link></li>
               <li><Link href="/terms" className="footer-link-v2">Terms of Service</Link></li>
@@ -68,27 +68,27 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-12 border-t border-white/05 flex flex-col sm:flex-row items-center justify-between gap-8">
-          <p className="flex items-center gap-1.5 text-xs text-white/10 font-black tracking-tight uppercase">
+        <div className="pt-12 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-8">
+          <p className="flex items-center gap-1.5 text-xs text-[var(--text-dim)] font-black tracking-tight uppercase">
             <Sparkles className="w-3.5 h-3.5" /> © {currentYear} PicPop Studio — all assets protected. 
           </p>
           <div className="flex items-center gap-8">
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/05 cursor-default hover:text-white/10 transition-colors">Digital Integrity</span>
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/05 cursor-default hover:text-white/10 transition-colors">Vibe Centric</span>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-dim)] cursor-default hover:text-[var(--text-muted)] transition-colors">Digital Integrity</span>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-dim)] cursor-default hover:text-[var(--text-muted)] transition-colors">Vibe Centric</span>
           </div>
         </div>
       </div>
 
       <style jsx>{`
         .footer-link-v2 {
-          color: rgba(255, 255, 255, 0.4);
+          color: var(--text-muted);
           font-weight: 800;
           font-size: 0.85rem;
           transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           display: block;
         }
         .footer-link-v2:hover {
-          color: #fff;
+          color: var(--text-primary);
           transform: translateX(6px);
         }
         .sticker {

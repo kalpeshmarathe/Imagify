@@ -51,12 +51,12 @@ export function ActivityTicker({ items, coolId }: ActivityTickerProps) {
     <div className="sticky top-20 z-[40] w-full px-4 py-1 pointer-events-none flex justify-center text-center">
       <button
         onClick={openNotifications}
-        className="max-w-[320px] sm:max-w-[360px] w-full h-[50px] pointer-events-auto overflow-hidden bg-[#0d0d12]/90 backdrop-blur-3xl border border-white/10 rounded-full hover:bg-white/[0.1] hover:border-pink-500/20 hover:scale-[1.02] transition-all text-left group/ticker active:scale-[0.98] shadow-[0_15px_60px_-15px_rgba(0,0,0,0.8)] relative"
+        className="max-w-[320px] sm:max-w-[360px] w-full h-[50px] pointer-events-auto overflow-hidden bg-[var(--bg-card)]/95 backdrop-blur-3xl border border-[var(--border)] rounded-full hover:bg-[var(--bg-secondary)] hover:border-[var(--pink)]/25 hover:scale-[1.02] transition-all text-left group/ticker active:scale-[0.98] shadow-[0_15px_60px_-15px_rgba(0,0,0,0.12)] dark:shadow-[0_15px_60px_-15px_rgba(0,0,0,0.8)] relative"
       >
         <div className="px-4 h-full relative flex items-center gap-3">
           {/* Unread Badge / Status */}
           <div className="shrink-0 relative">
-            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center overflow-hidden">
                <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
             </div>
             {totalCount > 1 && (
@@ -80,11 +80,15 @@ export function ActivityTicker({ items, coolId }: ActivityTickerProps) {
                     isActive ? "translate-y-0 opacity-100" : i < activeIndex ? "-translate-y-10 opacity-0" : "translate-y-10 opacity-0"
                   }`}
                 >
-                  <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-500 border border-white/5 ${isOwner ? 'bg-gradient-to-br from-pink-500 to-purple-600' : 'bg-white/10'}`}>
+                  <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-500 border border-[var(--border)] ${isOwner ? "bg-gradient-to-br from-pink-500 to-purple-600" : "bg-[var(--bg-secondary)]"}`}>
                     {msg.feedbackImageUrl ? (
                       <img src={msg.feedbackImageUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[10px] font-black text-white uppercase">{senderDisplay[0]}</span>
+                      <span
+                        className={`text-[10px] font-black uppercase ${isOwner ? "text-white" : "text-[var(--text-primary)]"}`}
+                      >
+                        {senderDisplay[0]}
+                      </span>
                     )}
                   </div>
                   
@@ -93,9 +97,9 @@ export function ActivityTicker({ items, coolId }: ActivityTickerProps) {
                       <span className={`text-[11px] font-black uppercase tracking-wider truncate max-w-[120px] ${isOwner ? "text-pink-400" : "text-blue-400"}`}>
                         {senderDisplay}
                       </span>
-                      <span className="text-[8px] font-bold text-white/20">{formatTime(msg.createdAt)}</span>
+                      <span className="text-[8px] font-bold text-[var(--text-dim)]">{formatTime(msg.createdAt)}</span>
                     </div>
-                    <p className="text-[12px] font-bold text-white/50 truncate max-w-[160px] group-hover/ticker:text-white transition-colors">
+                    <p className="text-[12px] font-bold text-[var(--text-muted)] truncate max-w-[160px] group-hover/ticker:text-[var(--text-primary)] transition-colors">
                       {msg.message || "Reaction sent"}
                     </p>
                   </div>
@@ -104,8 +108,8 @@ export function ActivityTicker({ items, coolId }: ActivityTickerProps) {
             })}
           </div>
 
-          <div className="shrink-0 flex items-center gap-2 pl-2 border-l border-white/5">
-            <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover/ticker:translate-x-1 transition-all" />
+          <div className="shrink-0 flex items-center gap-2 pl-2 border-l border-[var(--border)]">
+            <ChevronRight className="w-3.5 h-3.5 text-[var(--text-dim)] group-hover/ticker:translate-x-1 transition-all" />
           </div>
         </div>
       </button>

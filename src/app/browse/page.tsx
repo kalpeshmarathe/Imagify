@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, ImageIcon } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { ExploreImages } from "@/components/ExploreImages";
 
@@ -18,7 +17,6 @@ export default function BrowsePage() {
             <img src="/logo.svg" alt="picpop" className="h-8 w-auto opacity-90" />
           </Link>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
             <Link
               href="/"
               className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors"

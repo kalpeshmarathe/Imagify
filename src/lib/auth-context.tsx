@@ -53,6 +53,40 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** RTDB session + anonymous IP mapping — must not block first paint (GlobalLoader). */
+async function runPostLoginLinking(firebaseUser: User): Promise<void> {
+  try {
+    const { getSessionId } = await import("@/lib/session-utils");
+    const { linkSessionToUser } = await import("@/lib/realtime-notifications");
+    const { httpsCallable } = await import("firebase/functions");
+    const { getAppFunctions } = await import("@/lib/functions");
+
+    const sessionId = getSessionId();
+    const functions = getAppFunctions();
+
+    if (sessionId) {
+      await linkSessionToUser(sessionId, firebaseUser.uid);
+    }
+
+    if (functions) {
+      const result = await httpsCallable(functions, "mapIpToUser")({});
+      const data = result.data as { anonymousId: string };
+
+      try {
+        const linkFn = httpsCallable(functions, "linkAnonymousToUser");
+        await linkFn({
+          anonymousId: data.anonymousId,
+          sessionId: sessionId,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -174,48 +208,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-
-
       setUser(firebaseUser);
       try {
         if (firebaseUser) {
           const p = await fetchOrCreateProfile(firebaseUser);
           setProfile(p);
-
-          // IMPORTANT: Link current anonymous session to this user
-          try {
-            const { getSessionId } = await import("@/lib/session-utils");
-            const { linkSessionToUser } = await import("@/lib/realtime-notifications");
-            const { httpsCallable } = await import("firebase/functions");
-            const { getAppFunctions } = await import("@/lib/functions");
-
-            const sessionId = getSessionId();
-            const functions = getAppFunctions();
-
-            // 1. Link RTDB Session
-            if (sessionId) {
-              
-
-              await linkSessionToUser(sessionId, firebaseUser.uid);
-            }
-
-            // 2. Link IP-based history + Firestore documents
-            if (functions) {
-              const result = await httpsCallable(functions, "mapIpToUser")({});
-              const data = result.data as { anonymousId: string };
-
-              // 3. Link Firestore Documents (Batch update)
-              try {
-                const linkFn = httpsCallable(functions, "linkAnonymousToUser");
-                const linkResult = await linkFn({ 
-                  anonymousId: data.anonymousId, 
-                  sessionId: sessionId 
-                }) as any;
-              } catch (linkErr) {
-              }
-            }
-          } catch (err) {
-          }
         } else {
           setProfile(null);
         }
@@ -228,6 +225,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Don't set a fake profile with coolId: null, as it triggers a redirect to /create-id
       } finally {
         setLoading(false);
+      }
+
+      if (firebaseUser) {
+        void runPostLoginLinking(firebaseUser);
       }
     });
 

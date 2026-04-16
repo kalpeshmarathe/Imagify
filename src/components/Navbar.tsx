@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, LogOut, LayoutDashboard, Inbox, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { ThemeToggle } from "./ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { useToast } from "@/lib/toast-context";
 
@@ -36,7 +35,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="navbar-glass sticky top-0 z-50 border-b border-white/5 bg-[var(--bg-primary)]/80 backdrop-blur-md">
+    <header className="navbar-glass sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
       <nav className="flex h-16 items-center justify-between px-6 max-w-4xl mx-auto">
         <Link href="/" className="flex items-center gap-2.5 hover:scale-105 transition-transform duration-300 shrink-0 group">
           <img src="/logo.svg" alt="picpop" className="h-8 w-auto" />
@@ -44,8 +43,7 @@ export function Navbar() {
 
 
         <div className="flex items-center gap-2 sm:gap-6">
-          <Link href="/blog" className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors hidden md:block">Blog</Link>
-          <ThemeToggle />
+          <Link href="/blog" className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden md:block">Blog</Link>
 
           <NotificationBell ownerName={profile?.coolId || ""} />
 
@@ -53,7 +51,7 @@ export function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/5 border border-white/10 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all max-w-[150px] sm:max-w-none"
+                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all max-w-[150px] sm:max-w-none"
                 aria-label="User profile menu"
               >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[var(--pink)] to-[var(--purple)] flex items-center justify-center text-[10px] text-white shrink-0">
@@ -65,13 +63,13 @@ export function Navbar() {
 
               {showDropdown && (
                 <div 
-                  className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+                  className="absolute right-0 top-full mt-2 py-2 w-48 rounded-2xl border border-[var(--border)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
                   style={{ background: "var(--bg-secondary)" }}
                 >
                   <Link 
                     href="/dashboard"
                     onClick={() => setShowDropdown(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[var(--text-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
@@ -79,15 +77,15 @@ export function Navbar() {
                   <Link 
                     href="/inbox"
                     onClick={() => setShowDropdown(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[var(--text-muted)] hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
                   >
                     <Inbox className="w-4 h-4" />
                     Inbox
                   </Link>
-                  <div className="h-px bg-white/5 my-1" />
+                  <div className="h-px bg-[var(--border)] my-1" />
                   <button
                     onClick={handleSignOut}
-                    className="w-full px-4 py-2.5 text-left text-sm font-bold text-[var(--text-muted)] hover:text-red-400 hover:bg-white/5 transition-colors flex items-center gap-3"
+                    className="w-full px-4 py-2.5 text-left text-sm font-bold text-[var(--text-muted)] hover:text-red-400 hover:bg-[var(--bg-primary)] transition-colors flex items-center gap-3"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign out

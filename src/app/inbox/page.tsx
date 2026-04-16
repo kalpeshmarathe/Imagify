@@ -29,7 +29,6 @@ import { uploadAttachment } from "@/lib/image-upload";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Navbar } from "@/components/Navbar";
 import { FeedbackShareModal } from "@/components/FeedbackShareModal";
 import { ReportFeedbackModal } from "@/components/ReportFeedbackModal";

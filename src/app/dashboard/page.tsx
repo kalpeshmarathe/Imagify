@@ -5,7 +5,6 @@ import { Link2, Copy, Share2, Inbox, PlayCircle, LogOut, ChevronDown } from "luc
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useToast } from "@/lib/toast-context";
 import {
